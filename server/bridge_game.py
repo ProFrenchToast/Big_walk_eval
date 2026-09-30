@@ -208,7 +208,7 @@ class BridgeGame:
                 raise ValueError(f"no body in slot {slot}")
         directory = Path(self.config.capture_dir).resolve() / request.episode_id
         directory.mkdir(parents=True, exist_ok=True)
-        # NEEDS GAME: the mod renders one camera per body and pipes frames to ffmpeg.
+        # The mod renders one camera per body and pipes frames to ffmpeg.
         await self.bridge.capture_start(
             str(directory), request.fps, request.width, request.height, slots
         )
