@@ -1,0 +1,22 @@
+from __future__ import annotations
+
+import pytest
+
+from big_walk_eval.game.fake_game import FakeGame
+from big_walk_eval.protocol import BodySpawn, ResetRequest
+
+ASH = BodySpawn(slot=1, name="Ash", position=(-5.0, 0.0, 0.0), yaw_deg=0.0)
+BIRCH = BodySpawn(slot=2, name="Birch", position=(0.0, 0.0, 0.0), yaw_deg=0.0)
+# Angle from Ash's spawn to the plate at (-8, 4): atan2(-3, 4).
+ASH_TO_PLATE_YAW = -36.8699
+
+
+def reset_request(*bodies: BodySpawn) -> ResetRequest:
+    return ResetRequest(puzzle_id="fake_plate_gate", bodies=list(bodies) or [ASH, BIRCH])
+
+
+@pytest.fixture
+async def game() -> FakeGame:
+    g = FakeGame(seed=0)
+    await g.reset(reset_request())
+    return g
