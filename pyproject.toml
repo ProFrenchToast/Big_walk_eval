@@ -17,6 +17,9 @@ server = [
     "fastapi>=0.110",
     "uvicorn>=0.29",
 ]
+video = [
+    "imageio-ffmpeg>=0.5",
+]
 
 [project.entry-points.inspect_ai]
 big_walk_eval = "big_walk_eval._registry"
@@ -28,6 +31,7 @@ dev = [
     "ruff>=0.5",
     "fastapi>=0.110",
     "uvicorn>=0.29",
+    "imageio-ffmpeg>=0.5",
 ]
 
 [build-system]

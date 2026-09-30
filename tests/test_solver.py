@@ -34,13 +34,14 @@ def run(
     max_turns: int = 8,
     n_agents: int = 2,
     policy=None,
+    game_factory=None,
 ) -> tuple[EvalSample, EpisodeLog]:
     task = Task(
         dataset=[
             Sample(input="play", metadata={"puzzle": puzzle.model_dump(), "n_agents": n_agents})
         ],
         solver=round_robin(
-            lambda: FakeGame(seed=0),
+            game_factory or (lambda: FakeGame(seed=0)),
             config or EpisodeConfig(),
             controls="test controls",
             game_name="a test game",

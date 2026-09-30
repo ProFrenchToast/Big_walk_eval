@@ -78,4 +78,17 @@ public class BridgeBehaviour : MonoBehaviour
             _pending.RemoveAt(i);
         }
     }
+
+    private void LateUpdate()
+    {
+        try
+        {
+            BodyCapture.Tick();
+        }
+        catch (Exception e)
+        {
+            Plugin.Trace.LogError($"capture stopped: {e}");
+            BodyCapture.Stop();
+        }
+    }
 }

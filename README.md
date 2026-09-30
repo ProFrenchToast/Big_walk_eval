@@ -53,6 +53,19 @@ uv run python scripts/replay.py <log>.eval --backend http --frames runs/replay
 
 FakeGame replays exactly. On the real game, the drift shows how deterministic the game is under replayed input.
 
+## Video
+
+With `-T capture=true`, the game records each body's own view while game time runs. It writes the frames on the machine that runs the game. `scripts/make_video.py` puts the views of all agents side by side in one video. A yellow border shows the agent that acts. Each view shows only the chat that its agent said or heard.
+
+```bash
+uv sync --extra video     # ffmpeg, if it is not on PATH
+uv run python scripts/scripted_run.py scripts/solutions/fake_plate_gate.yaml --capture
+uv run python scripts/make_video.py logs/scripted/<log>.eval      # writes <frames>/episode.mp4
+uv run inspect eval big_walk_eval/big_walk_coop -T capture=true --model ...
+```
+
+The frames have no pauses between actions, because no game time passes then. Each chat message stops the video for 2 s (`--hold-s`) so that viewers can read it. On the real game, the bridge renders one extra camera per body. This is **NEEDS GAME** (see `bridge/README.md`).
+
 ## Layout
 
 | Path | What |
@@ -63,8 +76,9 @@ FakeGame replays exactly. On the real game, the drift shows how deterministic th
 | `src/big_walk_eval/tools/` | `computer` (native computer-use binding), `say`, `end_episode` |
 | `src/big_walk_eval/game/` | `GameClient` interface, `FakeGame`, `HttpGame` |
 | `src/big_walk_eval/replay.py` | Records the inputs of an episode and plays them back |
+| `src/big_walk_eval/video.py` | Makes one video from the per-body frames of an episode |
 | `src/big_walk_eval/timeline.py` | Actions to timed input events, shared by FakeGame and the server |
 | `server/` | Game server (FastAPI), bridge client, input backends, calibration. Windows for real input |
 | `bridge/` | BepInEx plugin (C#). Skeleton, not compiled yet |
 | `puzzles/` | One YAML file per puzzle |
-| `scripts/` | `scripted_run.py`, `replay.py`, and scripted solutions |
+| `scripts/` | `scripted_run.py`, `replay.py`, `make_video.py`, and scripted solutions |

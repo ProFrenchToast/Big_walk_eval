@@ -33,7 +33,7 @@ from inspect_ai.util import span
 from big_walk_eval.episode import Episode, EpisodeConfig, EpisodeLog
 from big_walk_eval.game.client import GameClient
 from big_walk_eval.prompts import system_prompt, turn_header
-from big_walk_eval.protocol import PuzzleConfig
+from big_walk_eval.protocol import CaptureRequest, PuzzleConfig
 from big_walk_eval.replay import Recorder, RecordingGame
 from big_walk_eval.tools import agent_tools
 from big_walk_eval.tools.computer import png_content
@@ -103,11 +103,22 @@ def round_robin(
         game = RecordingGame(game_factory(), recorder)
         episode = Episode(game, config, names, recorder=recorder)
         model = get_model()
+        capturing = False
         try:
             start = await game.reset(request)
             if start.camera_hfov_deg:
                 episode.hfov_deg = start.camera_hfov_deg
             episode.record_events(start.events)
+            if config.capture_fps:
+                await game.start_capture(
+                    CaptureRequest(
+                        episode_id=f"{puzzle.id}_{state.uuid}",
+                        fps=config.capture_fps,
+                        width=config.capture_width,
+                        height=config.capture_height,
+                    )
+                )
+                capturing = True
             agents = [
                 Agent(
                     slot=slot,
@@ -170,6 +181,12 @@ def round_robin(
             ]
             log.total_game_ms = episode.total_game_ms
             log.replay = recorder.recording.model_dump(mode="json")
+            if capturing:
+                try:
+                    info = await game.stop_capture()
+                    log.capture = info.model_dump(mode="json") if info else None
+                except Exception as e:
+                    log.capture_error = f"{type(e).__name__}: {e}"
             await game.close()
         return state
 

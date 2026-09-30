@@ -22,6 +22,8 @@ internal static class Commands
         "screenshot" => new Screenshot(Json.Int(args, "width"), Json.Int(args, "height")),
         "overview_shot" => OverviewShot.Run(args),
         "events" => GameEvents.Drain(),
+        "capture_start" => BodyCapture.Start(args),
+        "capture_stop" => BodyCapture.Stop(),
         "look" => Unfinished.Look(args),
         "load_snapshot" => Unfinished.LoadSnapshot(args),
         "save_snapshot" => Unfinished.SaveSnapshot(args),

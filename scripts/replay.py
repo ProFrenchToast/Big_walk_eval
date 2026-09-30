@@ -18,9 +18,7 @@ import asyncio
 import sys
 from pathlib import Path
 
-from inspect_ai.log import read_eval_log, read_eval_log_sample, read_eval_log_sample_summaries
-
-from big_walk_eval.episode import EpisodeLog
+from big_walk_eval.episode import read_episode_log
 from big_walk_eval.game.client import GameClient
 from big_walk_eval.game.fake_game import FakeGame
 from big_walk_eval.game.http_game import DEFAULT_URL, HttpGame
@@ -28,17 +26,10 @@ from big_walk_eval.replay import Recording, play
 
 
 def load(log_path: str, sample_id: str | None, epoch: int) -> tuple[Recording, dict]:
-    if sample_id is None:
-        summaries = read_eval_log_sample_summaries(log_path)
-        if not summaries:
-            raise SystemExit(f"{log_path} has no samples")
-        sample_id = str(summaries[0].id)
-    sample = read_eval_log_sample(log_path, id=sample_id, epoch=epoch)
-    data = sample.store_as(EpisodeLog).replay
-    if data is None:
-        raise SystemExit(f"sample {sample_id} epoch {epoch} has no recording")
-    task_args = read_eval_log(log_path, header_only=True).eval.task_args
-    return Recording.model_validate(data), task_args
+    log, task_args = read_episode_log(log_path, sample_id, epoch)
+    if log.replay is None:
+        raise SystemExit(f"sample {sample_id or 'first'} epoch {epoch} has no recording")
+    return Recording.model_validate(log.replay), task_args
 
 
 async def run(recording: Recording, game: GameClient, args: argparse.Namespace) -> bool:

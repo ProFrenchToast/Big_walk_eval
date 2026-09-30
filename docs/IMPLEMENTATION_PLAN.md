@@ -218,6 +218,8 @@ class GameClient(Protocol):
 | `GET /state` | | `GameState` |
 | `POST /chat_echo` | `{slot, text}` | `{ok}` |
 | `POST /overview_shot` | `{position, look_at}` | PNG, base64 |
+| `POST /capture/start` | `CaptureRequest {episode_id, fps, width, height, slots}` | `{ok}` |
+| `POST /capture/stop` | | `{info: CaptureInfo \| null}` |
 
 Put the pydantic models in one shared module (`big_walk_eval/protocol.py`). The game server imports the same module, so the two sides cannot drift.
 
@@ -236,6 +238,7 @@ Line-delimited JSON over TCP on `127.0.0.1:47800`. One request per line, one res
 | `load_snapshot {name}` / `save_snapshot {name}` | Loads or saves the puzzle save file. | Save file location and load path are unknown. |
 | `events` | Returns and clears the event queue. | Harmony postfixes on reward spawn and pickup. |
 | `look {dyaw, dpitch}` | Optional. Turns the active camera by an exact angle. | Better than calibrated mouse movement if it works. |
+| `capture_start {directory, fps, width, height, slots}` / `capture_stop` | Renders one hidden camera per body at each 1/fps step of game time. Sends the frames to ffmpeg. | For replay videos. See 15.1 item 13. |
 
 ## 7. Agent tools
 
@@ -460,6 +463,7 @@ After M8: more puzzles, more agents, and ablations (see section 13).
 10. **`puzzle_game` task parameter.** `-T backend=http -T puzzle_game=fake` runs FakeGame puzzles on a server started with `--fake`. Use this to test the network path before the game.
 11. **The bridge `spawn_bodies` waits 40 frames after the last spawn.** The practice mod moves a new body back to its formation spot 30 frames after it spawns, which would undo a teleport.
 12. **Each episode records its inputs for replays.** `RecordingGame` (`src/big_walk_eval/replay.py`) wraps the `GameClient`. It records each reset, switch, and act in order, with the game time. The tools add `say` messages and votes. After each act, it reads the state of all bodies as a checkpoint. The events of that read go back to the harness on the next call, so no event is lost. The solver puts the recording in `EpisodeLog.replay`. Screenshots are not in the recording, because the Inspect log has them. `scripts/replay.py` sends the recorded inputs to a fresh game and shows the drift from each checkpoint. FakeGame replays with zero drift. **[NEEDS GAME]** Measure the drift on the real game. If the drift is large, the bridge `teleport` can move each body to its checkpoint during a playback. A smooth video also needs frames during an act, not only after it. That needs a bridge command that captures frames at a fixed game-time step.
+13. **Per-agent video.** With `-T capture=true`, the game records each body's own view in one run. We do not replay the episode once per agent. Under hot-swap the camera follows the control, and each replay on the real game can drift in a different way. So the N videos would not show the same episode. `CaptureRequest` asks the game to write one JPEG per body for each 1/fps step of game time. Frames are only made while game time runs, so the pauses between actions are not in them. The game writes the frames on its own machine, to `<capture_dir>/<episode_id>/slot<N>/`, with `capture.json` (a `CaptureInfo`). The solver starts the capture after the reset and puts the `CaptureInfo` in `EpisodeLog.capture`. The recording gets a `capture` step, so `src/big_walk_eval/video.py` can match frames to acts and chat by game time. `scripts/make_video.py` makes the grid video. FakeGame renders every body with its raycast view. The bridge (`Commands/BodyCapture.cs`) renders one extra camera per body and sends raw frames to one ffmpeg process per body. **[NEEDS GAME]**: whether `cameraTransform` follows the head of a body that is not active, the layer that hides a body's own head from its camera (`TODO(dump)`), and the cost of N cameras. If the capture slows the live run too much, run it during a playback instead, with `Time.captureDeltaTime`.
 
 ### 15.2 Status per milestone
 

@@ -15,13 +15,18 @@ from __future__ import annotations
 import math
 import random
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Literal
+
+from PIL import Image
 
 from big_walk_eval.game import fake_render
 from big_walk_eval.protocol import (
     Action,
     ActResult,
     BodyState,
+    CaptureInfo,
+    CaptureRequest,
     GameEvent,
     GameState,
     Hand,
@@ -57,6 +62,19 @@ _MOVE_KEYS = {
     "right": (1.0, 0.0),
 }
 _BUTTON_HAND: dict[str, Hand] = {"left": "left", "right": "right"}
+
+
+@dataclass
+class _Capture:
+    request: CaptureRequest
+    directory: Path
+    slots: list[int]
+    start_ms: int
+    frames: int = 0
+
+    @property
+    def next_ms(self) -> float:
+        return self.start_ms + self.frames * 1000 / self.request.fps
 
 
 @dataclass(frozen=True)
@@ -137,8 +155,10 @@ def segments_cross(
 class FakeGame:
     """Implements `GameClient`. Deterministic for a given seed and action sequence."""
 
-    def __init__(self, seed: int = 0) -> None:
+    def __init__(self, seed: int = 0, capture_dir: str | Path = "captures") -> None:
         self.seed = seed
+        self.capture_dir = Path(capture_dir)
+        self._capture: _Capture | None = None
         self.bodies: dict[int, FakeBody] = {}
         self.items: dict[str, FakeItem] = {}
         self.active_slot = 0
@@ -156,6 +176,7 @@ class FakeGame:
     async def reset(self, request: ResetRequest) -> GameState:
         if not request.bodies:
             raise ValueError("reset needs at least one body")
+        await self.stop_capture()
         rng = random.Random(f"{self.seed}:{request.puzzle_id}")
         self.bodies = {
             b.slot: FakeBody(
@@ -227,8 +248,37 @@ class FakeGame:
     ) -> bytes | None:
         return fake_render.overview(self)
 
+    async def start_capture(self, request: CaptureRequest) -> None:
+        await self.stop_capture()
+        slots = request.slots or sorted(self.bodies)
+        for slot in slots:
+            if slot not in self.bodies:
+                raise ValueError(f"no body in slot {slot}")
+        directory = self.capture_dir / request.episode_id
+        for slot in slots:
+            (directory / f"slot{slot}").mkdir(parents=True, exist_ok=True)
+        self._capture = _Capture(request, directory, slots, self.game_ms)
+        self._capture_due()
+
+    async def stop_capture(self) -> CaptureInfo | None:
+        capture, self._capture = self._capture, None
+        if capture is None:
+            return None
+        info = CaptureInfo(
+            episode_id=capture.request.episode_id,
+            directory=str(capture.directory.resolve()),
+            fps=capture.request.fps,
+            width=capture.request.width,
+            height=capture.request.height,
+            slots={slot: self.bodies[slot].name for slot in capture.slots},
+            frames=capture.frames,
+            start_game_ms=capture.start_ms,
+        )
+        (capture.directory / "capture.json").write_text(info.model_dump_json(indent=2))
+        return info
+
     async def close(self) -> None:
-        return None
+        await self.stop_capture()
 
     # ------------------------------------------------------------- world rules
 
@@ -255,21 +305,37 @@ class FakeGame:
             step = min(TICK_MS, dt_ms)
             dt_ms -= step
             self.game_ms += step
-            mx = sum(_MOVE_KEYS[k][0] for k in keys if k in _MOVE_KEYS)
-            mz = sum(_MOVE_KEYS[k][1] for k in keys if k in _MOVE_KEYS)
-            norm = math.hypot(mx, mz)
-            if norm == 0:
-                continue
-            speed = WALK_SPEED * (SPRINT_FACTOR if "shift" in keys else 1.0)
-            dist = speed * step / 1000.0
-            fx, fz = body.forward()
-            rx, rz = fz, -fx
-            dx = (mz * fx + mx * rx) / norm * dist
-            dz = (mz * fz + mx * rz) / norm * dist
-            new = (body.x + dx, body.z + dz)
-            if not self._blocked((body.x, body.z), new):
-                body.x, body.z = new
-                self._update_gate(body.slot)
+            self._move(body, keys, step)
+            self._capture_due()
+
+    def _move(self, body: FakeBody, keys: set[str], step: int) -> None:
+        mx = sum(_MOVE_KEYS[k][0] for k in keys if k in _MOVE_KEYS)
+        mz = sum(_MOVE_KEYS[k][1] for k in keys if k in _MOVE_KEYS)
+        norm = math.hypot(mx, mz)
+        if norm == 0:
+            return
+        speed = WALK_SPEED * (SPRINT_FACTOR if "shift" in keys else 1.0)
+        dist = speed * step / 1000.0
+        fx, fz = body.forward()
+        rx, rz = fz, -fx
+        dx = (mz * fx + mx * rx) / norm * dist
+        dz = (mz * fz + mx * rz) / norm * dist
+        new = (body.x + dx, body.z + dz)
+        if not self._blocked((body.x, body.z), new):
+            body.x, body.z = new
+            self._update_gate(body.slot)
+
+    def _capture_due(self) -> None:
+        capture = self._capture
+        if capture is None:
+            return
+        size = (capture.request.width, capture.request.height)
+        while self.game_ms >= capture.next_ms:
+            for slot in capture.slots:
+                img = fake_render.first_person_image(self, self.bodies[slot])
+                path = capture.directory / f"slot{slot}" / f"{capture.frames:06d}.jpg"
+                img.resize(size, Image.Resampling.BILINEAR).save(path, quality=85)
+            capture.frames += 1
 
     def _update_gate(self, slot: int | None) -> None:
         pressed = self._plate_pressed()

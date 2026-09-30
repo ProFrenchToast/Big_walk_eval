@@ -31,6 +31,7 @@ class FakeBridge:
         self.pending_events: list[dict[str, Any]] = []
         self.fail: dict[str, str] = {}
         self.camera_vfov_deg = 60.0
+        self.capture: dict[str, Any] | None = None
         self._game_time = 0.0
         self._resumed_at = 0.0
         self._server: asyncio.base_events.Server | None = None
@@ -102,6 +103,16 @@ class FakeBridge:
                 body["yaw_deg"] += args["dyaw_deg"]
                 body["pitch_deg"] += args["dpitch_deg"]
                 return {}
+            case "capture_start":
+                self.capture = {**args, "start_time_s": self.time_s()}
+                return {}
+            case "capture_stop":
+                if self.capture is None:
+                    raise RuntimeError("no capture runs")
+                start = self.capture["start_time_s"]
+                frames = int((self.time_s() - start) * self.capture["fps"]) + 1
+                self.capture = None
+                return {"frames": frames, "start_time_s": start}
             case "load_snapshot" | "chat" | "input":
                 return {}
         raise RuntimeError(f"unknown command {cmd}")

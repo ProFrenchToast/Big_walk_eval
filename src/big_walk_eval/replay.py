@@ -32,6 +32,8 @@ from big_walk_eval.protocol import (
     Action,
     ActResult,
     BodyState,
+    CaptureInfo,
+    CaptureRequest,
     GameEvent,
     GameState,
     HealthResponse,
@@ -82,6 +84,13 @@ class ActStep(_Step):
     error: str | None = None
 
 
+class CaptureStep(_Step):
+    """The game started to record each body's view. Capture frame 0 is at this step's game time."""
+
+    kind: Literal["capture"] = "capture"
+    episode_id: str
+
+
 class SayStep(_Step):
     kind: Literal["say"] = "say"
     slot: int
@@ -102,7 +111,7 @@ class EndStep(_Step):
 
 
 ReplayStep = Annotated[
-    ResetStep | TurnStep | SwitchStep | ActStep | SayStep | VoteStep | EndStep,
+    ResetStep | TurnStep | SwitchStep | ActStep | CaptureStep | SayStep | VoteStep | EndStep,
     Field(discriminator="kind"),
 ]
 
@@ -172,6 +181,9 @@ class Recorder:
             step.events = result.events
         self._add(step)
         self.recording.total_game_ms += step.used_ms
+
+    def capture(self, episode_id: str) -> None:
+        self._add(CaptureStep(episode_id=episode_id))
 
     def say(self, record: ChatRecord) -> None:
         self._add(SayStep(slot=record.sender, text=record.text, recipients=record.recipients))
@@ -245,6 +257,13 @@ class RecordingGame:
     ) -> bytes | None:
         return await self.inner.overview_shot(position, look_at)
 
+    async def start_capture(self, request: CaptureRequest) -> None:
+        await self.inner.start_capture(request)
+        self.recorder.capture(request.episode_id)
+
+    async def stop_capture(self) -> CaptureInfo | None:
+        return await self.inner.stop_capture()
+
     async def close(self) -> None:
         await self.inner.close()
 
@@ -302,7 +321,9 @@ class PlaybackFrame:
 
 
 async def play(
-    recording: Recording, game: GameClient, echo_chat: bool = False
+    recording: Recording,
+    game: GameClient,
+    echo_chat: bool = False,
 ) -> AsyncIterator[PlaybackFrame]:
     """Send the recorded inputs to `game` again. Yield one frame after each act.
 

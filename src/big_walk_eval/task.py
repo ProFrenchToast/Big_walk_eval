@@ -28,6 +28,11 @@ def big_walk_coop(
     hfov_deg: float = 90.0,
     keep_images: int = 3,
     echo_chat: bool = False,
+    capture: bool = False,
+    capture_fps: int = 30,
+    capture_width: int = 683,
+    capture_height: int = 384,
+    capture_dir: str = "captures",
     seed: int = 0,
     puzzles_dir: str | None = None,
     puzzle_game: Literal["real", "fake"] | None = None,
@@ -47,6 +52,12 @@ def big_walk_coop(
       hfov_deg: Horizontal field of view for `mouse_move`, if the game does not report it.
       keep_images: Screenshots kept in each agent's history.
       echo_chat: Also show `say` messages in game, for replays.
+      capture: Record video frames from every body's own view while game time runs.
+        Make a video with `scripts/make_video.py`.
+      capture_fps: Frames per second of game time.
+      capture_width: Frame width.
+      capture_height: Frame height.
+      capture_dir: Where FakeGame writes the frames. The game server uses its own `capture_dir`.
       seed: FakeGame seed.
       puzzles_dir: Directory with puzzle YAML files. Default: `puzzles/` in the repo.
       puzzle_game: Which puzzles to load. Default: "fake" for backend="fake", else "real".
@@ -64,6 +75,9 @@ def big_walk_coop(
         hfov_deg=hfov_deg,
         keep_images=keep_images,
         echo_chat=echo_chat,
+        capture_fps=capture_fps if capture else 0,
+        capture_width=capture_width,
+        capture_height=capture_height,
     )
     return Task(
         dataset=puzzle_dataset(
@@ -73,7 +87,9 @@ def big_walk_coop(
             puzzles_dir=puzzles_dir,
         ),
         solver=round_robin(
-            (lambda: FakeGame(seed=seed)) if fake else (lambda: HttpGame(game_url)),
+            (lambda: FakeGame(seed=seed, capture_dir=capture_dir))
+            if fake
+            else (lambda: HttpGame(game_url)),
             config,
             controls=FAKE_GAME_CONTROLS if puzzle_kind == "fake" else BIG_WALK_CONTROLS,
             game_name="a simple test game" if puzzle_kind == "fake" else "Big Walk",
