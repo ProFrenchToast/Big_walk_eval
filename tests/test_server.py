@@ -19,11 +19,14 @@ from big_walk_eval.game.fake_game import FakeGame
 from big_walk_eval.game.http_game import GameServerError, HttpGame
 from big_walk_eval.prompts import FAKE_GAME_CONTROLS
 from big_walk_eval.protocol import (
+    CaptureInfo,
+    CaptureRequest,
     HoldKeyAction,
     LookAction,
     MouseAction,
     PropPlacement,
     ResetRequest,
+    WaitAction,
 )
 from big_walk_eval.scorer import gourd_held
 from big_walk_eval.scripted import Script, ScriptedPolicy
@@ -152,6 +155,36 @@ def make_game(clock, client, per_body=False, **config) -> tuple[BridgeGame, Reco
     backend = RecordingInputBackend(per_body=per_body, clock=clock)
     cfg = ServerConfig(counts_per_degree=10, **config)
     return BridgeGame(client, backend, cfg, clock=clock, sleep=clock.sleep), backend
+
+
+async def test_bridge_game_capture(bridge_env, tmp_path):
+    clock, bridge, client = bridge_env
+    game, _ = make_game(clock, client, capture_dir=str(tmp_path))
+    await game.reset(ResetRequest(puzzle_id="p", bodies=[ASH, BIRCH]))
+    assert await game.stop_capture() is None
+    await game.start_capture(CaptureRequest(episode_id="ep1", fps=10, width=64, height=36))
+    assert bridge.capture["slots"] == [1, 2]
+    assert bridge.capture["directory"] == str((tmp_path / "ep1").resolve())
+    await game.act(2, [WaitAction(duration_ms=500)], 3000)
+    info = await game.stop_capture()
+    assert info.slots == {1: "Ash", 2: "Birch"}
+    assert info.frames == 6
+    assert CaptureInfo.model_validate_json((tmp_path / "ep1" / "capture.json").read_text()) == info
+    assert bridge.capture is None
+    with pytest.raises(ValueError, match="slot 7"):
+        await game.start_capture(CaptureRequest(episode_id="ep2", slots=[7]))
+
+
+async def test_http_capture_matches_fake_game(tmp_path):
+    game = http_game(FakeGame(seed=0, capture_dir=tmp_path))
+    await game.reset(ResetRequest(puzzle_id="p", bodies=[ASH, BIRCH]))
+    await game.start_capture(CaptureRequest(episode_id="ep", fps=10, width=64, height=36))
+    await game.act(1, [WaitAction(duration_ms=300)], 3000)
+    info = await game.stop_capture()
+    assert info.frames == 4
+    assert await game.stop_capture() is None
+    with pytest.raises(GameServerError, match="400"):
+        await game.start_capture(CaptureRequest(episode_id="ep", slots=[7]))
 
 
 async def test_bridge_client_roundtrip_and_errors(bridge_env):

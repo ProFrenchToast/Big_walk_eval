@@ -28,6 +28,8 @@ internal static class Commands
         "debug_practice" => DebugInfo.Practice(),
         "list_props" => PropList.Run(args),
         "debug_body" => BodyDebug.Run(args),
+        "capture_start" => BodyCapture.Start(args),
+        "capture_stop" => BodyCapture.Stop(),
         "look" => Unfinished.Look(args),
         "load_snapshot" => Unfinished.LoadSnapshot(args),
         "save_snapshot" => Unfinished.SaveSnapshot(args),

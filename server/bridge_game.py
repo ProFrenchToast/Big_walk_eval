@@ -9,12 +9,15 @@ from __future__ import annotations
 import asyncio
 import time
 from collections.abc import Awaitable, Callable
+from pathlib import Path
 
 from big_walk_eval.look import vfov_to_hfov
 from big_walk_eval.protocol import (
     Action,
     ActResult,
     BodyState,
+    CaptureInfo,
+    CaptureRequest,
     GameState,
     HealthResponse,
     HeldItem,
@@ -58,6 +61,7 @@ class BridgeGame:
         self.names: dict[int, str] = {}
         self.held: dict[int, set[str]] = {}
         self.active: int | None = None
+        self._capture: tuple[CaptureRequest, Path, list[int]] | None = None
         self._reward_type = ""
         self._blocked = set(config.blocked_keys)
 
@@ -76,6 +80,7 @@ class BridgeGame:
         )
 
     async def reset(self, request: ResetRequest) -> GameState:
+        await self.stop_capture()
         if self.config.auto_host:
             await host_walk(self.bridge, self.config.save_name, self.config.player_count)
         await self._release_everything()
@@ -195,7 +200,41 @@ class BridgeGame:
             position, look_at, self.config.screenshot_width, self.config.screenshot_height
         )
 
+    async def start_capture(self, request: CaptureRequest) -> None:
+        await self.stop_capture()
+        slots = request.slots or sorted(self.names)
+        for slot in slots:
+            if slot not in self.names:
+                raise ValueError(f"no body in slot {slot}")
+        directory = Path(self.config.capture_dir).resolve() / request.episode_id
+        directory.mkdir(parents=True, exist_ok=True)
+        # NEEDS GAME: the mod renders one camera per body and pipes frames to ffmpeg.
+        await self.bridge.capture_start(
+            str(directory), request.fps, request.width, request.height, slots
+        )
+        self._capture = (request, directory, slots)
+
+    async def stop_capture(self) -> CaptureInfo | None:
+        if self._capture is None:
+            return None
+        request, directory, slots = self._capture
+        self._capture = None
+        result = await self.bridge.capture_stop()
+        info = CaptureInfo(
+            episode_id=request.episode_id,
+            directory=str(directory),
+            fps=request.fps,
+            width=request.width,
+            height=request.height,
+            slots={slot: self.names[slot] for slot in slots},
+            frames=int(result.get("frames", 0)),
+            start_game_ms=round(float(result.get("start_time_s") or 0.0) * 1000),
+        )
+        (directory / "capture.json").write_text(info.model_dump_json(indent=2))
+        return info
+
     async def close(self) -> None:
+        await self.stop_capture()
         await self._release_everything()
         await self.bridge.close()
 

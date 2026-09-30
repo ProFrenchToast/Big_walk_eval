@@ -231,6 +231,37 @@ class OkResponse(_Wire):
     ok: bool = True
 
 
+class CaptureRequest(_Wire):
+    """Record every body's own view, one frame per `1000 / fps` ms of game time.
+
+    The game writes JPEG frames to `<capture dir>/<episode_id>/slot<N>/000000.jpg`
+    on the machine that runs it, and `capture.json` (a `CaptureInfo`) on stop.
+    Frames exist only for unpaused game time, so frame k is at game time
+    k * 1000 / fps from the start of the capture.
+    """
+
+    episode_id: str = Field(pattern=r"^[A-Za-z0-9_.-]+$", max_length=128)
+    fps: int = Field(default=30, ge=1, le=120)
+    width: int = Field(default=SCREEN_WIDTH // 2, ge=16, le=3840)
+    height: int = Field(default=SCREEN_HEIGHT // 2, ge=16, le=2160)
+    slots: list[int] = Field(default_factory=list, description="empty: every body")
+
+
+class CaptureInfo(_Wire):
+    episode_id: str
+    directory: str = Field(description="the episode folder, on the machine that runs the game")
+    fps: int
+    width: int
+    height: int
+    slots: dict[int, str] = Field(description="slot -> body name")
+    frames: int
+    start_game_ms: int = 0
+
+
+class CaptureStopResponse(_Wire):
+    info: CaptureInfo | None
+
+
 class HealthResponse(_Wire):
     ok: bool
     backend: str

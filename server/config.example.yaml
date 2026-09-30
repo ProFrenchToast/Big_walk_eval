@@ -27,3 +27,4 @@ player_count: 2
 window_title: Big Walk
 screenshot_width: 1366
 screenshot_height: 768
+capture_dir: captures       # per-body video frames: <capture_dir>/<episode_id>/slot<N>/

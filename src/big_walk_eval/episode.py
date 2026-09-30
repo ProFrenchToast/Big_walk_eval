@@ -10,7 +10,8 @@ from pydantic import Field
 
 from big_walk_eval.chat import ChatRouter
 from big_walk_eval.game.client import GameClient
-from big_walk_eval.protocol import PRACTICE_MOD_KEYS, GameEvent
+from big_walk_eval.protocol import PRACTICE_MOD_KEYS, SCREEN_HEIGHT, SCREEN_WIDTH, GameEvent
+from big_walk_eval.replay import Recorder
 
 
 @dataclass(frozen=True)
@@ -23,6 +24,10 @@ class EpisodeConfig:
     keep_images: int = 3
     echo_chat: bool = False
     blocked_keys: frozenset[str] = PRACTICE_MOD_KEYS
+    # 0 turns off the per-body video capture.
+    capture_fps: int = 0
+    capture_width: int = SCREEN_WIDTH // 2
+    capture_height: int = SCREEN_HEIGHT // 2
 
 
 @dataclass
@@ -61,6 +66,7 @@ class Episode:
     turn: TurnState | None = None
     total_game_ms: int = 0
     events: list[EventRecord] = field(default_factory=list)
+    recorder: Recorder = field(default_factory=Recorder)
 
     def __post_init__(self) -> None:
         self.chat = ChatRouter(self.config.chat_range_m, self.names)
@@ -78,6 +84,7 @@ class Episode:
             max_game_ms=self.config.max_game_ms_per_turn,
             max_tool_calls=self.config.max_tool_calls_per_turn,
         )
+        self.recorder.start_turn(index, slot, self.names[slot])
         return self.turn
 
     def begin_tool_call(self, slot: int) -> TurnState:
@@ -117,3 +124,27 @@ class EpisodeLog(StoreModel):
     n_turns: int = 0
     ended_by_vote: bool = False
     final_state: dict | None = None
+    replay: dict | None = None
+    """A `big_walk_eval.replay.Recording`: every input sent to the game, in order."""
+    capture: dict | None = None
+    """A `CaptureInfo`: where the game wrote each body's video frames."""
+    capture_error: str | None = None
+
+
+def read_episode_log(
+    log_path: str, sample_id: str | None = None, epoch: int = 1
+) -> tuple[EpisodeLog, dict]:
+    """The `EpisodeLog` of one sample in an Inspect log, and the task args.
+
+    Default: the first sample.
+    """
+    from inspect_ai.log import read_eval_log, read_eval_log_sample, read_eval_log_sample_summaries
+
+    if sample_id is None:
+        summaries = read_eval_log_sample_summaries(log_path)
+        if not summaries:
+            raise ValueError(f"{log_path} has no samples")
+        sample_id = str(summaries[0].id)
+    sample = read_eval_log_sample(log_path, id=sample_id, epoch=epoch)
+    task_args = read_eval_log(log_path, header_only=True).eval.task_args
+    return sample.store_as(EpisodeLog), task_args

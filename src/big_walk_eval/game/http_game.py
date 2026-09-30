@@ -11,6 +11,9 @@ from big_walk_eval.protocol import (
     Action,
     ActRequest,
     ActResult,
+    CaptureInfo,
+    CaptureRequest,
+    CaptureStopResponse,
     ChatEchoRequest,
     GameState,
     HealthResponse,
@@ -83,6 +86,12 @@ class HttpGame:
         request = OverviewRequest(position=position, look_at=look_at)
         shot = await self._call("POST", "/overview_shot", ScreenshotResponse, request)
         return shot.png
+
+    async def start_capture(self, request: CaptureRequest) -> None:
+        await self._call("POST", "/capture/start", OkResponse, request)
+
+    async def stop_capture(self) -> CaptureInfo | None:
+        return (await self._call("POST", "/capture/stop", CaptureStopResponse)).info
 
     async def close(self) -> None:
         await self._client.aclose()

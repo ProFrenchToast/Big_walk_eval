@@ -5,6 +5,8 @@ from typing import Protocol, runtime_checkable
 from big_walk_eval.protocol import (
     Action,
     ActResult,
+    CaptureInfo,
+    CaptureRequest,
     GameState,
     HealthResponse,
     ResetRequest,
@@ -49,6 +51,14 @@ class GameClient(Protocol):
         self, position: Vec3 | None = None, look_at: Vec3 | None = None
     ) -> bytes | None:
         """Optional: PNG from a free camera. None if the game cannot do it."""
+        ...
+
+    async def start_capture(self, request: CaptureRequest) -> None:
+        """Optional: record each body's own view while game time runs. See `CaptureRequest`."""
+        ...
+
+    async def stop_capture(self) -> CaptureInfo | None:
+        """Stop the capture and finish its files. None if no capture runs."""
         ...
 
     async def close(self) -> None: ...

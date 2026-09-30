@@ -87,6 +87,10 @@ class _Billboard:
 
 
 def first_person(game: FakeGame, viewer: FakeBody) -> bytes:
+    return _png(first_person_image(game, viewer))
+
+
+def first_person_image(game: FakeGame, viewer: FakeBody) -> Image.Image:
     from big_walk_eval.game.fake_game import HFOV_DEG, PLATE_RADIUS, PLATE_XZ
 
     w, h = SCREEN_WIDTH, SCREEN_HEIGHT
@@ -185,7 +189,7 @@ def first_person(game: FakeGame, viewer: FakeBody) -> bytes:
         hands.append(f"{hand} hand: {game.items[item_id].type if item_id else 'empty'}")
     draw.rectangle([10, h - 44, 430, h - 10], fill=(0, 0, 0))
     draw.text((20, h - 27), "   ".join(hands), fill=(255, 255, 255), anchor="lm", font=_font(20))
-    return _png(img)
+    return img
 
 
 def overview(game: FakeGame) -> bytes:

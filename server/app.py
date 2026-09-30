@@ -21,6 +21,8 @@ from pydantic import BaseModel, ValidationError
 from big_walk_eval.game.client import GameClient
 from big_walk_eval.protocol import (
     ActRequest,
+    CaptureRequest,
+    CaptureStopResponse,
     ChatEchoRequest,
     OkResponse,
     OverviewRequest,
@@ -116,6 +118,21 @@ def create_app(game: GameClient) -> FastAPI:
 
         return await run(call)
 
+    @app.post("/capture/start")
+    async def capture_start(request: Request) -> Response:
+        async def call():
+            await game.start_capture(await body(request, CaptureRequest))
+            return OkResponse()
+
+        return await run(call)
+
+    @app.post("/capture/stop")
+    async def capture_stop() -> Response:
+        async def call():
+            return CaptureStopResponse(info=await game.stop_capture())
+
+        return await run(call)
+
     return app
 
 
@@ -135,7 +152,7 @@ def main() -> None:
     if args.fake:
         from big_walk_eval.game.fake_game import FakeGame
 
-        game: GameClient = FakeGame(seed=args.seed)
+        game: GameClient = FakeGame(seed=args.seed, capture_dir=config.capture_dir)
     else:
         from server.bridge_game import make_bridge_game
 

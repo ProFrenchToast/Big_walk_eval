@@ -10,7 +10,8 @@ Status (2026-09-30): compiled and tested in game 1.5.1 2608271531 (Unity 6000.3.
 2. Put `BigWalk.Practice.dll` (<https://github.com/iameli/big-walk-practice/releases/latest/download/BigWalk.Practice.dll>) in `BepInEx\plugins\BigWalk.Practice\`. Optional: build `BigWalk.SkipIntro` from the same repo to skip the splash and microphone screens.
 3. In `BepInEx\config\com.bigwalk.practice.cfg`: `MaxExtraBodies` at least agents minus 1 (default 9), `ShowNameOverlay = false` (default).
 4. Run the game once windowed at 1366 x 768 (Settings, or launch with `-screen-fullscreen 0 -screen-width 1366 -screen-height 768` one time). Unity keeps the size in the registry. Do not keep those flags: the game reads its command line as a join address.
-5. Optional: `InstantFlushing = true` under `[Logging.Disk]` in `BepInEx\config\BepInEx.cfg`, so `BepInEx\LogOutput.log` is current.
+5. For video capture (PR #2), install ffmpeg. Put it on `PATH`, or set `FfmpegPath` in `com.bigwalk.evalbridge.cfg`.
+6. Optional: `InstantFlushing = true` under `[Logging.Disk]` in `BepInEx\config\BepInEx.cfg`, so `BepInEx\LogOutput.log` is current.
 
 ## Build and deploy
 
@@ -57,6 +58,8 @@ Slots are 1-based. Slot 1 is key `1` and practice index 0 (the original player).
 | `look` | `dyaw_deg`, `dpitch_deg` | | TODO(dump). The server uses `look_mode: mouse` |
 | `load_snapshot` / `save_snapshot` | `name` | | TODO(dump). `place_prop` covers simple cases |
 | `chat` | `slot`, `text` | | TODO(dump). Optional. `PlayerTexter` is the lead |
+| `capture_start` | `directory`, `fps`, `width`, `height`, `slots` | | written (PR #2), not run in the game yet. One camera per body, frames to ffmpeg. See `Commands/BodyCapture.cs` |
+| `capture_stop` | | `frames`, `start_time_s` | written (PR #2), not run in the game yet |
 | `input` | `slot`, `op`, ... | | TODO(dump). Backend B only |
 
 The Python side of this protocol is `server/bridge_client.py`. The tests in `tests/fake_bridge.py` use a fake bridge that speaks the same protocol.
@@ -96,3 +99,4 @@ To regenerate the signatures, load the interop assemblies with reflection (a 40-
 2. `look` through `PlayerHead`, so turns do not depend on mouse sensitivity.
 3. A real two-player puzzle: find a switch that must stay held (`PeckSwitch`, `PlayerDecisions.heldDownSwitch`) and test check 1 for it.
 4. Backend B (per-body Rewired input), if a held world switch drops on a switch.
+5. Video capture (`BodyCapture`, PR #2), untested in the game. It reads frames with `GetRawTextureData().ToArray()`, which is likely to fail like `EncodeToPNG` (see "Screenshots"); `AsyncGPUReadback` or a file per frame may be needed. Also check that each capture camera follows its own body's head for inactive bodies, which layer hides the local player's own body (`rg -n "firstPerson|FirstPerson|cullingMask"` over the signatures), and the frame rate with N cameras.

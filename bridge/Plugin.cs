@@ -27,6 +27,8 @@ public class Plugin : BasePlugin
     internal static ConfigEntry<int> CommandTimeoutFrames;
     internal static ConfigEntry<int> SpawnSettleFrames;
     internal static ConfigEntry<bool> HideConnectionWarning;
+    internal static ConfigEntry<string> FfmpegPath;
+    internal static ConfigEntry<int> CaptureQueueFrames;
 
     private static BridgeServer _server;
     private Harmony _harmony;
@@ -44,6 +46,10 @@ public class Plugin : BasePlugin
         SpawnSettleFrames = Config.Bind("Server", "SpawnSettleFrames", 40,
             "Frames to wait after the last spawn. The practice mod moves a new body back to " +
             "its formation spot 30 frames after spawning, which would undo a teleport.");
+        FfmpegPath = Config.Bind("Capture", "FfmpegPath", "ffmpeg",
+            "ffmpeg executable for capture_start. A full path, or a name on PATH.");
+        CaptureQueueFrames = Config.Bind("Capture", "QueueFrames", 120,
+            "Frames per body that wait for ffmpeg. When the queue is full, the game waits.");
 
         HideConnectionWarning = Config.Bind("Hud", "HideConnectionWarning", true,
             "Hide the bad-connection HUD warning. Long pauses trigger it, and it would appear in agent screenshots.");
