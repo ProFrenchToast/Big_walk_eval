@@ -34,6 +34,7 @@ from big_walk_eval.episode import Episode, EpisodeConfig, EpisodeLog
 from big_walk_eval.game.client import GameClient
 from big_walk_eval.prompts import system_prompt, turn_header
 from big_walk_eval.protocol import PuzzleConfig
+from big_walk_eval.replay import Recorder, RecordingGame
 from big_walk_eval.tools import agent_tools
 from big_walk_eval.tools.computer import png_content
 
@@ -98,8 +99,9 @@ def round_robin(
 
         # The sample input is not shown to agents. The merged transcript starts empty.
         state.messages = []
-        game = game_factory()
-        episode = Episode(game, config, names)
+        recorder = Recorder()
+        game = RecordingGame(game_factory(), recorder)
+        episode = Episode(game, config, names, recorder=recorder)
         model = get_model()
         try:
             start = await game.reset(request)
@@ -152,6 +154,7 @@ def round_robin(
             final = await game.state()
             episode.record_events(final.events)
             log.final_state = final.model_dump(mode="json", exclude={"events"})
+            recorder.end(log.ended_by_vote, final)
             holder = final.reward_holder()
             summary = (
                 f"{'Ended by vote' if log.ended_by_vote else 'Turn limit reached'} "
@@ -166,6 +169,7 @@ def round_robin(
                 {"turn": r.turn, **r.event.model_dump(mode="json")} for r in episode.events
             ]
             log.total_game_ms = episode.total_game_ms
+            log.replay = recorder.recording.model_dump(mode="json")
             await game.close()
         return state
 

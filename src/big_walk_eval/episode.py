@@ -11,6 +11,7 @@ from pydantic import Field
 from big_walk_eval.chat import ChatRouter
 from big_walk_eval.game.client import GameClient
 from big_walk_eval.protocol import PRACTICE_MOD_KEYS, GameEvent
+from big_walk_eval.replay import Recorder
 
 
 @dataclass(frozen=True)
@@ -61,6 +62,7 @@ class Episode:
     turn: TurnState | None = None
     total_game_ms: int = 0
     events: list[EventRecord] = field(default_factory=list)
+    recorder: Recorder = field(default_factory=Recorder)
 
     def __post_init__(self) -> None:
         self.chat = ChatRouter(self.config.chat_range_m, self.names)
@@ -78,6 +80,7 @@ class Episode:
             max_game_ms=self.config.max_game_ms_per_turn,
             max_tool_calls=self.config.max_tool_calls_per_turn,
         )
+        self.recorder.start_turn(index, slot, self.names[slot])
         return self.turn
 
     def begin_tool_call(self, slot: int) -> TurnState:
@@ -117,3 +120,5 @@ class EpisodeLog(StoreModel):
     n_turns: int = 0
     ended_by_vote: bool = False
     final_state: dict | None = None
+    replay: dict | None = None
+    """A `big_walk_eval.replay.Recording`: every input sent to the game, in order."""

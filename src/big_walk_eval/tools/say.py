@@ -23,7 +23,8 @@ def say(episode: Episode, slot: int) -> Tool:
         state = await episode.game.state()
         episode.record_events(state.events)
         positions = {b.slot: b.position for b in state.bodies}
-        episode.chat.post(slot, message, turn.index, positions)
+        record = episode.chat.post(slot, message, turn.index, positions)
+        episode.recorder.say(record)
         if episode.config.echo_chat:
             await episode.game.echo_chat(slot, message)
         return "sent"
