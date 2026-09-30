@@ -64,27 +64,38 @@ internal sealed class BridgeServer
         }
     }
 
+    /// <summary>True while the accept thread runs. BridgeBehaviour restarts the server if not.</summary>
+    public bool IsAlive => _acceptThread != null && _acceptThread.IsAlive;
+
+    public string Describe() =>
+        $"thread alive={IsAlive}, bound={_listener?.Server?.IsBound}, endpoint={_listener?.LocalEndpoint}";
+
     private void AcceptLoop()
     {
-        while (_running)
+        Plugin.Trace.LogInfo("Accept loop started.");
+        try
         {
-            TcpClient client;
-            try
+            while (_running)
             {
-                client = _listener.AcceptTcpClient();
-            }
-            catch (SocketException)
-            {
-                if (!_running) return;
-                continue;
-            }
-            catch (ObjectDisposedException)
-            {
-                return;
-            }
+                TcpClient client;
+                try
+                {
+                    client = _listener.AcceptTcpClient();
+                }
+                catch (SocketException e)
+                {
+                    if (!_running) return;
+                    Plugin.Trace.LogWarning($"Accept failed: {e.Message}");
+                    continue;
+                }
 
-            var thread = new Thread(() => Serve(client)) { IsBackground = true, Name = "EvalBridge.Client" };
-            thread.Start();
+                var thread = new Thread(() => Serve(client)) { IsBackground = true, Name = "EvalBridge.Client" };
+                thread.Start();
+            }
+        }
+        catch (Exception e)
+        {
+            Plugin.Trace.LogError($"Accept loop stopped: {e}");
         }
     }
 
@@ -122,12 +133,10 @@ internal sealed class BridgeServer
             var message = JsonNode.Parse(line).AsObject();
             id = message["id"]?.GetValue<long>() ?? 0;
             cmd = message["cmd"]?.GetValue<string>() ?? "";
-            var request = new Request
-            {
-                Id = id,
-                Cmd = cmd,
-                Args = (message["args"] as JsonObject)?.DeepClone().AsObject() ?? new JsonObject(),
-            };
+            // Detach args from the parsed message: a JsonNode has only one parent.
+            var args = message["args"] as JsonObject;
+            message.Remove("args");
+            var request = new Request { Id = id, Cmd = cmd, Args = args ?? new JsonObject() };
             Queue.Enqueue(request);
             if (!request.Done.Task.Wait(RequestTimeout))
             {

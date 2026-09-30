@@ -4,15 +4,19 @@ from __future__ import annotations
 
 from big_walk_eval.chat import ChatRecord
 
-# TODO(controls): Patrick to confirm the Big Walk keys and buttons (walk, jump,
-# crouch, grab with each hand) before the first real run.
+# Read from the game's Rewired keyboard and mouse maps with the bridge `controls`
+# command (game 1.5.1 2608271531). The game has no separate hands: you carry one thing.
 BIG_WALK_CONTROLS = """\
-- Walk: hold W (forward), S (back), A (left), D (right). For example hold_key with text "w" and duration 1.
+- Walk: hold W (forward), S (back), A (left), D (right). For example hold_key with text "w" and duration 1. \
+You walk about 1.5 meters per second. Hold shift as well to run ("shift+w").
 - Look around: mouse_move to the point you want to look at. That point moves to the center of your view.
-- Hands: the left mouse button uses your left hand and the right mouse button uses your right hand. \
-Press and keep the button down to grab and hold something in front of you (left_mouse_down). \
-Release it to let go (left_mouse_up). A held button stays held until you release it, also while other players act.
-- Jump: space."""
+- Use: left_click. Point at something first (left_click with a coordinate turns you to it). \
+This picks up an object, or presses a switch or button. You carry what you pick up until you drop it, \
+also while other players act. You can carry one thing at a time.
+- Drop: right_click drops what you carry.
+- Hold a button down: left_mouse_down keeps "use" pressed, also while other players act, until left_mouse_up.
+- Jump: key "space". Crouch: hold "ctrl". Sit down: key "z", and "z" again to stand up. \
+Wave: hold "q" (left arm) or "e" (right arm), for example hold_key with text "q" and duration 1."""
 
 FAKE_GAME_CONTROLS = """\
 - Walk: hold W (forward), S (back), A (left), D (right). Hold shift as well to walk faster. \

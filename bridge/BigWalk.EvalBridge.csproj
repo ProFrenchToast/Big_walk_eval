@@ -33,6 +33,7 @@
     <Reference Include="Il2CppInterop.Runtime"><HintPath>$(BepInExCore)\Il2CppInterop.Runtime.dll</HintPath></Reference>
     <Reference Include="Il2CppInterop.Common"><HintPath>$(BepInExCore)\Il2CppInterop.Common.dll</HintPath></Reference>
     <Reference Include="0Harmony"><HintPath>$(BepInExCore)\0Harmony.dll</HintPath></Reference>
+    <Reference Include="SemanticVersioning"><HintPath>$(BepInExCore)\SemanticVersioning.dll</HintPath></Reference>
   </ItemGroup>
 
   <ItemGroup Label="Unity">
@@ -42,11 +43,14 @@
     <Reference Include="UnityEngine.PhysicsModule"><HintPath>$(Interop)\UnityEngine.PhysicsModule.dll</HintPath></Reference>
     <Reference Include="UnityEngine.ImageConversionModule"><HintPath>$(Interop)\UnityEngine.ImageConversionModule.dll</HintPath></Reference>
     <Reference Include="UnityEngine.ScreenCaptureModule"><HintPath>$(Interop)\UnityEngine.ScreenCaptureModule.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.UI"><HintPath>$(Interop)\UnityEngine.UI.dll</HintPath></Reference>
+    <Reference Include="Unity.TextMeshPro"><HintPath>$(Interop)\Unity.TextMeshPro.dll</HintPath></Reference>
   </ItemGroup>
 
   <ItemGroup Label="Game">
     <Reference Include="Assembly-CSharp"><HintPath>$(Interop)\Assembly-CSharp.dll</HintPath></Reference>
     <Reference Include="Mirror"><HintPath>$(Interop)\Mirror.dll</HintPath></Reference>
+    <Reference Include="Rewired_Core"><HintPath>$(Interop)\Rewired_Core.dll</HintPath></Reference>
   </ItemGroup>
 
   <ItemGroup>

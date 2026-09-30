@@ -11,7 +11,7 @@ namespace BigWalk.EvalBridge;
 /// Bridge between the eval game server (Python) and the game. Listens on
 /// 127.0.0.1 for line-delimited JSON commands and runs each one on the Unity
 /// main thread. Needs big-walk-practice for bodies and slot switching.
-/// Host-only. NEEDS GAME for everything past compile.
+/// Host-only.
 /// </summary>
 [BepInPlugin(Guid, "Big Walk — Eval Bridge", Version)]
 [BepInDependency(Practice.Guid)]
@@ -26,8 +26,9 @@ public class Plugin : BasePlugin
     internal static ConfigEntry<int> MaxCommandsPerFrame;
     internal static ConfigEntry<int> CommandTimeoutFrames;
     internal static ConfigEntry<int> SpawnSettleFrames;
+    internal static ConfigEntry<bool> HideConnectionWarning;
 
-    private BridgeServer _server;
+    private static BridgeServer _server;
     private Harmony _harmony;
 
     public override void Load()
@@ -44,6 +45,9 @@ public class Plugin : BasePlugin
             "Frames to wait after the last spawn. The practice mod moves a new body back to " +
             "its formation spot 30 frames after spawning, which would undo a teleport.");
 
+        HideConnectionWarning = Config.Bind("Hud", "HideConnectionWarning", true,
+            "Hide the bad-connection HUD warning. Long pauses trigger it, and it would appear in agent screenshots.");
+
         ClassInjector.RegisterTypeInIl2Cpp<BridgeBehaviour>();
 
         var host = new GameObject("BigWalk.EvalBridge");
@@ -53,11 +57,27 @@ public class Plugin : BasePlugin
 
         _harmony = new Harmony(Guid);
         GameEvents.Install(_harmony);
+        Hud.Install(_harmony);
+
+        EnsureServer();
+
+        Log.LogInfo($"Loaded. Listening on 127.0.0.1:{Port.Value}.");
+    }
+
+    /// <summary>Start the TCP server, or restart it if its accept thread has died.</summary>
+    internal static string ServerStatus() => _server?.Describe() ?? "no server";
+
+    internal static void EnsureServer()
+    {
+        if (_server != null && _server.IsAlive) return;
+        if (_server != null)
+        {
+            Trace.LogWarning("The bridge server stopped; restarting it.");
+            _server.Stop();
+        }
 
         _server = new BridgeServer(Port.Value);
         _server.Start();
-
-        Log.LogInfo($"Loaded. Listening on 127.0.0.1:{Port.Value}.");
     }
 
     public override bool Unload()

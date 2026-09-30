@@ -2,7 +2,7 @@
 
 Pass a `ScriptedPolicy` as `custom_outputs` to Inspect's `mockllm` model. It
 runs the real turn loop and the real tools, with no LLM. Each agent has a
-list of steps. A step is one generate call with a fixed list of tool calls.
+list of steps. A step is one turn: one generate call with a fixed list of tool calls.
 A step with `wait_for` runs only after the agent has heard a chat message
 that contains that text. The policy reads its progress from the agent's own
 history, so one instance can serve many samples.
@@ -30,6 +30,7 @@ from pydantic import BaseModel, Field
 
 MODEL_NAME = "mockllm/model"
 _NAME = re.compile(r"Your name is (\w+)\.")
+_TURN = re.compile(r"Turn \d+\. It is your turn")
 
 
 class ScriptStep(BaseModel):
@@ -67,7 +68,7 @@ class ScriptedPolicy:
         config: GenerateConfig,
     ) -> ModelOutput:
         name = self._agent_name(input)
-        if not isinstance(input[-1], ChatMessageUser):
+        if _acted_this_turn(input):
             return _text("End of my turn.")
         done = sum(1 for m in input if isinstance(m, ChatMessageAssistant) and m.tool_calls)
         steps = self.agents.get(name, [])
@@ -99,6 +100,19 @@ class ScriptedPolicy:
                 if match:
                     return match.group(1)
         raise ValueError("no agent name in the system prompt")
+
+
+def _acted_this_turn(input: list[ChatMessage]) -> bool:
+    """True if a reply follows the latest turn header: one step per turn.
+
+    Checking only that the last message is a user message is not enough, because
+    Inspect moves images from tool results into a user message for some models.
+    """
+    header = max(
+        (i for i, m in enumerate(input) if isinstance(m, ChatMessageUser) and _TURN.match(m.text)),
+        default=-1,
+    )
+    return any(isinstance(m, ChatMessageAssistant) for m in input[header + 1 :])
 
 
 def _heard(input: list[ChatMessage]) -> str:

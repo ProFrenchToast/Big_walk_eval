@@ -20,12 +20,14 @@ from big_walk_eval.protocol import (
     HeldItem,
     HoldKeyAction,
     KeyAction,
+    LookAction,
     ResetRequest,
     Vec3,
 )
 from big_walk_eval.timeline import build_timeline
 from server.bridge_client import BridgeClient, BridgeError
 from server.config import ServerConfig
+from server.host_walk import host_walk
 from server.input.backend import InputBackend
 from server.input.player import TimelinePlayer
 
@@ -74,18 +76,35 @@ class BridgeGame:
         )
 
     async def reset(self, request: ResetRequest) -> GameState:
+        if self.config.auto_host:
+            await host_walk(self.bridge, self.config.save_name, self.config.player_count)
         await self._release_everything()
         await self.bridge.pause()
         if request.snapshot:
             # NEEDS GAME: the mod's load_snapshot is TODO(dump).
             await self.bridge.load_snapshot(request.snapshot)
         await self.bridge.spawn_bodies(len(request.bodies))
-        for body in request.bodies:
-            await self.bridge.teleport(body.slot, body.position, body.yaw_deg)
         self.names = {b.slot: b.name for b in request.bodies}
         self.held = {b.slot: set() for b in request.bodies}
         self._reward_type = request.reward_item_type
         self.active = None
+        await self._drop_held()
+        for placement in request.props:
+            await self.bridge.place_prop(placement.item_type, placement.position, placement.near)
+        # A teleport sticks only if the body is the local one and the game then runs
+        # for a moment. Otherwise the next switch puts the body back where the network
+        # last saw it (measured in the game: 0.3 s is not enough, 1.5 s is).
+        # Teleport sets the yaw but keeps the camera pitch, so level the view as well.
+        for body in request.bodies:
+            await self._switch(body.slot)
+            await self.bridge.teleport(body.slot, body.position, body.yaw_deg)
+            await self.input.focus()
+            await self.bridge.resume()
+            try:
+                await self.sleep(self.config.teleport_settle_s)
+                await self._look_to(body.slot, body.yaw_deg, 0.0)
+            finally:
+                await self.bridge.pause()
         await self._switch(request.bodies[0].slot)
         await self.bridge.events()
         return await self.state()
@@ -140,14 +159,15 @@ class BridgeGame:
                 position=b.position,
                 yaw_deg=b.yaw_deg,
                 pitch_deg=b.pitch_deg,
+                pose=b.pose,
                 held=[
                     HeldItem(
                         hand=h.hand,
                         item_id=h.item_id,
                         item_type=h.item_type,
-                        is_reward=h.is_reward
-                        if h.is_reward is not None
-                        else bool(self._reward_type) and h.item_type == self._reward_type,
+                        # The bridge marks gourds. A puzzle can name another reward type.
+                        is_reward=bool(h.is_reward)
+                        or (bool(self._reward_type) and h.item_type == self._reward_type),
                     )
                     for h in b.held
                 ],
@@ -189,8 +209,8 @@ class BridgeGame:
         if not self.input.per_body:
             # Backend A: OS input reaches only the active body. Release the old
             # body's buttons before the swap and press the new body's buttons
-            # after it. NEEDS GAME: check 1 must show that the old body keeps its
-            # grip through this release while paused.
+            # after it. Carried props stay with the old body (tested). NEEDS GAME: a
+            # world switch that the old body holds down.
             await self.input.release_all()
         await self._switch_slot(slot)
         await self.input.select_slot(slot)
@@ -214,6 +234,34 @@ class BridgeGame:
             if self.clock() > deadline:
                 raise TimeoutError(f"the game did not switch to slot {slot}")
             await self.sleep(0.05)
+
+    async def _drop_held(self) -> None:
+        """Make every harness body drop what it holds, with the drop button, while the game runs."""
+        raw = await self.bridge.get_state()
+        for body in raw.bodies:
+            if body.slot not in self.names or not body.held:
+                continue
+            await self._switch(body.slot)
+            await self.input.focus()
+            await self.bridge.resume()
+            try:
+                await self.input.button_down(self.config.drop_button)
+                await self.sleep(0.1)
+                await self.input.button_up(self.config.drop_button)
+                await self.sleep(0.5)
+            finally:
+                await self.bridge.pause()
+
+    async def _look_to(self, slot: int, yaw_deg: float, pitch_deg: float) -> None:
+        """Turn the active body's view to an absolute yaw and pitch. The game must be running."""
+        raw = await self.bridge.get_state()
+        body = next(b for b in raw.bodies if b.slot == slot)
+        dyaw = (yaw_deg - body.yaw_deg + 180.0) % 360.0 - 180.0
+        dpitch = pitch_deg - body.pitch_deg
+        if abs(dyaw) < 0.5 and abs(dpitch) < 0.5:
+            return
+        look = LookAction(dyaw_deg=dyaw, dpitch_deg=dpitch)
+        await self.player.play(build_timeline([look], 10_000, set()))
 
     async def _release_everything(self) -> None:
         await self.input.release_all()

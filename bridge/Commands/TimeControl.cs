@@ -7,8 +7,8 @@ namespace BigWalk.EvalBridge;
 /// Pause and resume with Time.timeScale. Update keeps running at 0 with
 /// deltaTime = 0; FixedUpdate stops. time_s is scaled game time, so the game
 /// server measures unpaused time as the difference between resume and pause.
-/// NEEDS GAME: check 3 must show that physics, props, and puzzle timers stop
-/// and restart cleanly (some may use unscaled time).
+/// Bodies stop while paused. NEEDS GAME: check that puzzle timers stop too
+/// (some may use unscaled time).
 /// </summary>
 internal static class TimeControl
 {

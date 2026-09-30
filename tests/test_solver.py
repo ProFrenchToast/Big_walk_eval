@@ -8,10 +8,13 @@ from inspect_ai.dataset import Sample
 from inspect_ai.log import EvalSample
 from inspect_ai.model import (
     ChatMessage,
+    ChatMessageAssistant,
+    ChatMessageSystem,
     ChatMessageTool,
     ChatMessageUser,
     ContentImage,
     ContentText,
+    GenerateConfig,
     get_model,
 )
 
@@ -217,3 +220,26 @@ def test_every_message_is_tagged_with_its_agent(tmp_path, fake_puzzle, n_agents)
     assert agents == {"Ash", "Birch", "Cedar"}.intersection(agents)
     assert None not in agents
     assert len(agents) == n_agents
+
+
+def test_scripted_policy_runs_one_step_per_turn():
+    """Inspect can move tool-result images into a trailing user message. That
+    message must not start the next step: a step is one turn."""
+    steps = [step(("say", {"message": "one"})), step(("say", {"message": "two"}))]
+    policy = ScriptedPolicy({"Ash": steps})
+    header = ChatMessageUser(content="Turn 1. It is your turn, Ash.\nYour current view:")
+    history: list[ChatMessage] = [ChatMessageSystem(content="Your name is Ash."), header]
+
+    first = policy(history, [], "auto", GenerateConfig())
+    assert first.message.tool_calls[0].arguments == {"message": "one"}
+    history += [
+        first.message,
+        ChatMessageTool(content="sent", tool_call_id=first.message.tool_calls[0].id),
+        ChatMessageUser(content=[ContentImage(image="data:image/png;base64,AA==")]),
+    ]
+    assert not policy(history, [], "auto", GenerateConfig()).message.tool_calls
+
+    history.append(ChatMessageUser(content="Turn 3. It is your turn, Ash."))
+    second = policy(history, [], "auto", GenerateConfig())
+    assert second.message.tool_calls[0].arguments == {"message": "two"}
+    assert isinstance(second.message, ChatMessageAssistant)

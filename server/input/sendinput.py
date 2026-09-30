@@ -113,7 +113,7 @@ class FocusError(RuntimeError):
 
 
 class SendInputBackend:
-    """Backend A. Input goes to whichever body is active. NEEDS GAME."""
+    """Backend A. Input goes to whichever body is active."""
 
     per_body = False
 
@@ -143,7 +143,6 @@ class SendInputBackend:
         return None
 
     async def focus(self) -> None:
-        # NEEDS GAME: check that the game accepts input right after focus changes.
         u = self._user32
         hwnd = u.FindWindowW(None, self.window_title)
         if not hwnd:

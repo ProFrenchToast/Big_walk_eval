@@ -8,10 +8,21 @@ bridge_port: 47800
 # bridge    = Backend B (per-body input through the mod, TODO(dump))
 input_backend: sendinput
 look_mode: mouse            # or "bridge" if the mod's look command works
-counts_per_degree: 10.0     # from: python -m server.calibrate
+counts_per_degree: 25.0     # from: python -m server.calibrate. 25 at the game's default sensitivity
 invert_mouse_y: false
 look_step_ms: 10
 switch_via_keys: false      # true: press the practice mod's slot keys instead of switch_slot
+
+# Reset: seconds of game time after each spawn teleport, so the teleport survives
+# later switches (0.3 is too short). The drop button empties the hands first.
+teleport_settle_s: 1.5
+drop_button: right
+
+# Reset: host a walk from the title screen if needed. Opens save_name, or makes it.
+# player_count picks the puzzle variant (2, 3, or 4+ players), not the number of bodies.
+auto_host: true
+save_name: evalwalk
+player_count: 2
 
 window_title: Big Walk
 screenshot_width: 1366

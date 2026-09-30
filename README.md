@@ -28,15 +28,18 @@ uv run --extra server python -m server.app --fake &
 uv run inspect eval big_walk_eval/big_walk_coop -T backend=http -T puzzle_game=fake --model ...
 ```
 
-Real game (Windows machine with the game, BepInEx, big-walk-practice, and `bridge/`):
+Real game (Windows machine with the game, BepInEx 6 be.788 IL2CPP, big-walk-practice 0.6.0, and `bridge/`; see `bridge/README.md` for the one-time setup):
 
-```bash
-uv run --extra server python -m server.calibrate --config server.yaml     # once per machine
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File bridge\deploy.ps1   # build, install, start the game through Steam
+copy server\config.example.yaml server.yaml
 uv run --extra server python -m server.app --config server.yaml
-uv run python -m server.record_spawns --names Ash,Birch                   # when writing a puzzle file
-uv run python scripts/scripted_run.py scripts/solutions/<puzzle>.yaml --backend http
-uv run inspect eval big_walk_eval/big_walk_coop -T backend=http --max-samples 1 --model ...
+# Scripted 3-body smoke test: walk, look, jump, crouch, sit, wave, pick up, drop, chat, vote. Expect "score: C".
+uv run python scripts/scripted_run.py scripts/solutions/footy_walkabout.yaml --backend http --save-images runs/real
+uv run inspect eval big_walk_eval/big_walk_coop -T backend=http -T puzzles=footy_walkabout --max-samples 1 --model ...
 ```
+
+The server hosts a walk on the first `/reset` if the game is at the title screen. Do not touch the mouse or keyboard during a run: the server sends real input to the game window. Helpers: `python -m server.host_walk` (host a walk), `python -m server.calibrate` (mouse counts per degree), `python -m server.record_spawns --names Ash,Birch` (print a `spawns:` block).
 
 The server binds to `127.0.0.1:47801`. From another machine, use an SSH tunnel: `ssh -L 47801:127.0.0.1:47801 <windows-host>`.
 
@@ -51,6 +54,6 @@ The server binds to `127.0.0.1:47801`. From another machine, use an SSH tunnel: 
 | `src/big_walk_eval/game/` | `GameClient` interface, `FakeGame`, `HttpGame` |
 | `src/big_walk_eval/timeline.py` | Actions to timed input events, shared by FakeGame and the server |
 | `server/` | Game server (FastAPI), bridge client, input backends, calibration. Windows for real input |
-| `bridge/` | BepInEx plugin (C#). Skeleton, not compiled yet |
+| `bridge/` | BepInEx plugin (C#) that the game server talks to over TCP |
 | `puzzles/` | One YAML file per puzzle |
 | `scripts/` | `scripted_run.py` and scripted solutions |

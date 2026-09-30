@@ -30,6 +30,14 @@ class ServerConfig(BaseModel):
     # Press the practice mod's slot key instead of the bridge switch_slot command.
     switch_via_keys: bool = False
     switch_timeout_s: float = 5.0
+    # Unpaused time after each spawn teleport in reset, so the teleport survives later switches.
+    teleport_settle_s: float = 1.5
+    # The mouse button of the game's "drop" action. Reset uses it to empty the hands.
+    drop_button: Literal["left", "right", "middle"] = "right"
+    # On reset, get from the title screen into a hosted walk if needed (server/host_walk.py).
+    auto_host: bool = True
+    save_name: str = "evalwalk"
+    player_count: Literal[2, 3, 4] = 2
 
     window_title: str = "Big Walk"
     screenshot_width: int = SCREEN_WIDTH

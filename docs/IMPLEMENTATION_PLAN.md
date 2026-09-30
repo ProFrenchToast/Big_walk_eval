@@ -1,6 +1,6 @@
 # Big Walk Cooperation Eval: Harness Implementation Plan
 
-Status: 2026-09-30. M0 to M5 and M7 are built and tested against FakeGame. M6 (the bridge mod) is a skeleton that has not been compiled. Section 15 lists what changed from this plan and why.
+Status: 2026-09-30. M0 to M7 are built. The bridge mod runs in the real game (1.5.1 2608271531), and a scripted three-body smoke test scores C through the full harness on it (M8, scripted part). Section 15 lists what changed from this plan and why; section 15.4 has the real-game findings.
 
 This document is a handoff. It gives the background, the decisions, the architecture, the interfaces, and an ordered build plan. A developer with no access to the game can build and test most of the Python code against a fake game. The parts that need the real game are marked **[NEEDS GAME]**.
 
@@ -419,14 +419,14 @@ After M8: more puzzles, more agents, and ablations (see section 13).
 
 ## 12. What Patrick must do or confirm (needs the game)
 
-- [ ] Feasibility check 1: does an inactive body keep holding a button or an object after a hot-swap? This picks Backend A or B.
+- [x] Feasibility check 1, for carried props: an inactive body keeps its prop (tested 2026-09-30). Still open: a world switch that a body holds down.
 - [ ] Checks 2 to 9 from the planning doc: idle bodies stay awake, pause and step, per-agent view after a switch, input injection, hands-state readout, placement, reset, target machine.
-- [ ] Which machine runs the game (Windows with a GPU, or Proton).
+- [x] Which machine runs the game: Patrick's Windows 11 PC, game launched through Steam.
 - [ ] The first puzzle.
-- [ ] The Big Walk controls: which keys and buttons walk, jump, crouch, grab with each hand, and open chat.
+- [x] The Big Walk controls, read from Rewired with the bridge `controls` command (see `bridge/README.md`).
 - [ ] Run the Cpp2IL dump locally and give class names for the hands component, the gourd, puzzle completion, and save and load. Do not commit the dump.
 - [ ] Pin the game version and turn off Steam auto-updates. Record the game build number in `CLAUDE.md`.
-- [ ] Fill in the Big Walk controls in `src/big_walk_eval/prompts.py` (`BIG_WALK_CONTROLS`, marked `TODO(controls)`). Check that no game control uses a practice-mod hotkey (`1` to `0`, `+`, `=`, `R`, `G`, `F1` to `F3`, `F5`, `F9`). The `computer` tool rejects those keys.
+- [x] Fill in the Big Walk controls in `src/big_walk_eval/prompts.py`. No game control uses a practice-mod hotkey.
 - [ ] In check 1, test the exact sequence of section 15.1 item 5.
 
 ## 13. Later work (not in scope now)
@@ -470,12 +470,36 @@ After M8: more puzzles, more agents, and ablations (see section 13).
 | M3 | Done. Tests use `mockllm` with `ScriptedPolicy` (`src/big_walk_eval/scripted.py`). |
 | M4 | Done. `inspect eval big_walk_eval/big_walk_coop --model mockllm/model` runs. The scripted solution scores C. |
 | M5 | Done except real input. Tests use a TCP fake bridge. `SendInputBackend` is **[NEEDS GAME]**. |
-| M6 | Skeleton. Syntax-checked, not compiled. `TODO(dump)`: held items, events, look, snapshots, chat, Backend B input. See `bridge/README.md`. |
-| M7 | Done on FakeGame, in process and over HTTP. `scripts/solutions/real_puzzle.yaml.example` is the template for the real puzzle. |
-| M8 | Not started. **[NEEDS GAME]** |
+| M6 | Done and tested in the game: state, held items, pickup and drop events, switch, spawn, teleport, prop placement, screenshots, menus, controls. `TODO(dump)`: look, snapshots, chat, Backend B input. See `bridge/README.md`. |
+| M7 | Done on FakeGame and on the real game. `scripts/solutions/footy_walkabout.yaml` is a three-body smoke test that uses every action. |
+| M8 | Scripted part done (`footy_walkabout` scores C). Next: a real two-player puzzle, then agents. |
 
 ### 15.3 Gaps that block a real scored run
 
-- `HeldItems.Read` in the bridge returns nothing until the hands class is known. The scorer then never sees a held gourd.
-- `load_snapshot` is not written. Until it is, leave `snapshot` empty and reset the puzzle by hand.
-- The Big Walk controls in the system prompt are a draft.
+- `load_snapshot` is not written. `reset` places bodies and props (`props:` in the puzzle file), but switches, doors, and gourds keep their state. Until it is written, leave `snapshot` empty and reset those by hand, or pick a puzzle whose state lives in props.
+- No real two-player puzzle file yet. `footy_walkabout` is a smoke test with the football as its "reward".
+- The gourd itself is untested: `RewardGourd` is found and hooked, but no gourd has been held yet.
+
+### 15.4 First real-game session (2026-09-30)
+
+Setup: BepInEx 6.0.0-be.788 in the game folder, big-walk-practice 0.6.0, the bridge, and BigWalk.SkipIntro. The bridge talks only through interop signatures; we did not run Cpp2IL. `bridge/README.md` has the details and the class names.
+
+What works, all through `HttpGame` and the game server:
+
+- Hosting from the title screen with no human (`server/host_walk.py`, the bridge `menu` command). `reset` does it when needed.
+- Spawning up to 4 bodies (tested), switching while paused (0.04 s), screenshots while paused (0.12 s), and per-body views.
+- Every `computer` action: walk, run, strafe, jump, crouch, sit, wave, look toward a pixel (the turn angles match to 0.1 degree), use (pick up), drop, held "use" across turns, wait, scroll (no effect in the game), screenshot. The bridge `pose` in `get_state` confirmed crouch, sit, jump, wave, and pointing.
+- Carrying survives hot-swaps (check 1 for props). Pickup and drop events come from Harmony hooks on `PlayerHands`.
+- `scripts/solutions/footy_walkabout.yaml`: 3 bodies, 14 turns, 39 tool calls, no errors, score C, about 50 s from the title screen.
+
+Changes this needed:
+
+1. **`reset` teleports each body while it is the local body, then runs the game for `teleport_settle_s` (1.5 s)** and levels the view (teleport keeps the pitch). A teleport while paused, or of a remote body, is undone by the next switch.
+2. **`ResetRequest.props` / `PuzzleConfig.props`** (`PropPlacement`): move props to fixed spots in `reset`. Bodies drop what they carry first (`drop_button`). This stands in for snapshots in simple cases.
+3. **`reward_item_type` counts even when the bridge says `is_reward: false`.** Then a smoke test can use any prop as its reward.
+4. **`BodyState.pose`**: game-specific body state for checks and logs. Agents do not see it.
+5. **Screenshots come from a file** (`ScreenCapture.CaptureScreenshot`), because `EncodeToPNG` fails in this interop build. The server scales them if the window is not 1366 x 768.
+6. **`ScriptedPolicy` runs one step per turn.** Inspect moves tool-result images into a user message, so "the last message is a user message" did not mean "a new turn", and steps ran into the tool-call cap.
+7. **The game starts through Steam**, not `Big Walk.exe` (`bridge/deploy.ps1`). A direct launch is restarted by Steam, which kills the first bridge.
+8. **The bridge repairs the practice mod's slot table** after the menus empty it (practice 0.6.0 bug).
+9. **Measured:** `counts_per_degree` 25, vertical FOV 90 degrees (121.3 horizontal), walk about 1.5 m/s.

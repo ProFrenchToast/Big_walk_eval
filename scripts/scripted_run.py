@@ -42,17 +42,24 @@ def _offline_token_count() -> None:
 
 
 def save_images(sample, out: Path) -> int:
+    """Write each turn's first view, then each tool result's view, as turnNNN_<agent>[_KK].png."""
     out.mkdir(parents=True, exist_ok=True)
     n = 0
+    turn, agent, k = 0, "unknown", 0
     for message in resolve_sample_attachments(sample).messages:
         meta = message.metadata or {}
-        if message.role != "user" or isinstance(message.content, str):
+        if message.role == "user":
+            turn, agent, k = meta.get("turn", turn), meta.get("agent", agent), 0
+        elif message.role != "tool":
+            continue
+        if isinstance(message.content, str):
             continue
         for content in message.content:
             if isinstance(content, ContentImage) and content.image.startswith("data:image/png"):
                 data = base64.b64decode(content.image.split(",", 1)[1])
-                name = f"turn{meta.get('turn', 0) + 1:03d}_{meta.get('agent', 'unknown')}.png"
-                (out / name).write_bytes(data)
+                suffix = f"_{k:02d}" if message.role == "tool" else ""
+                (out / f"turn{turn + 1:03d}_{agent}{suffix}.png").write_bytes(data)
+                k += message.role == "tool"
                 n += 1
     return n
 

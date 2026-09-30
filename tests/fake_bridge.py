@@ -31,6 +31,10 @@ class FakeBridge:
         self.pending_events: list[dict[str, Any]] = []
         self.fail: dict[str, str] = {}
         self.camera_vfov_deg = 60.0
+        self.props: dict[str, list[float]] = {}
+        self.saves: set[str] = set()
+        self.menu = "ready"  # title, host_select, host_confirm, player_count, or ready
+        self.screen: tuple[bytes, int, int] | None = None
         self._game_time = 0.0
         self._resumed_at = 0.0
         self._server: asyncio.base_events.Server | None = None
@@ -90,8 +94,20 @@ class FakeBridge:
                 body["yaw_deg"] = args["yaw_deg"]
                 return {}
             case "screenshot":
+                if self.screen is not None:
+                    png, width, height = self.screen
+                    return {
+                        "png_base64": base64.b64encode(png).decode(),
+                        "width": width,
+                        "height": height,
+                    }
                 png = f"png:{self.active}:{args['width']}x{args['height']}".encode()
                 return {"png_base64": base64.b64encode(png).decode()}
+            case "place_prop":
+                self.props[args["item_type"]] = args["position"]
+                return {"item_id": "1", "item_type": args["item_type"]}
+            case "menu":
+                return self._menu(args.get("action", "status"), args)
             case "overview_shot":
                 return {"png_base64": base64.b64encode(b"overview").decode()}
             case "events":
@@ -105,6 +121,30 @@ class FakeBridge:
             case "load_snapshot" | "chat" | "input":
                 return {}
         raise RuntimeError(f"unknown command {cmd}")
+
+    def _menu(self, action: str, args: dict[str, Any]) -> dict[str, Any]:
+        steps = {
+            "title_host": ("title", "host_select"),
+            "new_game": ("host_select", "host_confirm"),
+            "host_confirm": ("host_confirm", "player_count"),
+            "player_count": ("player_count", "ready"),
+        }
+        if action == "load_save":
+            if self.menu != "host_select" or args.get("name") not in self.saves:
+                raise RuntimeError(f"no save named {args.get('name')}")
+            self.menu = "host_confirm"
+        elif action in steps:
+            before, after = steps[action]
+            if self.menu != before:
+                raise RuntimeError(f"the {before} menu is not open")
+            self.menu = after
+        ready = self.menu == "ready"
+        return {
+            "open_menus": [] if ready else [self.menu],
+            "hosting": ready,
+            "local_player": ready,
+            "local_player_ready": ready,
+        }
 
     async def _client(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         while line := await reader.readline():

@@ -13,10 +13,12 @@ from __future__ import annotations
 import asyncio
 import base64
 import contextlib
+import io
 import itertools
 import json
 from typing import Any
 
+from PIL import Image
 from pydantic import BaseModel, Field
 
 from big_walk_eval.protocol import GameEvent, Hand, Vec3
@@ -24,6 +26,13 @@ from big_walk_eval.protocol import GameEvent, Hand, Vec3
 
 class BridgeError(RuntimeError):
     pass
+
+
+def scale_png(png: bytes, width: int, height: int) -> bytes:
+    image = Image.open(io.BytesIO(png)).convert("RGB").resize((width, height), Image.LANCZOS)
+    out = io.BytesIO()
+    image.save(out, format="PNG")
+    return out.getvalue()
 
 
 class BridgeHeld(BaseModel):
@@ -39,6 +48,7 @@ class BridgeBody(BaseModel):
     yaw_deg: float
     pitch_deg: float = 0.0
     held: list[BridgeHeld] = Field(default_factory=list)
+    pose: dict[str, Any] = Field(default_factory=dict)
 
 
 class BridgeState(BaseModel):
@@ -130,9 +140,19 @@ class BridgeClient:
     async def teleport(self, slot: int, position: Vec3, yaw_deg: float) -> None:
         await self.call("teleport", slot=slot, position=list(position), yaw_deg=yaw_deg)
 
+    async def place_prop(self, item_type: str, position: Vec3, near: Vec3 | None = None) -> str:
+        args: dict[str, Any] = {"item_type": item_type, "position": list(position)}
+        if near is not None:
+            args["near"] = list(near)
+        return str((await self.call("place_prop", **args)).get("item_id", ""))
+
     async def screenshot(self, width: int, height: int) -> bytes:
+        """The screen as PNG, scaled to width x height if the game window has another size."""
         result = await self.call("screenshot", width=width, height=height)
-        return base64.b64decode(result["png_base64"])
+        png = base64.b64decode(result["png_base64"])
+        if (result.get("width"), result.get("height")) in ((width, height), (None, None)):
+            return png
+        return scale_png(png, width, height)
 
     async def load_snapshot(self, name: str) -> None:
         await self.call("load_snapshot", name=name)

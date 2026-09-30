@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 import os
 import socket
 import subprocess
@@ -10,6 +11,7 @@ import httpx
 import pytest
 from inspect_ai import Task, eval
 from inspect_ai.model import get_model
+from PIL import Image
 
 from big_walk_eval.dataset import puzzle_dataset
 from big_walk_eval.episode import EpisodeConfig
@@ -20,6 +22,7 @@ from big_walk_eval.protocol import (
     HoldKeyAction,
     LookAction,
     MouseAction,
+    PropPlacement,
     ResetRequest,
 )
 from big_walk_eval.scorer import gourd_held
@@ -169,12 +172,19 @@ async def test_bridge_game_reset(bridge_env):
             puzzle_id="p", snapshot="saves/p", bodies=[ASH, BIRCH], reward_item_type="Gourd"
         )
     )
-    assert bridge.cmds()[:7] == [
+    # Each body is teleported while it is the local body, then the game runs briefly.
+    assert [c for c in bridge.cmds() if c not in ("get_state", "menu")][:13] == [
         "pause",
         "load_snapshot",
         "spawn_bodies",
+        "switch_slot",
         "teleport",
+        "resume",
+        "pause",
+        "switch_slot",
         "teleport",
+        "resume",
+        "pause",
         "switch_slot",
         "events",
     ]
@@ -272,6 +282,91 @@ async def test_bridge_look_mode(bridge_env):
     await game.act(1, [LookAction(dyaw_deg=30, dpitch_deg=-5)], 3000)
     assert bridge.bodies[1]["yaw_deg"] == pytest.approx(30)
     assert not any(name == "move_rel" for _, name, _ in backend.calls)
+
+
+async def test_reset_drops_held_items_then_places_props(bridge_env):
+    clock, bridge, client = bridge_env
+    game, backend = make_game(clock, client)
+    await game.reset(ResetRequest(puzzle_id="p", bodies=[ASH, BIRCH]))
+    bridge.bodies[2]["held"] = [{"hand": "right", "item_id": "9", "item_type": "Ball"}]
+    backend.calls.clear()
+    bridge.commands.clear()
+
+    await game.reset(
+        ResetRequest(
+            puzzle_id="p",
+            bodies=[ASH, BIRCH],
+            props=[PropPlacement(item_type="Ball", position=(1.0, 2.0, 3.0))],
+        )
+    )
+
+    # Birch presses the drop button while the game runs, before any prop moves.
+    assert ("button_down", ("right",)) in backend.names()
+    cmds = bridge.cmds()
+    assert cmds.index("place_prop") < cmds.index("teleport")
+    assert bridge.props == {"Ball": [1.0, 2.0, 3.0]}
+
+
+async def test_reset_levels_each_view(bridge_env):
+    clock, bridge, client = bridge_env
+    game, backend = make_game(clock, client)
+    await game.reset(ResetRequest(puzzle_id="p", bodies=[ASH, BIRCH]))
+    bridge.bodies[1]["pitch_deg"] = 20.0
+    backend.calls.clear()
+
+    await game.reset(ResetRequest(puzzle_id="p", bodies=[ASH, BIRCH]))
+
+    moves = [args for _, name, args in backend.calls if name == "move_rel"]
+    # counts_per_degree=10: 20 degrees of pitch back to level. Yaw already matches the spawn.
+    assert sum(dy for _, dy in moves) == -200
+    assert sum(dx for dx, _ in moves) == 0
+
+
+async def test_reset_hosts_a_walk_from_the_title_screen(bridge_env):
+    clock, bridge, client = bridge_env
+    bridge.menu = "title"
+    game, _ = make_game(clock, client)
+    await game.reset(ResetRequest(puzzle_id="p", bodies=[ASH, BIRCH]))
+    actions = [a.get("action") for c, a in bridge.commands if c == "menu"]
+    assert [a for a in actions if a != "status"] == [
+        "title_host",
+        "load_save",
+        "new_game",
+        "host_confirm",
+        "player_count",
+    ]
+    assert bridge.menu == "ready"
+
+
+async def test_reset_opens_an_existing_save(bridge_env):
+    clock, bridge, client = bridge_env
+    bridge.menu = "title"
+    bridge.saves = {"evalwalk"}
+    game, _ = make_game(clock, client)
+    await game.reset(ResetRequest(puzzle_id="p", bodies=[ASH, BIRCH]))
+    actions = [a.get("action") for c, a in bridge.commands if c == "menu"]
+    assert "new_game" not in actions
+    assert bridge.menu == "ready"
+
+
+async def test_reward_type_overrides_bridge_is_reward_false(bridge_env):
+    clock, bridge, client = bridge_env
+    game, _ = make_game(clock, client)
+    await game.reset(ResetRequest(puzzle_id="p", bodies=[ASH, BIRCH], reward_item_type="Ball"))
+    bridge.bodies[1]["held"] = [
+        {"hand": "right", "item_id": "9", "item_type": "Ball", "is_reward": False}
+    ]
+    holder = (await game.state()).reward_holder()
+    assert holder is not None and holder.name == "Ash"
+
+
+async def test_bridge_screenshot_scaled_to_requested_size(bridge_env):
+    _, bridge, client = bridge_env
+    image = io.BytesIO()
+    Image.new("RGB", (200, 100), "red").save(image, format="PNG")
+    bridge.screen = (image.getvalue(), 200, 100)
+    png = await client.screenshot(40, 20)
+    assert Image.open(io.BytesIO(png)).size == (40, 20)
 
 
 # ------------------------------------------------------------ input helpers

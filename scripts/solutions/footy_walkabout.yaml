@@ -1,0 +1,64 @@
+# Scripted smoke test on the real game. It uses every action the agents have.
+# Each list entry is one turn (one generate call). Turn order: Ash, Birch, Cedar.
+# Pixel targets are for the views after reset (1366x768, hfov 121.3 deg).
+#   Ash:   talk, look, walk, jump, run, crouch, wave, sit, scroll, wait, screenshot
+#   Birch: strafe, walk back, hold "use" down across turns and release it
+#   Cedar: walk to the football, pick it up, drop it, pick it up again, end
+puzzle: footy_walkabout
+agents:
+  Ash:
+    - calls:
+        - say: {message: "Hi, I am Ash. I see a courtyard with a tree, and a football on the ledge."}
+        - computer: {action: screenshot}
+        - computer: {action: mouse_move, coordinate: [400, 384]}
+        - computer: {action: hold_key, text: w, duration: 1.0}
+        - computer: {action: key, text: space}
+    - calls:
+        - computer: {action: hold_key, text: "shift+w", duration: 0.8}
+        - computer: {action: hold_key, text: ctrl, duration: 0.6}
+        - computer: {action: hold_key, text: q, duration: 0.3}
+        - computer: {action: hold_key, text: e, duration: 0.3}
+        - computer: {action: wait, duration: 0.3}
+    - calls:
+        - computer: {action: key, text: z}
+        - computer: {action: wait, duration: 1.0}
+        - computer: {action: key, text: z}
+        - computer: {action: scroll, scroll_direction: down, scroll_amount: 2}
+        - computer: {action: mouse_move, coordinate: [683, 200]}
+    - wait_for: "I have the ball"
+      calls:
+        - say: {message: "Great. I vote to end."}
+        - end_episode: {}
+  Birch:
+    - calls:
+        - computer: {action: mouse_move, coordinate: [400, 384]}
+        - computer: {action: hold_key, text: a, duration: 0.5}
+        - computer: {action: hold_key, text: d, duration: 0.5}
+        - computer: {action: hold_key, text: s, duration: 0.5}
+        - say: {message: "Birch here, I am walking around behind you."}
+    - calls:
+        - computer: {action: left_mouse_down}
+        - computer: {action: wait, duration: 0.3}
+        - say: {message: "I am holding the use button down."}
+    - calls:
+        - computer: {action: left_mouse_up}
+        - say: {message: "Released it."}
+    - wait_for: "I have the ball"
+      calls:
+        - end_episode: {}
+  Cedar:
+    - calls:
+        - computer: {action: mouse_move, coordinate: [676, 482]}
+        - computer: {action: hold_key, text: w, duration: 1.8}
+    - calls:
+        - computer: {action: left_click, coordinate: [714, 560]}
+        - computer: {action: wait, duration: 0.5}
+        - say: {message: "I picked up the football."}
+    - calls:
+        - computer: {action: right_click}
+        - computer: {action: wait, duration: 1.0}
+        - computer: {action: left_click, coordinate: [683, 515]}
+        - computer: {action: wait, duration: 0.5}
+    - calls:
+        - say: {message: "I have the ball again after dropping it. Let's end."}
+        - end_episode: {}

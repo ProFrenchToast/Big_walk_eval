@@ -1,0 +1,21 @@
+# Not a real puzzle: a smoke test of the harness on the real game. Three bodies
+# stand on the ledge above the courtyard near the start (the one with the tree and
+# the climbing frame), next to a football. It "succeeds" when a body carries the
+# football, so a scripted run can score C. Positions are from game 1.5.1 2608271531.
+id: footy_walkabout
+title: Football walkabout (smoke test)
+area: opening courtyard
+game: real
+needs_sound: false
+min_agents: 2
+snapshot: ""
+spawns:
+  - {slot: 1, name: Ash, position: [-192.6, 37.7, -504.6], yaw_deg: -80}
+  - {slot: 2, name: Birch, position: [-191.1, 37.7, -502.3], yaw_deg: -90}
+  - {slot: 3, name: Cedar, position: [-194.1, 37.7, -502.3], yaw_deg: -90}
+props:
+  - {item_type: FootyProp, position: [-198.61, 36.2, -502.32]}
+reward_item_type: FootyProp
+max_turns: 24
+location_hint: "The football lies on the ledge about 4.5 m ahead of Cedar, a little below eye level."
+notes: "Smoke test. Scripted solution: scripts/solutions/footy_walkabout.yaml."

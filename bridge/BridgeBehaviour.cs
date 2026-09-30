@@ -31,6 +31,21 @@ public class BridgeBehaviour : MonoBehaviour
 
     private void Update()
     {
+        if (Time.frameCount % 120 == 0)
+        {
+            try
+            {
+                if (Time.frameCount % 1200 == 0) Plugin.Trace.LogInfo($"Bridge server: {Plugin.ServerStatus()}");
+                Plugin.EnsureServer();
+                // Reading the slot table repairs it if the practice mod emptied it.
+                if (Mirror.NetworkServer.activeHost) _ = Practice.Slots;
+            }
+            catch (Exception e)
+            {
+                Plugin.Trace.LogError($"Bridge server restart failed: {e.Message}");
+            }
+        }
+
         var budget = Plugin.MaxCommandsPerFrame.Value;
         while (budget-- > 0 && BridgeServer.Queue.TryDequeue(out var request))
         {
@@ -48,6 +63,7 @@ public class BridgeBehaviour : MonoBehaviour
             }
             catch (Exception e)
             {
+                Plugin.Trace.LogWarning($"{request.Cmd} failed: {e}");
                 request.Done.TrySetException(e);
             }
         }
@@ -72,6 +88,7 @@ public class BridgeBehaviour : MonoBehaviour
             }
             catch (Exception e)
             {
+                Plugin.Trace.LogWarning($"{request.Cmd} failed: {e}");
                 request.Done.TrySetException(e);
             }
 

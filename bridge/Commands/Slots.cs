@@ -53,7 +53,7 @@ internal sealed class SwitchSlot : IPending
 /// practice mod. Spawning also switches control to the new body. Waits
 /// SpawnSettleFrames after the last spawn, because the practice mod moves a
 /// new body back to its formation spot 30 frames after spawning.
-/// NEEDS GAME: spawning while Time.timeScale = 0.
+/// Works while paused.
 /// </summary>
 internal sealed class SpawnBodies : IPending
 {
@@ -70,6 +70,9 @@ internal sealed class SpawnBodies : IPending
         result = null;
         var local = NetworkClient.localPlayer;
         if (local == null || Practice.PendingSwitchId != 0) return false;
+        // Wait until the practice mod has put the host body in a slot, else the
+        // first spawn takes slot 2 and the host body is left without a slot.
+        if (Practice.SlotOf(local.netId) == 0) return false;
 
         var count = Practice.BodyCount();
         if (count < _n)
@@ -127,8 +130,6 @@ internal static class Teleport
             pc.rb.angularVelocity = Vector3.zero;
         }
 
-        // NEEDS GAME: the camera look direction may not follow the body rotation.
-        // Setting it needs the head/look state (see Unfinished.Look).
         return new JsonObject();
     }
 }

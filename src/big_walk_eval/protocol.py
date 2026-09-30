@@ -48,6 +48,8 @@ class BodyState(_Wire):
     yaw_deg: float
     pitch_deg: float = 0.0
     held: list[HeldItem] = Field(default_factory=list)
+    # Game-specific body state (crouch, sit, jump) for checks and logs. Agents do not see it.
+    pose: dict[str, Any] = Field(default_factory=dict)
 
 
 class GameEvent(_Wire):
@@ -144,6 +146,15 @@ class BodySpawn(_Wire):
     yaw_deg: float = 0.0
 
 
+class PropPlacement(_Wire):
+    """Put a prop at a position during reset. The prop is the nearest one of
+    `item_type` to `near` (default: `position`). Stands in for a save snapshot."""
+
+    item_type: str
+    position: Vec3
+    near: Vec3 | None = None
+
+
 class OverviewCamera(_Wire):
     position: Vec3
     look_at: Vec3
@@ -160,6 +171,7 @@ class PuzzleConfig(_Wire):
     min_agents: int = 2
     snapshot: str = ""
     spawns: list[BodySpawn]
+    props: list[PropPlacement] = Field(default_factory=list)
     reward_item_type: str = ""
     max_turns: int = 60
     notes: str = ""
@@ -175,6 +187,7 @@ class PuzzleConfig(_Wire):
             puzzle_id=self.id,
             snapshot=self.snapshot,
             bodies=self.spawns[:n_agents],
+            props=self.props,
             reward_item_type=self.reward_item_type,
         )
 
@@ -186,6 +199,7 @@ class ResetRequest(_Wire):
     puzzle_id: str
     snapshot: str = ""
     bodies: list[BodySpawn]
+    props: list[PropPlacement] = Field(default_factory=list)
     reward_item_type: str = ""
 
 

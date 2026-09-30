@@ -42,7 +42,34 @@ internal static class Practice
          ?? throw new MissingMethodException("PracticeController", name)).Invoke(Instance, args);
 
     /// <summary>netId per practice index; 0 = empty.</summary>
-    public static List<uint> Slots => Field<List<uint>>("_slots");
+    public static List<uint> Slots
+    {
+        get
+        {
+            var slots = Field<List<uint>>("_slots");
+            // Practice 0.6.0 bug: ResetAll (on OnStopClient/OnStopHost, which the menus
+            // trigger) calls _slots.Clear() instead of zeroing it. With an empty list
+            // the practice mod can never register or spawn a body. Refill it.
+            if (slots.Count == 0)
+            {
+                for (var i = 0; i < 1 + MaxExtraBodies; i++) slots.Add(0);
+                Plugin.Trace.LogInfo($"Refilled the practice slot table ({slots.Count} slots).");
+            }
+
+            return slots;
+        }
+    }
+
+    private static int MaxExtraBodies
+    {
+        get
+        {
+            var plugin = Type.GetType("BigWalk.Practice.Plugin, BigWalk.Practice");
+            var entry = plugin?.GetField("MaxExtraBodies", BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null);
+            var value = entry?.GetType().GetProperty("Value")?.GetValue(entry);
+            return value is int n ? Math.Clamp(n, 1, 11) : 9;
+        }
+    }
 
     /// <summary>netId of a switch the practice mod has started but not finished; 0 = none.</summary>
     public static uint PendingSwitchId => Field<uint>("_pendingId");
