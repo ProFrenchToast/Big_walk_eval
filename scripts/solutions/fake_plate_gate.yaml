@@ -1,0 +1,23 @@
+# Fixed two-body solution for the FakeGame puzzle. Each list entry is one
+# generate call; `wait_for` holds the step until the agent hears that text.
+puzzle: fake_plate_gate
+agents:
+  Ash:
+    # Look at the plate (36.9 degrees left of the spawn heading) and walk 5 m onto it.
+    - calls:
+        - computer: {action: mouse_move, coordinate: [171, 384]}
+        - computer: {action: hold_key, text: w, duration: 2.5}
+        - say: {message: "I am standing on the plate. The gate should be open now."}
+    - wait_for: "I have the gourd"
+      calls:
+        - end_episode: {}
+  Birch:
+    - wait_for: "standing on the plate"
+      calls:
+        - computer: {action: hold_key, text: w, duration: 3}
+    - calls:
+        - computer: {action: hold_key, text: w, duration: 3}
+    - calls:
+        - computer: {action: left_mouse_down}
+        - say: {message: "I have the gourd! Let's end."}
+        - end_episode: {}

@@ -10,8 +10,10 @@ tool call, or when the turn's tool call or game time limit is used up.
 from __future__ import annotations
 
 from collections.abc import Callable
+from contextlib import AsyncExitStack
 from dataclasses import dataclass
 
+import anyio
 from inspect_ai.log import transcript
 from inspect_ai.model import (
     ChatMessage,
@@ -76,8 +78,15 @@ def round_robin(
     controls: str,
     game_name: str = "Big Walk",
     max_turns: int | None = None,
+    game_lock: anyio.Lock | None = None,
 ) -> Solver:
     async def solve(state: TaskState, generate: Generate) -> TaskState:
+        async with AsyncExitStack() as stack:
+            if game_lock is not None:
+                await stack.enter_async_context(game_lock)
+            return await play(state)
+
+    async def play(state: TaskState) -> TaskState:
         puzzle = PuzzleConfig.model_validate(state.metadata["puzzle"])
         n_agents = int(state.metadata["n_agents"])
         turn_limit = max_turns or puzzle.max_turns
