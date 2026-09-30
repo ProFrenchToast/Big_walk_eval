@@ -1,6 +1,6 @@
 # Big Walk Cooperation Eval: Harness Implementation Plan
 
-Status: 2026-09-30. Nothing is built yet. The repo contains only this plan and `CLAUDE.md`.
+Status: 2026-09-30. M0 to M5 and M7 are built and tested against FakeGame. M6 (the bridge mod) is a skeleton that has not been compiled. Section 15 lists what changed from this plan and why.
 
 This document is a handoff. It gives the background, the decisions, the architecture, the interfaces, and an ordered build plan. A developer with no access to the game can build and test most of the Python code against a fake game. The parts that need the real game are marked **[NEEDS GAME]**.
 
@@ -426,6 +426,8 @@ After M8: more puzzles, more agents, and ablations (see section 13).
 - [ ] The Big Walk controls: which keys and buttons walk, jump, crouch, grab with each hand, and open chat.
 - [ ] Run the Cpp2IL dump locally and give class names for the hands component, the gourd, puzzle completion, and save and load. Do not commit the dump.
 - [ ] Pin the game version and turn off Steam auto-updates. Record the game build number in `CLAUDE.md`.
+- [ ] Fill in the Big Walk controls in `src/big_walk_eval/prompts.py` (`BIG_WALK_CONTROLS`, marked `TODO(controls)`). Check that no game control uses a practice-mod hotkey (`1` to `0`, `+`, `=`, `R`, `G`, `F1` to `F3`, `F5`, `F9`). The `computer` tool rejects those keys.
+- [ ] In check 1, test the exact sequence of section 15.1 item 5.
 
 ## 13. Later work (not in scope now)
 
@@ -437,7 +439,43 @@ After M8: more puzzles, more agents, and ablations (see section 13).
 
 ## 14. Open questions
 
-- Does the Anthropic computer toolset (`computer_toolset_20260801`) map calls back into our `action` argument without changes? Check the provider code, then test with a real model call.
+- Does the Anthropic computer toolset (`computer_toolset_20260801`) map calls back into our `action` argument without changes? **Partly answered.** In inspect_ai 0.3.273, `anthropic.py` sends each toolset member call to the tool named `computer` with `action = <member name>` and the member input as the other arguments. So our shim receives the calls. Not checked: whether the member input names match the legacy names (`text`, `coordinate`, `duration`). The Anthropic SDK is not installed in CI. A real model call must still confirm this.
 - Does in-game text chat show a separate name for each spawned body? This matters only for the echo feature.
 - The right value for `max_game_ms_per_turn`. Start at 3000 and tune after the scripted run.
 - Does `timeScale = 0` stop every puzzle timer? Some timers can use unscaled time.
+
+## 15. Implementation status and changes from this plan
+
+### 15.1 Changes
+
+1. **`GameClient.reset` takes a `ResetRequest`**, not `(puzzle, bodies)`. The game server is then a thin HTTP layer over any `GameClient`. `PuzzleConfig.reset_request(n_agents)` builds the request.
+2. **The timeline builder is in `src/big_walk_eval/timeline.py`**, not `server/input/timeline.py`. FakeGame and the game server play the same timed events, so budgets and truncation are the same in tests and in the game. The fixed durations (key tap, click, look) are constants in `protocol.py`.
+3. **A turn can have more than one generate call.** A turn is a header (chat heard, fresh screenshot), then up to `max_generates_per_turn` (default 6) generate calls with their tool calls. The turn ends when the model replies without a tool call, or when the tool-call cap or the game-time budget is used up. Reason: native computer-use models usually make one action per reply and wait for the screenshot. With one generate call per turn, each turn is one action, and every action waits for all other agents. Set `-T max_generates_per_turn=1` for the behavior of section 5.1.
+4. **The harness does the look-toward-pixel math.** The `computer` tool converts the pixel to a `LookAction(dyaw_deg, dpitch_deg)`. The server converts the angle to mouse counts, or sends it to the bridge `look` command. The field of view comes from `Camera.fieldOfView` in `get_state` when the bridge reports it, else from `-T hfov_deg`.
+5. **Held mouse buttons are per body.** `left_mouse_down` stays held across turns until `left_mouse_up`. With OS input (Backend A), the server releases the buttons before a switch (while paused) and presses the new body's buttons again after the switch. Check 1 must test this exact sequence: body A grips, the button is released at the OS while paused, control switches to body B, B acts, control switches back, the button is pressed again.
+6. **The practice mod switches differently than section 2.3 says.** big-walk-practice 0.6.0 does not set `bypassUpdate` on inactive bodies. It calls `NetworkServer.ReplacePlayerForConnection` and makes the old body a remote body (`MakeRemote`). So check 1 tests whether a *remote* body keeps its grip.
+7. **Practice-mod hotkeys are blocked.** The practice mod reads `1` to `0`, `+`, `R`, `F5`, `F9`, and `G` with `Input.GetKeyDown`. If an agent pressed `r`, every body would teleport. The `computer` tool and the game server reject these keys, and `F1` to `F3` (config UI, dev menu, free cam).
+8. **Right hand.** Native computer use has no `right_mouse_down`. The tool accepts `left_mouse_down` with `text="right"`, and `right_mouse_down` / `right_mouse_up` for models that read the docstring. Confirm with the real controls.
+9. **One episode at a time on the HTTP backend.** `Task` has no `max_samples` option, so the solver holds a lock for the whole episode. `--max-samples 1` is still a good idea.
+10. **`puzzle_game` task parameter.** `-T backend=http -T puzzle_game=fake` runs FakeGame puzzles on a server started with `--fake`. Use this to test the network path before the game.
+11. **The bridge `spawn_bodies` waits 40 frames after the last spawn.** The practice mod moves a new body back to its formation spot 30 frames after it spawns, which would undo a teleport.
+
+### 15.2 Status per milestone
+
+| # | State |
+| --- | --- |
+| M0 | Done. CI: ruff, format check, pytest on Python 3.11. |
+| M1 | Done. FakeGame has a raycast first-person view, so look-toward-pixel is true in FakeGame too. |
+| M2 | Done. A test checks `is_computer_tool_info` on the shim. |
+| M3 | Done. Tests use `mockllm` with `ScriptedPolicy` (`src/big_walk_eval/scripted.py`). |
+| M4 | Done. `inspect eval big_walk_eval/big_walk_coop --model mockllm/model` runs. The scripted solution scores C. |
+| M5 | Done except real input. Tests use a TCP fake bridge. `SendInputBackend` is **[NEEDS GAME]**. |
+| M6 | Skeleton. Syntax-checked, not compiled. `TODO(dump)`: held items, events, look, snapshots, chat, Backend B input. See `bridge/README.md`. |
+| M7 | Done on FakeGame, in process and over HTTP. `scripts/solutions/real_puzzle.yaml.example` is the template for the real puzzle. |
+| M8 | Not started. **[NEEDS GAME]** |
+
+### 15.3 Gaps that block a real scored run
+
+- `HeldItems.Read` in the bridge returns nothing until the hands class is known. The scorer then never sees a held gourd.
+- `load_snapshot` is not written. Until it is, leave `snapshot` empty and reset the puzzle by hand.
+- The Big Walk controls in the system prompt are a draft.

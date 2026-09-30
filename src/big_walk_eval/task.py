@@ -30,6 +30,7 @@ def big_walk_coop(
     echo_chat: bool = False,
     seed: int = 0,
     puzzles_dir: str | None = None,
+    puzzle_game: Literal["real", "fake"] | None = None,
 ) -> Task:
     """LLM agents cooperate to solve a Big Walk puzzle. Each agent controls one body.
 
@@ -48,10 +49,13 @@ def big_walk_coop(
       echo_chat: Also show `say` messages in game, for replays.
       seed: FakeGame seed.
       puzzles_dir: Directory with puzzle YAML files. Default: `puzzles/` in the repo.
+      puzzle_game: Which puzzles to load. Default: "fake" for backend="fake", else "real".
+        Set "fake" with backend="http" to run FakeGame puzzles on a server started with --fake.
     """
     fake = backend == "fake"
     if not fake and backend != "http":
         raise ValueError(f"backend must be 'fake' or 'http', got {backend!r}")
+    puzzle_kind = puzzle_game or ("fake" if fake else "real")
     config = EpisodeConfig(
         max_game_ms_per_turn=max_game_ms_per_turn,
         max_tool_calls_per_turn=max_tool_calls_per_turn,
@@ -63,13 +67,16 @@ def big_walk_coop(
     )
     return Task(
         dataset=puzzle_dataset(
-            "fake" if fake else "real", n_agents, puzzles=puzzles, puzzles_dir=puzzles_dir
+            puzzle_kind,
+            n_agents,
+            puzzles=puzzles,
+            puzzles_dir=puzzles_dir,
         ),
         solver=round_robin(
             (lambda: FakeGame(seed=seed)) if fake else (lambda: HttpGame(game_url)),
             config,
-            controls=FAKE_GAME_CONTROLS if fake else BIG_WALK_CONTROLS,
-            game_name="a simple test game" if fake else "Big Walk",
+            controls=FAKE_GAME_CONTROLS if puzzle_kind == "fake" else BIG_WALK_CONTROLS,
+            game_name="a simple test game" if puzzle_kind == "fake" else "Big Walk",
             max_turns=max_turns,
             # One game instance runs one episode at a time.
             game_lock=None if fake else anyio.Lock(),

@@ -1,0 +1,24 @@
+# Template for a scripted solution of a real puzzle. Copy to scripts/solutions/<id>.yaml.
+# Each list entry is one generate call with its tool calls, in order.
+# A step with `wait_for` runs only after the agent hears chat that contains that text.
+# Tool arguments are the same as a model would send. mouse_move takes a pixel:
+#   big_walk_eval.look.angles_to_pixel(dyaw_deg, dpitch_deg, hfov_deg) converts a turn angle.
+puzzle: green_structure_switches
+agents:
+  Ash:
+    - calls:
+        - computer: {action: hold_key, text: w, duration: 2}
+        - computer: {action: left_mouse_down}          # grab and keep holding
+        - say: {message: "I am holding the switch."}
+    - wait_for: "I have the gourd"
+      calls:
+        - end_episode: {}
+  Birch:
+    - wait_for: "holding the switch"
+      calls:
+        - computer: {action: mouse_move, coordinate: [683, 384]}
+        - computer: {action: hold_key, text: w, duration: 3}
+    - calls:
+        - computer: {action: left_mouse_down}
+        - say: {message: "I have the gourd."}
+        - end_episode: {}

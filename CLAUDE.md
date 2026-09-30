@@ -12,3 +12,9 @@ Read `docs/IMPLEMENTATION_PLAN.md` before you start work. It has the background,
 - Unknown game class names are marked `TODO(dump)`. Do not guess class names. Leave the marker and the grep to run.
 - Never commit decompiled game code or the Cpp2IL output (`out/`).
 - Shared request and response models live in `src/big_walk_eval/protocol.py`. Change them in one place only.
+
+## Commands
+
+- `uv run pytest` runs every test against FakeGame and a fake bridge. The tests need no network (`tests/conftest.py` stubs mockllm's tiktoken count).
+- `uv run ruff check . && uv run ruff format --check .`
+- `uv run python scripts/scripted_run.py scripts/solutions/fake_plate_gate.yaml` must score C after any change to the loop or the tools.

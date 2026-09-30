@@ -1,0 +1,19 @@
+# Template for a real puzzle. Copy to puzzles/<id>.yaml (the dataset loads *.yaml only).
+id: green_structure_switches        # candidate, not confirmed
+title: Green Structure switches
+area: opening
+game: real
+needs_sound: false
+min_agents: 2
+snapshot: saves/green_structure_switches    # on the Windows machine; load_snapshot is TODO(dump)
+# Place the bodies in game with the practice mod, then run:
+#   uv run python -m server.record_spawns --names Ash,Birch
+spawns:
+  - {slot: 1, name: Ash,   position: [0.0, 0.0, 0.0], yaw_deg: 0}
+  - {slot: 2, name: Birch, position: [0.0, 0.0, 0.0], yaw_deg: 0}
+reward_item_type: TODO(dump)
+max_turns: 60
+location_hint: "Location hint for ablations only. Not shown to agents."
+notes: ""
+# Optional free camera for replays:
+# overview: {position: [0, 20, 0], look_at: [0, 0, 10]}
