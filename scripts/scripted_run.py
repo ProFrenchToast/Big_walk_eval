@@ -71,6 +71,11 @@ def main() -> int:
     parser.add_argument("--max-game-ms-per-turn", type=int, default=3000)
     parser.add_argument("--log-dir", default="logs/scripted")
     parser.add_argument("--save-images", type=Path, help="write each turn's view as PNG here")
+    parser.add_argument(
+        "--capture", action="store_true", help="record every body's view (scripts/make_video.py)"
+    )
+    parser.add_argument("--capture-fps", type=int, default=30)
+    parser.add_argument("--capture-dir", default="captures", help="FakeGame frame folder")
     args = parser.parse_args()
 
     _offline_token_count()
@@ -83,6 +88,9 @@ def main() -> int:
         n_agents=len(script.agents),
         max_turns=args.max_turns,
         max_game_ms_per_turn=args.max_game_ms_per_turn,
+        capture=args.capture,
+        capture_fps=args.capture_fps,
+        capture_dir=args.capture_dir,
     )
     model = get_model("mockllm/model", custom_outputs=ScriptedPolicy(script))
     [log] = eval(task, model=model, log_dir=args.log_dir, display="plain")
@@ -105,6 +113,10 @@ def main() -> int:
         )
     if args.save_images:
         print(f"saved {save_images(sample, args.save_images)} images to {args.save_images}")
+    if record.capture:
+        print(f"capture: {record.capture['frames']} frames in {record.capture['directory']}")
+    elif record.capture_error:
+        print(f"capture failed: {record.capture_error}")
     print(f"log: {log.location}")
     return 0 if score.value == "C" else 2
 

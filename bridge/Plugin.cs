@@ -26,6 +26,8 @@ public class Plugin : BasePlugin
     internal static ConfigEntry<int> MaxCommandsPerFrame;
     internal static ConfigEntry<int> CommandTimeoutFrames;
     internal static ConfigEntry<int> SpawnSettleFrames;
+    internal static ConfigEntry<string> FfmpegPath;
+    internal static ConfigEntry<int> CaptureQueueFrames;
 
     private BridgeServer _server;
     private Harmony _harmony;
@@ -43,6 +45,10 @@ public class Plugin : BasePlugin
         SpawnSettleFrames = Config.Bind("Server", "SpawnSettleFrames", 40,
             "Frames to wait after the last spawn. The practice mod moves a new body back to " +
             "its formation spot 30 frames after spawning, which would undo a teleport.");
+        FfmpegPath = Config.Bind("Capture", "FfmpegPath", "ffmpeg",
+            "ffmpeg executable for capture_start. A full path, or a name on PATH.");
+        CaptureQueueFrames = Config.Bind("Capture", "QueueFrames", 120,
+            "Frames per body that wait for ffmpeg. When the queue is full, the game waits.");
 
         ClassInjector.RegisterTypeInIl2Cpp<BridgeBehaviour>();
 

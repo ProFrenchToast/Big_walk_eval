@@ -21,6 +21,7 @@ To move the plugin into a fork of big-walk-practice, copy the `.cs` files to `mo
 - Run the game windowed at 1366 x 768. The screenshot is then 1:1 with what the model sees.
 - In `com.bigwalk.practice.cfg`: set `MaxExtraBodies` to at least the number of agents minus 1, and set `ShowNameOverlay = false`.
 - Host a lobby. The practice mod works only on the host.
+- For video capture, install ffmpeg. Put it on `PATH`, or set `FfmpegPath` in `com.bigwalk.evalbridge.cfg`.
 
 ## Threads
 
@@ -49,6 +50,8 @@ Slots are 1-based. Slot 1 is key `1` and practice index 0 (the original player).
 | `screenshot` | `width`, `height` | `png_base64` | written, end-of-frame capture |
 | `overview_shot` | `position`, `look_at`, `width`, `height` | `png_base64` | written, free camera |
 | `events` | | `events: [{type, slot, t_ms, data}]` | queue written, game hooks TODO(dump) |
+| `capture_start` | `directory`, `fps`, `width`, `height`, `slots` | | written, one camera per body, frames to ffmpeg. See `Commands/BodyCapture.cs` |
+| `capture_stop` | | `frames`, `start_time_s` | written |
 | `look` | `dyaw_deg`, `dpitch_deg` | | TODO(dump). Server fallback: `look_mode: mouse` |
 | `load_snapshot` / `save_snapshot` | `name` | | TODO(dump). No fallback |
 | `chat` | `slot`, `text` | | TODO(dump). Optional |
@@ -66,6 +69,7 @@ Run the Cpp2IL dump as the practice mod's `AGENTS.md` describes. Never commit th
 | Pickup, drop, reward spawn, puzzle done events | `GameEvents.Install` | `rg -n "void (Grab\|Pick\|Hold\|Release\|Drop)" out/dummy/Assembly-CSharp` |
 | Exact camera turn | `Unfinished.Look` | `rg -n "class PlayerHead" -A 60 out/dummy/Assembly-CSharp` |
 | Save and load | `Unfinished.LoadSnapshot` | `rg -n "class .*Save\|LoadGame\|SaveGame" out/dummy/Assembly-CSharp` |
+| Layer of the local player's own body (capture cameras must hide it) | `BodyCapture` | `rg -n "firstPerson\|FirstPerson\|cullingMask" out/dummy/Assembly-CSharp` |
 | Text chat | `Unfinished.Chat` | `rg -n "class .*(Chat\|Texter)" out/dummy/Assembly-CSharp` |
 | Rewired actions (Backend B) | `Unfinished.Input` | `rg -n "GetButton\|GetAxis" out/isil/Assembly-CSharp` |
 
@@ -75,3 +79,4 @@ Run the Cpp2IL dump as the practice mod's `AGENTS.md` describes. Never commit th
 2. **Spawning at `timeScale = 0`.** `spawn_bodies` runs while paused. The practice mod skips a spawn while `LocalPlayerFullyReady` is false; the command retries until it times out.
 3. **Screenshot at `timeScale = 0`.** `WaitForEndOfFrame` must still fire while paused.
 4. **Look direction after teleport.** `teleport` sets the body rotation. The camera may keep its old direction.
+5. **Capture cameras.** Check that each capture camera follows its own body's head, also for bodies that are not active. Check the frame rate while N cameras render.

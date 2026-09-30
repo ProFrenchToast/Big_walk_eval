@@ -35,6 +35,8 @@ class ServerConfig(BaseModel):
     screenshot_width: int = SCREEN_WIDTH
     screenshot_height: int = SCREEN_HEIGHT
     blocked_keys: list[str] = Field(default_factory=lambda: sorted(PRACTICE_MOD_KEYS))
+    # Per-body video frames go to <capture_dir>/<episode_id>/ on this machine.
+    capture_dir: str = "captures"
 
     @classmethod
     def load(cls, path: str | Path | None) -> ServerConfig:

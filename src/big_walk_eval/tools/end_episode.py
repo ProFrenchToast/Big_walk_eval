@@ -18,6 +18,7 @@ def end_episode(episode: Episode, slot: int) -> Tool:
         """
         episode.begin_tool_call(slot)
         episode.votes[slot] = not withdraw
+        episode.recorder.vote(slot, not withdraw)
         return "vote recorded"
 
     return execute

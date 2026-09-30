@@ -160,5 +160,16 @@ class BridgeClient:
         data = result.get("png_base64")
         return base64.b64decode(data) if data else None
 
+    async def capture_start(
+        self, directory: str, fps: int, width: int, height: int, slots: list[int]
+    ) -> None:
+        await self.call(
+            "capture_start", directory=directory, fps=fps, width=width, height=height, slots=slots
+        )
+
+    async def capture_stop(self) -> dict[str, Any]:
+        """Returns `frames` (frames written per slot) and `start_time_s` (game time)."""
+        return await self.call("capture_stop")
+
     async def input(self, slot: int, event: dict[str, Any]) -> None:
         await self.call("input", slot=slot, **event)

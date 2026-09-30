@@ -187,6 +187,7 @@ dist/
 ci-refs/
 logs/
 runs/
+captures/
 
 # C# / BepInEx
 bin/
