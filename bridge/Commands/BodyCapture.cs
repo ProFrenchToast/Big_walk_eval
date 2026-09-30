@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text.Json.Nodes;
 using System.Threading;
 using UnityEngine;
@@ -24,17 +24,11 @@ namespace BigWalk.EvalBridge;
 /// the frames. capture_stop {} finishes the files and returns frames and
 /// start_time_s. The game server writes capture.json.
 ///
-/// NEEDS GAME: everything. Things to check first:
-/// - cameraTransform on a body that is not active: does it follow that body's
-///   head and look? This is the same question as in StateReader.Body.
-/// - The camera inside a body's head can see the inside of the head mesh.
-///   The near clip plane may be enough. If not, hide the body's own renderers
-///   from its camera with a layer. TODO(dump): which layer the game uses for
-///   the local player's own body: rg -n "firstPerson|FirstPerson|cullingMask" out/dummy/Assembly-CSharp
-/// - If the game uses a scriptable render pipeline, Camera.Render may need
-///   RenderPipeline.SubmitRenderRequest (same note as OverviewShot).
-/// - Cost. Synchronous ReadPixels stalls the GPU. If the frame rate drops too far,
-///   change it to AsyncGPUReadback.
+/// Tested in the game (2026-10-01, footy_walkabout, 3 bodies at 683x384 and 30 fps):
+/// each camera follows its own body's head also while that body is inactive, the
+/// frames match the agents' screenshots (without the HUD), and there is no head
+/// mesh in view. The frame rate was fine with 3 cameras. Not checked: many more
+/// bodies, or larger frames.
 /// </summary>
 internal static class BodyCapture
 {
@@ -179,13 +173,30 @@ internal static class BodyCapture
         {
             RenderTexture.active = stream.Target;
             stream.Pixels.ReadPixels(new Rect(0, 0, stream.Target.width, stream.Target.height), 0, 0);
-            // GetRawTextureData returns an Il2Cpp array; ToArray copies it into a managed byte[].
-            return stream.Pixels.GetRawTextureData().ToArray();
+            return CopyPixels(stream.Pixels);
         }
         finally
         {
             RenderTexture.active = previous;
         }
+    }
+
+    /// <summary>
+    /// Copy the texture's CPU-side pixels into a managed byte[]. GetRawTextureData()
+    /// returns an Il2Cpp byte array, and unmarshalling it fails in this interop build
+    /// (see Screenshot). GetWritableImageData returns a plain pointer to the same
+    /// memory that GetRawTextureData&lt;T&gt; wraps, so nothing is unmarshalled.
+    /// </summary>
+    private static byte[] CopyPixels(Texture2D texture)
+    {
+        var size = (long)texture.GetImageDataSize();
+        var expected = (long)texture.width * texture.height * 4;
+        if (size < expected) throw new InvalidOperationException($"texture has {size} bytes, need {expected}");
+        var pointer = texture.GetWritableImageData(0);
+        if (pointer == IntPtr.Zero) throw new InvalidOperationException("texture has no CPU data");
+        var bytes = new byte[expected];
+        Marshal.Copy(pointer, bytes, 0, bytes.Length);
+        return bytes;
     }
 
     private static Transform Look(int slot)

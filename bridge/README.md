@@ -2,7 +2,7 @@
 
 A BepInEx 6 IL2CPP plugin. It lets the eval game server (`server/`) control the game over TCP. It needs [big-walk-practice](https://github.com/iameli/big-walk-practice) 0.6.0 for extra bodies and slot switching.
 
-Status (2026-09-30): compiled and tested in game 1.5.1 2608271531 (Unity 6000.3.17f1) with BepInEx 6.0.0-be.788. A scripted three-body run (`scripts/solutions/footy_walkabout.yaml`) scores C through the full harness. Still missing: save snapshots, the exact `look` command, in-game chat, Backend B input.
+Status (2026-09-30): compiled and tested in game 1.5.1 2608271531 (Unity 6000.3.17f1) with BepInEx 6.0.0-be.788. A scripted three-body run (`scripts/solutions/footy_walkabout.yaml`) scores C through the full harness, and video capture of every body's view works (2026-10-01). Still missing: save snapshots, the exact `look` command, in-game chat, Backend B input.
 
 ## One-time setup
 
@@ -58,8 +58,8 @@ Slots are 1-based. Slot 1 is key `1` and practice index 0 (the original player).
 | `look` | `dyaw_deg`, `dpitch_deg` | | TODO(dump). The server uses `look_mode: mouse` |
 | `load_snapshot` / `save_snapshot` | `name` | | TODO(dump). `place_prop` covers simple cases |
 | `chat` | `slot`, `text` | | TODO(dump). Optional. `PlayerTexter` is the lead |
-| `capture_start` | `directory`, `fps`, `width`, `height`, `slots` | | written (PR #2), not run in the game yet. One camera per body, frames to ffmpeg. See `Commands/BodyCapture.cs` |
-| `capture_stop` | | `frames`, `start_time_s` | written (PR #2), not run in the game yet |
+| `capture_start` | `directory`, `fps`, `width`, `height`, `slots` | | tested. One camera per body, frames to ffmpeg. See `Commands/BodyCapture.cs` and "Screenshots" below |
+| `capture_stop` | | `frames`, `start_time_s` | tested |
 | `input` | `slot`, `op`, ... | | TODO(dump). Backend B only |
 
 The Python side of this protocol is `server/bridge_client.py`. The tests in `tests/fake_bridge.py` use a fake bridge that speaks the same protocol.
@@ -71,7 +71,7 @@ The Python side of this protocol is `server/bridge_client.py`. The tests in `tes
 - **Pause:** `timeScale = 0` stops movement. Rendering, switching, spawning, and screenshots all work while paused.
 - **Mouse look:** 25 counts per degree at the default sensitivity, no Y inversion, positive pitch looks down. The camera has a vertical FOV of 90 degrees, so 121.3 degrees horizontal at 1366 x 768.
 - **Teleports:** teleport a body while it is the local (active) body, then let the game run for about 1.5 s. Otherwise the next switch puts the body back where the network last saw it (0.3 s is not enough). `mover.ResetPosition()` in the practice mod's switch also restores a position cache that only updates in `FixedUpdate`. `BridgeGame.reset` does this per body.
-- **Screenshots:** `EncodeToPNG`, and every other call that returns a Unity byte array, fails in this interop build ("Instances of abstract classes cannot be created" in `BlittableArrayWrapper.Unmarshal`). `screenshot` uses `ScreenCapture.CaptureScreenshot` to a temp file instead. The capture has the game HUD (crosshair) but not the Steam overlay.
+- **Screenshots:** `EncodeToPNG`, and every other call that returns a Unity byte array, fails in this interop build ("Instances of abstract classes cannot be created" in `BlittableArrayWrapper.Unmarshal`). `screenshot` uses `ScreenCapture.CaptureScreenshot` to a temp file instead. Video capture reads its `Texture2D` through the pointer from `GetWritableImageData(0)` (size from `GetImageDataSize()`) and `Marshal.Copy`, which returns no Unity array. The capture has the game HUD (crosshair) but not the Steam overlay.
 - **Stripped methods:** `Object.FindFirstObjectByType` fails with "Method unstripping failed". Use `Resources.FindObjectsOfTypeAll`.
 - **Practice mod bug (0.6.0):** `PracticeController.ResetAll` (on `OnStopClient` and `OnStopHost`, which the menus trigger) calls `_slots.Clear()` instead of zeroing the slots. Then every practice tick throws in `RegisterCurrent`, and no body can spawn. `Practice.Slots` refills the list, and the watchdog reads it every 120 frames. Worth an upstream fix.
 - **Host menu:** a new save needs a lobby password in the UI. `menu host_confirm` clears `passwordRequired` for local eval sessions; the 6-digit join code still gates the lobby.
@@ -99,4 +99,3 @@ To regenerate the signatures, load the interop assemblies with reflection (a 40-
 2. `look` through `PlayerHead`, so turns do not depend on mouse sensitivity.
 3. A real two-player puzzle: find a switch that must stay held (`PeckSwitch`, `PlayerDecisions.heldDownSwitch`) and test check 1 for it.
 4. Backend B (per-body Rewired input), if a held world switch drops on a switch.
-5. Video capture (`BodyCapture`, PR #2), untested in the game. It reads frames with `GetRawTextureData().ToArray()`, which is likely to fail like `EncodeToPNG` (see "Screenshots"); `AsyncGPUReadback` or a file per frame may be needed. Also check that each capture camera follows its own body's head for inactive bodies, which layer hides the local player's own body (`rg -n "firstPerson|FirstPerson|cullingMask"` over the signatures), and the frame rate with N cameras.
