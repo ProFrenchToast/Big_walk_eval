@@ -1,0 +1,15 @@
+# FakeGame puzzle. Runs with backend=fake only.
+id: fake_plate_gate
+title: Plate and gate (FakeGame)
+area: fake
+game: fake
+needs_sound: false
+min_agents: 2
+spawns:
+  - {slot: 1, name: Ash, position: [-5.0, 0.0, 0.0], yaw_deg: 0}
+  - {slot: 2, name: Birch, position: [0.0, 0.0, 0.0], yaw_deg: 0}
+  - {slot: 3, name: Cedar, position: [5.0, 0.0, 0.0], yaw_deg: 0}
+reward_item_type: Gourd
+max_turns: 30
+location_hint: "The gourd is behind the wall with the gate. The plate is to the left."
+notes: "One body stands on the plate to open the gate. Another walks through and takes the gourd."

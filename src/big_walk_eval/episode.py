@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from inspect_ai.tool import ToolError
+from inspect_ai.util import StoreModel
+from pydantic import Field
 
 from big_walk_eval.chat import ChatRouter
 from big_walk_eval.game.client import GameClient
@@ -13,7 +15,6 @@ from big_walk_eval.protocol import PRACTICE_MOD_KEYS, GameEvent
 
 @dataclass(frozen=True)
 class EpisodeConfig:
-    max_turns: int = 60
     max_game_ms_per_turn: int = 3000
     max_tool_calls_per_turn: int = 6
     max_generates_per_turn: int = 6
@@ -101,3 +102,18 @@ class Episode:
     def record_events(self, events: list[GameEvent]) -> None:
         index = self.turn.index if self.turn else -1
         self.events.extend(EventRecord(index, e) for e in events)
+
+
+class EpisodeLog(StoreModel):
+    """Per-sample record in the sample store. The scorer reads it."""
+
+    puzzle_id: str = ""
+    agents: dict[str, str] = Field(default_factory=dict)
+    votes: dict[str, bool] = Field(default_factory=dict)
+    chat: list[dict] = Field(default_factory=list)
+    turns: list[dict] = Field(default_factory=list)
+    events: list[dict] = Field(default_factory=list)
+    total_game_ms: int = 0
+    n_turns: int = 0
+    ended_by_vote: bool = False
+    final_state: dict | None = None
