@@ -1,0 +1,18 @@
+# Game server config. Copy to server.yaml (gitignored) and edit.
+host: 127.0.0.1
+port: 47801
+bridge_host: 127.0.0.1
+bridge_port: 47800
+
+# sendinput = Backend A (OS input to the active body)
+# bridge    = Backend B (per-body input through the mod, TODO(dump))
+input_backend: sendinput
+look_mode: mouse            # or "bridge" if the mod's look command works
+counts_per_degree: 10.0     # from: python -m server.calibrate
+invert_mouse_y: false
+look_step_ms: 10
+switch_via_keys: false      # true: press the practice mod's slot keys instead of switch_slot
+
+window_title: Big Walk
+screenshot_width: 1366
+screenshot_height: 768

@@ -179,3 +179,18 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+# Big Walk eval
+# Never commit decompiled game code or Cpp2IL output.
+out/
+vendor/
+dist/
+ci-refs/
+logs/
+runs/
+
+# C# / BepInEx
+bin/
+obj/
+*.user
+.vs/
+server.yaml

@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Standalone build. The references match big-walk-practice's Directory.Build.props.
+    To move this into a fork of big-walk-practice, copy the .cs files into
+    mods/BigWalk.EvalBridge/ and keep only the PropertyGroup with AssemblyName,
+    Version, and Description, plus the two extra Unity module references below.
+
+    Build: dotnet build -c Release /p:GamePath="<r2modman profile base or game folder>"
+  -->
+
+  <PropertyGroup>
+    <AssemblyName>BigWalk.EvalBridge</AssemblyName>
+    <Version>0.1.0</Version>
+    <Description>JSON-over-TCP bridge for the Big Walk cooperation eval.</Description>
+    <TargetFramework>net6.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);CS0649;CS0169;CS0436</NoWarn>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <GamePath Condition="'$(GamePath)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Big Walk</GamePath>
+    <BepInExCore>$(GamePath)\BepInEx\core</BepInExCore>
+    <Interop>$(GamePath)\BepInEx\interop</Interop>
+  </PropertyGroup>
+
+  <ItemGroup Label="BepInEx">
+    <Reference Include="BepInEx.Core"><HintPath>$(BepInExCore)\BepInEx.Core.dll</HintPath></Reference>
+    <Reference Include="BepInEx.Unity.IL2CPP"><HintPath>$(BepInExCore)\BepInEx.Unity.IL2CPP.dll</HintPath></Reference>
+    <Reference Include="Il2CppInterop.Runtime"><HintPath>$(BepInExCore)\Il2CppInterop.Runtime.dll</HintPath></Reference>
+    <Reference Include="Il2CppInterop.Common"><HintPath>$(BepInExCore)\Il2CppInterop.Common.dll</HintPath></Reference>
+    <Reference Include="0Harmony"><HintPath>$(BepInExCore)\0Harmony.dll</HintPath></Reference>
+  </ItemGroup>
+
+  <ItemGroup Label="Unity">
+    <Reference Include="Il2Cppmscorlib"><HintPath>$(Interop)\Il2Cppmscorlib.dll</HintPath></Reference>
+    <Reference Include="UnityEngine"><HintPath>$(Interop)\UnityEngine.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.CoreModule"><HintPath>$(Interop)\UnityEngine.CoreModule.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.PhysicsModule"><HintPath>$(Interop)\UnityEngine.PhysicsModule.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.ImageConversionModule"><HintPath>$(Interop)\UnityEngine.ImageConversionModule.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.ScreenCaptureModule"><HintPath>$(Interop)\UnityEngine.ScreenCaptureModule.dll</HintPath></Reference>
+  </ItemGroup>
+
+  <ItemGroup Label="Game">
+    <Reference Include="Assembly-CSharp"><HintPath>$(Interop)\Assembly-CSharp.dll</HintPath></Reference>
+    <Reference Include="Mirror"><HintPath>$(Interop)\Mirror.dll</HintPath></Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Never copy game or loader assemblies into the output; BepInEx supplies them. -->
+    <Reference Update="@(Reference)"><Private>false</Private></Reference>
+  </ItemGroup>
+
+</Project>
