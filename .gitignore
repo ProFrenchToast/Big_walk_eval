@@ -193,3 +193,4 @@ bin/
 obj/
 *.user
 .vs/
+server.yaml

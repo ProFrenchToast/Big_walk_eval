@@ -1,0 +1,43 @@
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Literal
+
+import yaml
+from pydantic import BaseModel, Field
+
+from big_walk_eval.protocol import PRACTICE_MOD_KEYS, SCREEN_HEIGHT, SCREEN_WIDTH
+
+
+class ServerConfig(BaseModel):
+    """Game server settings. Load from YAML with `ServerConfig.load(path)`."""
+
+    host: str = "127.0.0.1"
+    port: int = 47801
+    bridge_host: str = "127.0.0.1"
+    bridge_port: int = 47800
+    bridge_timeout_s: float = 30.0
+
+    # "sendinput" is Backend A (OS input to the active body). "bridge" is
+    # Backend B (per-body input injected by the bridge mod).
+    input_backend: Literal["sendinput", "bridge"] = "sendinput"
+    # "mouse" turns with relative mouse counts. "bridge" asks the mod to turn
+    # the camera by an exact angle.
+    look_mode: Literal["mouse", "bridge"] = "mouse"
+    counts_per_degree: float = 10.0
+    invert_mouse_y: bool = False
+    look_step_ms: int = 10
+    # Press the practice mod's slot key instead of the bridge switch_slot command.
+    switch_via_keys: bool = False
+    switch_timeout_s: float = 5.0
+
+    window_title: str = "Big Walk"
+    screenshot_width: int = SCREEN_WIDTH
+    screenshot_height: int = SCREEN_HEIGHT
+    blocked_keys: list[str] = Field(default_factory=lambda: sorted(PRACTICE_MOD_KEYS))
+
+    @classmethod
+    def load(cls, path: str | Path | None) -> ServerConfig:
+        if path is None:
+            return cls()
+        return cls.model_validate(yaml.safe_load(Path(path).read_text()) or {})
