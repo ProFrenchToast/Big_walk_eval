@@ -106,6 +106,16 @@ def test_chat_out_of_range_does_not_arrive(tmp_path, fake_puzzle):
     assert log.votes == {"Ash": True, "Birch": False}
 
 
+def test_puzzle_chat_range_applies_unless_the_task_sets_one(tmp_path, fake_puzzle):
+    agents = {"Ash": [step(("say", {"message": "hello Birch"}))], "Birch": []}
+    near = fake_puzzle.model_copy(update={"chat_range_m": 1.0})
+    _, log = run(tmp_path, near, agents, max_turns=2)
+    assert log.chat[0]["recipients"] == []
+
+    _, log = run(tmp_path, near, agents, config=EpisodeConfig(chat_range_m=100.0), max_turns=2)
+    assert log.chat[0]["recipients"] == [2]
+
+
 def test_votes_end_the_loop(tmp_path, fake_puzzle):
     _, log = run(
         tmp_path,

@@ -2,7 +2,7 @@
 
 A BepInEx 6 IL2CPP plugin. It lets the eval game server (`server/`) control the game over TCP. It needs [big-walk-practice](https://github.com/iameli/big-walk-practice) 0.6.0 for extra bodies and slot switching.
 
-Status (2026-09-30): compiled and tested in game 1.5.1 2608271531 (Unity 6000.3.17f1) with BepInEx 6.0.0-be.788. A scripted three-body run (`scripts/solutions/footy_walkabout.yaml`) scores C through the full harness, and video capture of every body's view works (2026-10-01). Still missing: save snapshots, the exact `look` command, in-game chat, Backend B input.
+Status (2026-09-30): compiled and tested in game 1.5.1 2608271531 (Unity 6000.3.17f1) with BepInEx 6.0.0-be.788. A scripted three-body run (`scripts/solutions/footy_walkabout.yaml`) scores C through the full harness, and video capture of every body's view works (2026-10-01). The first real puzzle, the cave telescope (`puzzles/cave_telescope.yaml`), scores C with a scripted two-body solution (2026-10-01). Still missing: save snapshots, the exact `look` command, in-game chat, Backend B input.
 
 ## One-time setup
 
@@ -43,16 +43,19 @@ Slots are 1-based. Slot 1 is key `1` and practice index 0 (the original player).
 | --- | --- | --- | --- |
 | `hello` | | `game_version`, `bridge_version`, `practice_version` | tested |
 | `pause` / `resume` | | `time_s` (scaled game time) | tested |
-| `get_state` | | `paused`, `active_slot`, `time_s`, `camera_vfov_deg`, `bodies: [{slot, position, yaw_deg, pitch_deg, held, pose}]` | tested. `held` is `PlayerHands.heldProp` (one per body). `pose`: crouch, sitting, jump, arm pointing and waving |
+| `get_state` | | `paused`, `active_slot`, `time_s`, `camera_vfov_deg`, `bodies: [{slot, position, yaw_deg, pitch_deg, held, pose}]` | tested. `held` is `PlayerHands.heldProp` (one per body). `pose`: crouch, sitting, jump, arm pointing and waving, `held_switch` (path of the world switch the local body holds down) |
 | `switch_slot` | `slot` | `active_slot` | tested, about 0.04 s while paused |
 | `spawn_bodies` | `n` | `count` | tested, while paused |
 | `teleport` | `slot`, `position`, `yaw_deg` | | tested. See "Teleports" below |
-| `place_prop` | `item_type`, `position`, `near`? | `item_id`, `item_type`, `is_reward`, `moved_m` | tested. Moves the nearest prop of that type |
+| `place_prop` | `item_type`, `position`, `near`?, `home`? | `item_id`, `item_type`, `is_reward`, `moved_m`, `home`? | tested. Moves the nearest prop of that type. With `home: true`, pins the prop whose start home is nearest to `position` back into that home, and sets a gourd back to Locked |
 | `screenshot` | | `png_base64`, `width`, `height` | tested, about 0.12 s while paused |
-| `events` | | `events: [{type, slot, t_ms, data}]` | tested: `switched`, `item_picked_up`, `item_dropped`. `reward_state` (gourd) is hooked but not seen yet |
+| `events` | | `events: [{type, slot, t_ms, data}]` | tested: `switched`, `item_picked_up`, `item_dropped`, `reward_state` (gourd `Locked` to `Loose` when taken) |
 | `controls` | | keyboard and mouse bindings per game action, from Rewired | tested |
 | `menu` | `action`: `status`, `title_host`, `new_game`, `load_save {name}`, `host_confirm {name}`, `player_count {n}` | `open_menus`, `hosting`, `local_player_ready` | tested. `server/host_walk.py` drives it |
 | `list_props` | `slot`?, `radius`?, `limit`? | props near a body, nearest first | tested. For writing puzzle files |
+| `find_objects` | `name`? or `component`? (substring), `near`?, `radius`?, `limit`?, `include_inactive`?, `components`? | scene objects, nearest first: `name`, `path`, `position`, `yaw_deg`, components, `gourd_state` | tested. For writing puzzle files: finds switches, telescopes and gourds anywhere |
+| `peck_states` | `near`, `radius`?, `include_inactive`? | `states: [{path, label, state}]` (`TrackedPeckState`), `held_switches: [{path, slot}]` | tested. Puzzle state: buttons, doors, boxes |
+| `release_switches` | `slots`? | `released: [{path, slot}]` | tested. Reset calls it. See "Held world switches" below |
 | `debug_practice`, `debug_body {slot}` | | practice slot table; every position the game keeps for a body | tested. For debugging |
 | `overview_shot` | `position`, `look_at` | `png_base64` (null without a position) | not supported, see "Screenshots" |
 | `look` | `dyaw_deg`, `dpitch_deg` | | TODO(dump). The server uses `look_mode: mouse` |
@@ -67,7 +70,10 @@ The Python side of this protocol is `server/bridge_client.py`. The tests in `tes
 ## What we learned in the game
 
 - **Controls** (from `controls`): WASD move, Shift run, Space jump, Ctrl crouch (hold), Z sit (toggle), Q and E wave (hold), Enter text chat, V mute. Left mouse is "use" (pick up, press), right mouse is "drop". There are no per-hand buttons: a body carries one prop in both hands.
-- **Check 1 (hot-swap), for carried props: passes.** A body keeps its prop while other bodies act, because carrying is game state, not a held button. A held "use" button (left arm pointing) also comes back after a switch, because the server presses it again. Not tested yet: holding down a world switch while another body acts.
+- **Check 1 (hot-swap), for carried props: passes.** A body keeps its prop while other bodies act, because carrying is game state, not a held button. A held "use" button (left arm pointing) also comes back after a switch, because the server presses it again. A world switch that a body holds down also stays held (see below).
+- **Held world switches** (tested with the cave telescope button, a `BasicPushButton`): a body presses and holds "use" on the button, the server releases the OS button while paused and switches to another body, and the button stays held by the first body (`PeckSwitch.playerHoldingThis`, button and box state 1) while the second body walks and takes the gourd. So Backend A works for hold-and-act puzzles. But the switch then stays held for good: a later OS release, a switch back with the button up, and `PlayerNetworking.ServerForceLetGoSwitch` (and the server side of `CmdReleaseHeldSwitch`) all leave it held. `release_switches` pecks the switch's `upSwitch` and clears `playerHoldingThis`, and `reset` calls it.
+- **Gourds after a run:** taking a gourd sets it `Loose`. The game saves that, and on the next load it moves the gourd to a "valet" home (the cave telescope gourd appears on the viewing platform, next to the button). So `place_prop` by position can pick the wrong gourd (it once took the TellerWindow gourd from its vice). Puzzle files put their gourd back with `home: true`, which pins it into its start home as in a new game.
+- **Taking a gourd from a glass box:** only the lid opens. Aim through the open top; from the side, the crosshair stays hollow and "use" does nothing. The crosshair fills when it is on something usable.
 - **Pause:** `timeScale = 0` stops movement. Rendering, switching, spawning, and screenshots all work while paused.
 - **Mouse look:** 25 counts per degree at the default sensitivity, no Y inversion, positive pitch looks down. The camera has a vertical FOV of 90 degrees, so 121.3 degrees horizontal at 1366 x 768.
 - **Teleports:** teleport a body while it is the local (active) body, then let the game run for about 1.5 s. Otherwise the next switch puts the body back where the network last saw it (0.3 s is not enough). `mover.ResetPosition()` in the practice mod's switch also restores a position cache that only updates in `FixedUpdate`. `BridgeGame.reset` does this per body.
@@ -82,7 +88,10 @@ The Python side of this protocol is `server/bridge_client.py`. The tests in `tes
 | What | Where |
 | --- | --- |
 | Held prop | `PlayerCharacter.hands` (`PlayerHands`): `heldProp` (`Prop`), `heldCharacter`, `PickUp(Prop, bool)`, `Drop(PlayerHeldInformation)` |
-| Reward | `RewardGourd : NetworkBehaviour` on a `Prop`; `gourdState`, `OnChangeGourdState` |
+| Reward | `RewardGourd : NetworkBehaviour` on a `Prop`; `gourdState` (`GourdFlag.GourdState`: Locked, Loose, Stashed, Hidden), `OnChangeGourdState`, `ServerSetGourdState` |
+| Prop homes | `Prop.startHome`, `Prop.currentHome`, `Prop.ServerSetPinned(PropHome)` |
+| World switches | `PeckSwitch`: `playerHoldingThis`, `upSwitch`, `Peck(PeckContext)`. `TrackedPeckState.currentPeckContext.state`. `PlayerCharacter.decisions` (`PlayerDecisions`): `heldDownSwitch` (local body only) |
+| Cave telescope | `FixedTelescopeToGourd`: `Positioner-Platform/ViewingPlatform_DistantGourd/.../BasicPushButton` (button), `Positioner-Box/BoxPositioner/GourdBox/OpenableBox` (`boxLogic`, `BoxGourdHome`), `Positioner-Platform/GourdValet` |
 | Pose | `croucher.localTrueCrouchness`, `sitter.isSittingLocal`, `jumper.Jumpness`, `gestures.left/rightArmWavingState`, `gestures.left/rightArmPointing` |
 | Head | `PlayerHead.headState` (Vector2), `runningTotalLookSpin`, `SetHeadStateLocal()`. Lead for an exact `look` |
 | Mover | `PlayerMover.cachedKernalPos`, `ResetPosition()` |
@@ -95,7 +104,7 @@ To regenerate the signatures, load the interop assemblies with reflection (a 40-
 
 ## Next
 
-1. `load_snapshot`: reset puzzle state (switches, doors, gourds), not only props and bodies.
+1. `load_snapshot`: reset puzzle state (switches, doors, gourds), not only props and bodies. `release_switches` and `place_prop home` cover the cave telescope.
 2. `look` through `PlayerHead`, so turns do not depend on mouse sensitivity.
-3. A real two-player puzzle: find a switch that must stay held (`PeckSwitch`, `PlayerDecisions.heldDownSwitch`) and test check 1 for it.
-4. Backend B (per-body Rewired input), if a held world switch drops on a switch.
+3. More real puzzles. `find_objects` with `component: RewardGourd` lists every gourd and its puzzle.
+4. Backend B (per-body Rewired input), for puzzles that need two bodies to act at the same moment (the green structure switches).

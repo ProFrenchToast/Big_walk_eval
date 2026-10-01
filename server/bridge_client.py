@@ -140,10 +140,14 @@ class BridgeClient:
     async def teleport(self, slot: int, position: Vec3, yaw_deg: float) -> None:
         await self.call("teleport", slot=slot, position=list(position), yaw_deg=yaw_deg)
 
-    async def place_prop(self, item_type: str, position: Vec3, near: Vec3 | None = None) -> str:
+    async def place_prop(
+        self, item_type: str, position: Vec3, near: Vec3 | None = None, home: bool = False
+    ) -> str:
         args: dict[str, Any] = {"item_type": item_type, "position": list(position)}
         if near is not None:
             args["near"] = list(near)
+        if home:
+            args["home"] = True
         return str((await self.call("place_prop", **args)).get("item_id", ""))
 
     async def screenshot(self, width: int, height: int) -> bytes:
@@ -153,6 +157,11 @@ class BridgeClient:
         if (result.get("width"), result.get("height")) in ((width, height), (None, None)):
             return png
         return scale_png(png, width, height)
+
+    async def release_switches(self, slots: list[int] | None = None) -> list[dict[str, Any]]:
+        """Make bodies (default: all) let go of held world switches. Returns the released ones."""
+        args: dict[str, Any] = {} if slots is None else {"slots": slots}
+        return list((await self.call("release_switches", **args)).get("released", []))
 
     async def load_snapshot(self, name: str) -> None:
         await self.call("load_snapshot", name=name)

@@ -1,6 +1,6 @@
 # Big Walk Cooperation Eval: Harness Implementation Plan
 
-Status: 2026-09-30. M0 to M7 are built. The bridge mod runs in the real game (1.5.1 2608271531), and a scripted three-body smoke test scores C through the full harness on it (M8, scripted part). Section 15 lists what changed from this plan and why; section 15.4 has the real-game findings.
+Status: 2026-10-01. M0 to M7 are built. The bridge mod runs in the real game (1.5.1 2608271531). A scripted three-body smoke test and a scripted solution of the first real puzzle (the cave telescope) score C through the full harness on it (M8, scripted part). Section 15 lists what changed from this plan and why; sections 15.4 and 15.5 have the real-game findings.
 
 This document is a handoff. It gives the background, the decisions, the architecture, the interfaces, and an ordered build plan. A developer with no access to the game can build and test most of the Python code against a fake game. The parts that need the real game are marked **[NEEDS GAME]**.
 
@@ -422,10 +422,10 @@ After M8: more puzzles, more agents, and ablations (see section 13).
 
 ## 12. What Patrick must do or confirm (needs the game)
 
-- [x] Feasibility check 1, for carried props: an inactive body keeps its prop (tested 2026-09-30). Still open: a world switch that a body holds down.
+- [x] Feasibility check 1, for carried props: an inactive body keeps its prop (tested 2026-09-30). For a world switch that a body holds down: it stays held (tested 2026-10-01, cave telescope button).
 - [ ] Checks 2 to 9 from the planning doc: idle bodies stay awake, pause and step, per-agent view after a switch, input injection, hands-state readout, placement, reset, target machine.
 - [x] Which machine runs the game: Patrick's Windows 11 PC, game launched through Steam.
-- [ ] The first puzzle.
+- [x] The first puzzle: the cave telescope (`puzzles/cave_telescope.yaml`, 2026-10-01). Patrick asked for a puzzle with a fixed solution.
 - [x] The Big Walk controls, read from Rewired with the bridge `controls` command (see `bridge/README.md`).
 - [ ] Run the Cpp2IL dump locally and give class names for the hands component, the gourd, puzzle completion, and save and load. Do not commit the dump.
 - [ ] Pin the game version and turn off Steam auto-updates. Record the game build number in `CLAUDE.md`.
@@ -477,13 +477,11 @@ After M8: more puzzles, more agents, and ablations (see section 13).
 | M5 | Done except real input. Tests use a TCP fake bridge. `SendInputBackend` is **[NEEDS GAME]**. |
 | M6 | Done and tested in the game: state, held items, pickup and drop events, switch, spawn, teleport, prop placement, screenshots, menus, controls. `TODO(dump)`: look, snapshots, chat, Backend B input. See `bridge/README.md`. |
 | M7 | Done on FakeGame and on the real game. `scripts/solutions/footy_walkabout.yaml` is a three-body smoke test that uses every action. |
-| M8 | Scripted part done (`footy_walkabout` scores C). Next: a real two-player puzzle, then agents. |
+| M8 | Scripted part done: `footy_walkabout` and the real two-player puzzle `cave_telescope` score C. Next: agents on `cave_telescope`. |
 
 ### 15.3 Gaps that block a real scored run
 
-- `load_snapshot` is not written. `reset` places bodies and props (`props:` in the puzzle file), but switches, doors, and gourds keep their state. Until it is written, leave `snapshot` empty and reset those by hand, or pick a puzzle whose state lives in props.
-- No real two-player puzzle file yet. `footy_walkabout` is a smoke test with the football as its "reward".
-- The gourd itself is untested: `RewardGourd` is found and hooked, but no gourd has been held yet.
+- `load_snapshot` is not written. `reset` places bodies and props (`props:` in the puzzle file), releases held world switches, and can pin a gourd back into its home (`home: true`). Other puzzle state (doors, counters, panels) keeps its value. Until `load_snapshot` is written, pick puzzles whose state these cover, as the cave telescope does.
 
 ### 15.4 First real-game session (2026-09-30)
 
@@ -508,3 +506,19 @@ Changes this needed:
 7. **The game starts through Steam**, not `Big Walk.exe` (`bridge/deploy.ps1`). A direct launch is restarted by Steam, which kills the first bridge.
 8. **The bridge repairs the practice mod's slot table** after the menus empty it (practice 0.6.0 bug).
 9. **Measured:** `counts_per_degree` 25, vertical FOV 90 degrees (121.3 horizontal), walk about 1.5 m/s.
+
+### 15.5 First real puzzle: the cave telescope (2026-10-01)
+
+Puzzle: `puzzles/cave_telescope.yaml`. Scripted solution: `scripts/solutions/cave_telescope.yaml`. It scored C five times in a row, once right after a `footy_walkabout` run (two bodies, 5 turns, about 3.3 s of game time).
+
+How it works in the game: holding down the push button beside the fixed telescope on the viewing platform opens a glass box in the rocks 150 m away, and a red light marks the box. The box closes when the button is released. Ash holds the button. Birch walks 3 m to the box and takes the gourd from above. Ash lets go only after Birch says "I have the gourd".
+
+Findings and changes:
+
+1. **Held world switches survive hot-swap** (check 1 for world switches). See `bridge/README.md`. Backend A is enough for hold-and-act puzzles. Puzzles where two bodies must act at the same moment (green structure switches) still need Backend B.
+2. **A held switch never lets go by itself.** `BridgeGame.reset` calls the new bridge command `release_switches`.
+3. **A taken gourd moves on the next load** (to a "valet" home). `PropPlacement.home` pins a prop back into its start home and sets a gourd back to Locked.
+4. **`PuzzleConfig.chat_range_m`.** The two players are 150 m apart, beyond the 20 m default. A puzzle can set its own range. The task's `chat_range_m`, if given, still wins.
+5. **New bridge commands for authoring:** `find_objects` (scene objects by name or component, for example every `RewardGourd`) and `peck_states` (button, door, and box states near a point). `get_state` reports `pose.held_switch`.
+6. **Scripted walks must start on level ground.** A body that spawns on a ledge and drops off it while walking ends up 0.3 to 0.5 m short, and the pickup fails. From the slope below the ledge, two runs ended within 1 cm of each other.
+

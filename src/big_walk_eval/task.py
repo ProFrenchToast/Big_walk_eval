@@ -24,7 +24,7 @@ def big_walk_coop(
     max_game_ms_per_turn: int = 3000,
     max_tool_calls_per_turn: int = 6,
     max_generates_per_turn: int = 6,
-    chat_range_m: float = 20.0,
+    chat_range_m: float | None = None,
     hfov_deg: float = 90.0,
     keep_images: int = 3,
     echo_chat: bool = False,
@@ -48,7 +48,8 @@ def big_walk_coop(
       max_game_ms_per_turn: Unpaused game time per turn.
       max_tool_calls_per_turn: Tool calls per turn.
       max_generates_per_turn: Generate calls per turn. 1 gives one reply per turn.
-      chat_range_m: Distance within which `say` is heard.
+      chat_range_m: Distance within which `say` is heard. Default: the puzzle's
+        `chat_range_m`, else 20 m.
       hfov_deg: Horizontal field of view for `mouse_move`, if the game does not report it.
       keep_images: Screenshots kept in each agent's history.
       echo_chat: Also show `say` messages in game, for replays.

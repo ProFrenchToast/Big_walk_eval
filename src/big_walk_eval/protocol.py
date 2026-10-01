@@ -148,11 +148,16 @@ class BodySpawn(_Wire):
 
 class PropPlacement(_Wire):
     """Put a prop at a position during reset. The prop is the nearest one of
-    `item_type` to `near` (default: `position`). Stands in for a save snapshot."""
+    `item_type` to `near` (default: `position`). Stands in for a save snapshot.
+
+    With `home`, `position` is the prop's start home (a puzzle's gourd holder):
+    the game pins the prop whose start home is nearest to it back into that home,
+    as in a new game. Use it for a reward that the game moves after it is taken."""
 
     item_type: str
     position: Vec3
     near: Vec3 | None = None
+    home: bool = False
 
 
 class OverviewCamera(_Wire):
@@ -177,6 +182,8 @@ class PuzzleConfig(_Wire):
     notes: str = ""
     location_hint: str = ""
     overview: OverviewCamera | None = None
+    # Chat range for puzzles whose players work far apart. The task's chat_range_m wins.
+    chat_range_m: float | None = None
 
     def reset_request(self, n_agents: int) -> ResetRequest:
         if n_agents > len(self.spawns):

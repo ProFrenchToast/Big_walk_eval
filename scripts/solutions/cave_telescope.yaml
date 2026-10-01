@@ -1,0 +1,28 @@
+# Fixed solution of the cave telescope puzzle. Turn order: Ash, Birch.
+# Pixel targets are for the views after reset (1366x768, hfov 121.3 deg).
+#   Ash holds the button down across turns and lets go only after Birch has the gourd.
+#   Birch walks to the open box and takes the gourd from above (the glass sides block a pickup).
+puzzle: cave_telescope
+agents:
+  Ash:
+    - calls:
+        - computer: {action: mouse_move, coordinate: [683, 529]}   # the button, 20.7 deg down
+        - computer: {action: left_mouse_down}
+        - computer: {action: wait, duration: 0.5}
+        - say: {message: "Ash here. I am holding the button down by the telescope. Is the box open?"}
+    - wait_for: "I have the gourd"
+      calls:
+        - computer: {action: left_mouse_up}
+        - say: {message: "Great, I let go of the button. I vote to end."}
+        - end_episode: {}
+  Birch:
+    - wait_for: "holding the button"
+      calls:
+        - computer: {action: mouse_move, coordinate: [680, 539]}   # the box, 22 deg down
+        - computer: {action: hold_key, text: w, duration: 1.2}
+    - calls:
+        - computer: {action: hold_key, text: w, duration: 0.5}      # to the edge of the box
+        - computer: {action: left_click, coordinate: [646, 683]}   # the gourd, through the open top
+        - computer: {action: wait, duration: 0.5}
+        - say: {message: "The box is open and I have the gourd! You can let go, Ash."}
+        - end_episode: {}
