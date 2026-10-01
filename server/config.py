@@ -34,6 +34,8 @@ class ServerConfig(BaseModel):
     teleport_settle_s: float = 1.5
     # The mouse button of the game's "drop" action. Reset uses it to empty the hands.
     drop_button: Literal["left", "right", "middle"] = "right"
+    # The key of the game's "sit" toggle. Reset uses it to stand a sitting body up.
+    sit_key: str = "z"
     # On reset, get from the title screen into a hosted walk if needed (server/host_walk.py).
     auto_host: bool = True
     save_name: str = "evalwalk"

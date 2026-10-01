@@ -30,6 +30,10 @@ class InputBackend(Protocol):
 
     async def wheel(self, clicks: int, horizontal: bool = False) -> None: ...
 
+    async def type_char(self, char: str) -> None:
+        """Type one character as text, without pressing its key (for the text chat)."""
+        ...
+
     async def release_all(self) -> None:
         """Release every key and button that this backend holds down."""
         ...
@@ -80,6 +84,9 @@ class RecordingInputBackend:
 
     async def wheel(self, clicks: int, horizontal: bool = False) -> None:
         self._log("wheel", clicks, horizontal)
+
+    async def type_char(self, char: str) -> None:
+        self._log("type_char", char)
 
     async def release_all(self) -> None:
         for key in sorted(self.keys):

@@ -21,6 +21,8 @@ CLICK_MS = 50
 BUTTON_EDGE_MS = 50
 LOOK_MS = 100
 SCROLL_MS = 50
+TYPE_CHAR_MS = 20
+TYPE_MAX_CHARS = 200
 
 Vec3 = tuple[float, float, float]
 Hand = Literal["left", "right"]
@@ -123,8 +125,15 @@ class ScrollAction(_Wire):
     amount: int = Field(default=1, ge=1, le=50)
 
 
+class TypeAction(_Wire):
+    """Type text as characters, not keys, for the in-game text chat (Enter opens it)."""
+
+    type: Literal["type"] = "type"
+    text: str = Field(min_length=1, max_length=TYPE_MAX_CHARS)
+
+
 Action = Annotated[
-    KeyAction | HoldKeyAction | LookAction | MouseAction | WaitAction | ScrollAction,
+    KeyAction | HoldKeyAction | LookAction | MouseAction | WaitAction | ScrollAction | TypeAction,
     Field(discriminator="type"),
 ]
 
@@ -184,6 +193,9 @@ class PuzzleConfig(_Wire):
     overview: OverviewCamera | None = None
     # Chat range for puzzles whose players work far apart. The task's chat_range_m wins.
     chat_range_m: float | None = None
+    # "gourd": a body holds the reward. "text_chat": every agent sent a message in the
+    # in-game text chat (a `text_chat` event from its body).
+    goal: Literal["gourd", "text_chat"] = "gourd"
 
     def reset_request(self, n_agents: int) -> ResetRequest:
         if n_agents > len(self.spawns):

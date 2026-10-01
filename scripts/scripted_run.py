@@ -106,7 +106,7 @@ def main() -> int:
         return 1
 
     sample = log.samples[0]
-    score = sample.scores["gourd_held"]
+    score = sample.scores["puzzle_solved"]
     record = sample.store_as(EpisodeLog)
     print(f"\nscore: {score.value}  ({score.explanation})")
     print(f"turns: {record.n_turns}, game time: {record.total_game_ms} ms")

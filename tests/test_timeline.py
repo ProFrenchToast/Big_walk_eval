@@ -6,10 +6,12 @@ from big_walk_eval.protocol import (
     KEY_GAP_MS,
     KEY_TAP_MS,
     LOOK_MS,
+    TYPE_CHAR_MS,
     HoldKeyAction,
     KeyAction,
     LookAction,
     MouseAction,
+    TypeAction,
     WaitAction,
 )
 from big_walk_eval.timeline import InputEvent, build_timeline
@@ -80,3 +82,17 @@ def test_click_on_held_button_releases_first():
         (CLICK_MS, "button_up", "right"),
     ]
     assert tl.held_buttons == frozenset()
+
+
+def test_type_is_one_char_event_per_character():
+    tl = build_timeline([TypeAction(text="hi r1")], 3000)
+    assert [(e.t_ms, e.op, e.char) for e in tl.events] == [
+        (i * TYPE_CHAR_MS, "char", c) for i, c in enumerate("hi r1")
+    ]
+    assert tl.end_ms == 5 * TYPE_CHAR_MS
+
+
+def test_type_that_does_not_fit_is_skipped():
+    tl = build_timeline([TypeAction(text="hello")], 4 * TYPE_CHAR_MS)
+    assert tl.events == []
+    assert tl.truncated

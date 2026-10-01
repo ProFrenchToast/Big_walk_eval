@@ -40,7 +40,11 @@ def puzzle_dataset(
             Sample(
                 id=p.id,
                 input=f"Solve the puzzle: {p.title}",
-                target="a player holds the gourd",
+                target=(
+                    "every player sends a message in the in-game chat"
+                    if p.goal == "text_chat"
+                    else "a player holds the gourd"
+                ),
                 metadata={
                     "puzzle": p.model_dump(mode="json"),
                     "n_agents": n_agents,

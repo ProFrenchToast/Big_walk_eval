@@ -31,6 +31,8 @@ internal static class Commands
         "peck_states" => PeckStates.Run(args),
         "release_switches" => ReleaseSwitches.Run(args),
         "debug_body" => BodyDebug.Run(args),
+        "debug_chat" => ChatDebug.Run(args),
+        "clear_chat" => ChatSync.Clear(),
         "capture_start" => BodyCapture.Start(args),
         "capture_stop" => BodyCapture.Stop(),
         "look" => Unfinished.Look(args),

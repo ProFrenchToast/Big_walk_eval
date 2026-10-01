@@ -33,6 +33,7 @@ internal sealed class SwitchSlot : IPending
 
         if (local.netId == target.netId)
         {
+            ChatSync.Tick();
             result = new JsonObject { ["active_slot"] = _slot };
             GameEvents.Push("switched", _slot, null);
             return true;

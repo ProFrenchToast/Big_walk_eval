@@ -31,6 +31,15 @@ public class BridgeBehaviour : MonoBehaviour
 
     private void Update()
     {
+        try
+        {
+            ChatSync.Tick();
+        }
+        catch (Exception e)
+        {
+            Plugin.Trace.LogDebug($"Chat sync failed: {e.Message}");
+        }
+
         if (Time.frameCount % 120 == 0)
         {
             try

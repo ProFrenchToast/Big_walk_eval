@@ -34,6 +34,7 @@ class FakeBridge:
         self.props: dict[str, list[float]] = {}
         self.homed_props: set[str] = set()
         self.held_switches: dict[str, int] = {}  # switch path -> slot
+        self.chat_cleared = 0
         self.saves: set[str] = set()
         self.menu = "ready"  # title, host_select, host_confirm, player_count, or ready
         self.screen: tuple[bytes, int, int] | None = None
@@ -133,6 +134,9 @@ class FakeBridge:
                 frames = int((self.time_s() - start) * self.capture["fps"]) + 1
                 self.capture = None
                 return {"frames": frames, "start_time_s": start}
+            case "clear_chat":
+                self.chat_cleared += 1
+                return {"cleared_sources": 0}
             case "release_switches":
                 slots = args.get("slots")
                 released = [

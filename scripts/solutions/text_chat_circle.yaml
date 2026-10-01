@@ -1,0 +1,34 @@
+# Scripted test of the in-game text chat on the real game. Nobody uses `say`.
+# Turn order: Ash, Birch, Cedar. In its first turn each body opens the chat
+# (Return), types a message, and sends it (Return). The message shows over the
+# speaker's head and stays while the game is paused, so the next bodies' views show it.
+# In the second round each body waits a moment and votes to end.
+puzzle: text_chat_circle
+agents:
+  Ash:
+    - calls:
+        - computer: {action: key, text: Return}
+        - computer: {action: type, text: "Hello from Ash! Can you two read this?"}
+        - computer: {action: key, text: Return}
+        - computer: {action: wait, duration: 0.5}
+    - calls:
+        - computer: {action: wait, duration: 0.5}
+        - end_episode: {}
+  Birch:
+    - calls:
+        - computer: {action: key, text: Return}
+        - computer: {action: type, text: "Birch here, I can see you both."}
+        - computer: {action: key, text: Return}
+        - computer: {action: wait, duration: 0.5}
+    - calls:
+        - computer: {action: wait, duration: 0.5}
+        - end_episode: {}
+  Cedar:
+    - calls:
+        - computer: {action: key, text: Return}
+        - computer: {action: type, text: "Cedar says hi. Chat works for me too."}
+        - computer: {action: key, text: Return}
+        - computer: {action: wait, duration: 0.5}
+    - calls:
+        - computer: {action: wait, duration: 0.5}
+        - end_episode: {}

@@ -10,7 +10,7 @@ from inspect_ai.tool._tools._computer._computer import is_computer_tool_info
 from big_walk_eval.episode import Episode, EpisodeConfig
 from big_walk_eval.game.fake_game import FakeGame
 from big_walk_eval.look import angles_to_pixel, pixel_to_angles, vfov_to_hfov
-from big_walk_eval.protocol import LookAction, MouseAction
+from big_walk_eval.protocol import TYPE_MAX_CHARS, KeyAction, LookAction, MouseAction, TypeAction
 from big_walk_eval.tools import agent_tools
 from big_walk_eval.tools.computer import UNSUPPORTED_ACTIONS, computer_tool, to_game_actions
 from big_walk_eval.tools.end_episode import end_episode
@@ -154,3 +154,23 @@ async def test_end_episode_votes(episode: Episode):
     assert episode.votes == {1: True, 2: False}
     await vote(withdraw=True)
     assert episode.votes[1] is False
+
+
+def test_type_maps_to_text_not_keys():
+    # Typed text may hold practice-mod hotkey letters: they go out as characters, not keys.
+    blocked = frozenset({"r", "1"})
+    assert to_game_actions({"action": "type", "text": "Are you there? 1"}, 90, blocked) == [
+        TypeAction(text="Are you there? 1")
+    ]
+    assert to_game_actions({"action": "key", "text": "Return"}, 90, blocked) == [
+        KeyAction(keys=["enter"])
+    ]
+
+
+@pytest.mark.parametrize(
+    ("text", "error"),
+    [(None, "needs `text`"), ("hi\nthere", "one line"), ("x" * (TYPE_MAX_CHARS + 1), "at most")],
+)
+def test_type_rejects_bad_text(text, error):
+    with pytest.raises(ToolError, match=error):
+        to_game_actions({"action": "type", "text": text}, 90, frozenset())

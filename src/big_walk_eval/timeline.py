@@ -17,16 +17,18 @@ from big_walk_eval.protocol import (
     KEY_TAP_MS,
     LOOK_MS,
     SCROLL_MS,
+    TYPE_CHAR_MS,
     Action,
     HoldKeyAction,
     KeyAction,
     LookAction,
     MouseAction,
     ScrollAction,
+    TypeAction,
     WaitAction,
 )
 
-InputOp = Literal["key_down", "key_up", "button_down", "button_up", "look", "wheel"]
+InputOp = Literal["key_down", "key_up", "button_down", "button_up", "look", "wheel", "char"]
 
 
 @dataclass(frozen=True)
@@ -40,6 +42,7 @@ class InputEvent:
     duration_ms: int = 0
     wheel: int = 0
     wheel_axis: Literal["vertical", "horizontal"] = "vertical"
+    char: str | None = None
 
 
 @dataclass
@@ -65,6 +68,8 @@ def action_ms(action: Action) -> int:
             return BUTTON_EDGE_MS
         case ScrollAction():
             return SCROLL_MS
+        case TypeAction(text=text):
+            return len(text) * TYPE_CHAR_MS
     raise TypeError(f"unknown action {action!r}")
 
 
@@ -148,4 +153,6 @@ def _events_for(action: Action, t: int, held: set[str]) -> list[InputEvent]:
             sign = 1 if direction in ("up", "right") else -1
             axis = "vertical" if direction in ("up", "down") else "horizontal"
             return [InputEvent(t, "wheel", wheel=sign * amount, wheel_axis=axis)]
+        case TypeAction(text=text):
+            return [InputEvent(t + i * TYPE_CHAR_MS, "char", char=c) for i, c in enumerate(text)]
     raise TypeError(f"unknown action {action!r}")

@@ -9,7 +9,8 @@ namespace BigWalk.EvalBridge;
 /// <summary>
 /// Event queue returned and cleared by the "events" command. Each event:
 /// {"type": str, "slot": int|null, "t_ms": int, "data": {...}}.
-/// Event names match FakeGame: item_picked_up, item_dropped, reward_state.
+/// Event names match FakeGame: item_picked_up, item_dropped, reward_state, text_chat.
+/// text_chat_sent is real-game only: the local body sent a chat message.
 /// </summary>
 internal static class GameEvents
 {
@@ -41,6 +42,12 @@ internal static class GameEvents
             nameof(DropPrefix), prefix: true);
         Patch(harmony, AccessTools.Method(typeof(RewardGourd), nameof(RewardGourd.OnChangeGourdState)),
             nameof(GourdStatePostfix));
+        // Tested: CompleteInput and TextChatSource.AddMessage run once per message, for the
+        // body that sent it. PlayerTexter.DisplayMessage never runs (probably inlined).
+        Patch(harmony, AccessTools.Method(typeof(PlayerTexter), nameof(PlayerTexter.CompleteInput)),
+            nameof(ChatSentPostfix));
+        Patch(harmony, AccessTools.Method(typeof(TextChatSource), nameof(TextChatSource.AddMessage)),
+            nameof(ChatShownPostfix));
     }
 
     private static void Patch(Harmony harmony, System.Reflection.MethodBase target, string hook, bool prefix = false)
@@ -115,6 +122,33 @@ internal static class GameEvents
         catch (Exception e)
         {
             Plugin.Trace.LogDebug($"Gourd event failed: {e.Message}");
+        }
+    }
+
+    private static void ChatSentPostfix(PlayerTexter __instance, string message, ref bool messageSent)
+    {
+        if (!messageSent) return;
+        try
+        {
+            Push("text_chat_sent", SlotOf(__instance.playerCharacter), new JsonObject { ["message"] = message });
+        }
+        catch (Exception e)
+        {
+            Plugin.Trace.LogDebug($"Chat sent event failed: {e.Message}");
+        }
+    }
+
+    /// <summary>The message shows in the game, so the other bodies can read it.</summary>
+    private static void ChatShownPostfix(TextChatSource __instance)
+    {
+        try
+        {
+            var m = __instance.mostRecentMessage;
+            Push("text_chat", SlotOf(m.sendingPlayer), new JsonObject { ["message"] = m.message });
+        }
+        catch (Exception e)
+        {
+            Plugin.Trace.LogDebug($"Chat event failed: {e.Message}");
         }
     }
 }

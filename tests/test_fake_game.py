@@ -11,8 +11,10 @@ from big_walk_eval.protocol import (
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
     HoldKeyAction,
+    KeyAction,
     LookAction,
     MouseAction,
+    TypeAction,
 )
 from tests.conftest import ASH_TO_PLATE_YAW, reset_request
 
@@ -146,3 +148,38 @@ def test_segments_cross():
     assert segments_cross((0, 0), (0, 2), (-1, 1), (1, 1))
     assert not segments_cross((0, 0), (0, 0.5), (-1, 1), (1, 1))
     assert segments_cross((0, 0), (0, 1), (-1, 1), (1, 1))
+
+
+ENTER = KeyAction(keys=["enter"])
+
+
+async def test_text_chat_sends_on_second_enter(game: FakeGame):
+    result = await game.act(1, [ENTER, TypeAction(text="hello"), KeyAction(keys=["space"])], 3000)
+    assert result.events == []
+    assert (await game.state()).body(1).pose["text_chatting"] is True
+
+    result = await game.act(1, [KeyAction(keys=["w"]), TypeAction(text="orld"), ENTER], 3000)
+    assert [(e.type, e.slot, e.data) for e in result.events] == [
+        ("text_chat", 1, {"message": "hello world"})
+    ]
+    assert (await game.state()).body(1).pose["text_chatting"] is False
+
+
+async def test_text_chat_esc_and_empty_send_nothing(game: FakeGame):
+    result = await game.act(
+        1, [ENTER, TypeAction(text="never mind"), KeyAction(keys=["esc"])], 3000
+    )
+    assert result.events == []
+    result = await game.act(1, [ENTER, ENTER], 3000)
+    assert result.events == []
+
+
+async def test_typing_without_open_chat_does_nothing(game: FakeGame):
+    result = await game.act(1, [TypeAction(text="hello")], 3000)
+    assert result.events == []
+    assert (await game.state()).body(1).pose["text_chatting"] is False
+
+
+async def test_body_does_not_walk_while_chatting(game: FakeGame):
+    await game.act(1, [ENTER, HoldKeyAction(keys=["w"], duration_ms=1000)], 3000)
+    assert (await game.state()).body(1).position == (-5.0, 0.0, 0.0)

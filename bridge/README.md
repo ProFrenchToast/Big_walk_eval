@@ -2,7 +2,7 @@
 
 A BepInEx 6 IL2CPP plugin. It lets the eval game server (`server/`) control the game over TCP. It needs [big-walk-practice](https://github.com/iameli/big-walk-practice) 0.6.0 for extra bodies and slot switching.
 
-Status (2026-09-30): compiled and tested in game 1.5.1 2608271531 (Unity 6000.3.17f1) with BepInEx 6.0.0-be.788. A scripted three-body run (`scripts/solutions/footy_walkabout.yaml`) scores C through the full harness, and video capture of every body's view works (2026-10-01). The first real puzzle, the cave telescope (`puzzles/cave_telescope.yaml`), scores C with a scripted two-body solution (2026-10-01). Still missing: save snapshots, the exact `look` command, in-game chat, Backend B input.
+Status (2026-09-30): compiled and tested in game 1.5.1 2608271531 (Unity 6000.3.17f1) with BepInEx 6.0.0-be.788. A scripted three-body run (`scripts/solutions/footy_walkabout.yaml`) scores C through the full harness, and video capture of every body's view works (2026-10-01). The first real puzzle, the cave telescope (`puzzles/cave_telescope.yaml`), scores C with a scripted two-body solution (2026-10-01). Still missing: save snapshots, the exact `look` command, Backend B input. In-game text chat through the keyboard works, over each speaker's head and range-limited by the game (2026-10-01): `scripts/solutions/text_chat_circle.yaml` scores C.
 
 ## One-time setup
 
@@ -49,7 +49,7 @@ Slots are 1-based. Slot 1 is key `1` and practice index 0 (the original player).
 | `teleport` | `slot`, `position`, `yaw_deg` | | tested. See "Teleports" below |
 | `place_prop` | `item_type`, `position`, `near`?, `home`? | `item_id`, `item_type`, `is_reward`, `moved_m`, `home`? | tested. Moves the nearest prop of that type. With `home: true`, pins the prop whose start home is nearest to `position` back into that home, and sets a gourd back to Locked |
 | `screenshot` | | `png_base64`, `width`, `height` | tested, about 0.12 s while paused |
-| `events` | | `events: [{type, slot, t_ms, data}]` | tested: `switched`, `item_picked_up`, `item_dropped`, `reward_state` (gourd `Locked` to `Loose` when taken) |
+| `events` | | `events: [{type, slot, t_ms, data}]` | tested: `switched`, `item_picked_up`, `item_dropped`, `reward_state` (gourd `Locked` to `Loose` when taken). Also tested: `text_chat` (`TextChatSource.AddMessage`, a message shows in the game) and `text_chat_sent` (`PlayerTexter.CompleteInput`, the local body sent one), once per message each |
 | `controls` | | keyboard and mouse bindings per game action, from Rewired | tested |
 | `menu` | `action`: `status`, `title_host`, `new_game`, `load_save {name}`, `host_confirm {name}`, `player_count {n}` | `open_menus`, `hosting`, `local_player_ready` | tested. `server/host_walk.py` drives it |
 | `list_props` | `slot`?, `radius`?, `limit`? | props near a body, nearest first | tested. For writing puzzle files |
@@ -57,10 +57,12 @@ Slots are 1-based. Slot 1 is key `1` and practice index 0 (the original player).
 | `peck_states` | `near`, `radius`?, `include_inactive`? | `states: [{path, label, state}]` (`TrackedPeckState`), `held_switches: [{path, slot}]` | tested. Puzzle state: buttons, doors, boxes |
 | `release_switches` | `slots`? | `released: [{path, slot}]` | tested. Reset calls it. See "Held world switches" below |
 | `debug_practice`, `debug_body {slot}` | | practice slot table; every position the game keeps for a body | tested. For debugging |
+| `debug_chat` | `sync`? | every `TextChatSource` (head and screen text, `isLocalPlayer`, visible, audibility, text), each body's texter, the input field | tested. For debugging the chat |
+| `clear_chat` | | `cleared_sources` | tested. Removes every chat message from heads and the HUD. Reset calls it |
 | `overview_shot` | `position`, `look_at` | `png_base64` (null without a position) | not supported, see "Screenshots" |
 | `look` | `dyaw_deg`, `dpitch_deg` | | TODO(dump). The server uses `look_mode: mouse` |
 | `load_snapshot` / `save_snapshot` | `name` | | TODO(dump). `place_prop` covers simple cases |
-| `chat` | `slot`, `text` | | TODO(dump). Optional. `PlayerTexter` is the lead |
+| `chat` | `slot`, `text` | | TODO(dump). Optional, for `echo_chat`. Agents chat in game through the keyboard instead: Enter, the `type` action, Enter |
 | `capture_start` | `directory`, `fps`, `width`, `height`, `slots` | | tested. One camera per body, frames to ffmpeg. See `Commands/BodyCapture.cs` and "Screenshots" below |
 | `capture_stop` | | `frames`, `start_time_s` | tested |
 | `input` | `slot`, `op`, ... | | TODO(dump). Backend B only |
@@ -73,6 +75,9 @@ The Python side of this protocol is `server/bridge_client.py`. The tests in `tes
 - **Check 1 (hot-swap), for carried props: passes.** A body keeps its prop while other bodies act, because carrying is game state, not a held button. A held "use" button (left arm pointing) also comes back after a switch, because the server presses it again. A world switch that a body holds down also stays held (see below).
 - **Held world switches** (tested with the cave telescope button, a `BasicPushButton`): a body presses and holds "use" on the button, the server releases the OS button while paused and switches to another body, and the button stays held by the first body (`PeckSwitch.playerHoldingThis`, button and box state 1) while the second body walks and takes the gourd. So Backend A works for hold-and-act puzzles. But the switch then stays held for good: a later OS release, a switch back with the button up, and `PlayerNetworking.ServerForceLetGoSwitch` (and the server side of `CmdReleaseHeldSwitch`) all leave it held. `release_switches` pecks the switch's `upSwitch` and clears `playerHoldingThis`, and `reset` calls it.
 - **Gourds after a run:** taking a gourd sets it `Loose`. The game saves that, and on the next load it moves the gourd to a "valet" home (the cave telescope gourd appears on the viewing platform, next to the button). So `place_prop` by position can pick the wrong gourd (it once took the TellerWindow gourd from its vice). Puzzle files put their gourd back with `home: true`, which pins it into its start home as in a new game.
+- **Text chat** (tested with `text_chat_circle`): Enter opens the chat, `SendInput` Unicode characters (`KEYEVENTF_UNICODE`) go into the field, and Enter sends. Typed `r` and digits do not trigger the practice-mod hotkeys. Each body sends as itself after a hot-swap. A message shows in two places: over the speaker's head (its `TextChatSource`, world-space text that other players see), and as an echo on the speaker's own HUD (`TextChatInput.output`, one shared field). **Under hot-swap both were wrong at first:** the game sets `TextChatSource.isLocalPlayer` when a body spawns, and the practice mod spawns every body as the local player, so every head text counted as "mine" and stayed hidden; and the one HUD echo kept the last body's message, so every body saw it on its own HUD. `ChatSync` (`Commands/ChatSync.cs`) fixes both whenever the local body changes: only the active body's head text is local, and the HUD echo shows the active body's own last message. Since then other bodies see a message only over the speaker's head, and only in range: the game fades head text by distance and occlusion (`TextChatSource.audibility`, from the audio occlusion system). Measured: readable at 8 m, hidden at 154 m. Only the newest message shows over a head, and it stays while the game is paused. `TextChatHud` shows a blip at the screen edge for a speaker (not yet checked what it tracks). Reset calls `clear_chat`, so no message carries over to the next episode. `PlayerTexter.DisplayMessage` never runs (probably inlined by IL2CPP); `ReceieveMessage`, `CompleteDisplayMessage` and `TextChatSource.AddMessage` each run once per message.
+- **Sitting carries over:** a body that sits (the `z` toggle, or landing on a seat) keeps sitting through a teleport and cannot walk. Reset stands up every sitting body (`sit_key`). Found when a body stayed seated after an experiment and `cave_telescope` failed.
+- **footy_walkabout can flake:** after Cedar drops the football, the ball sometimes comes to rest below the crosshair, and the click to take it again misses (1 run in 3 on 2026-10-01). Run it again before you look for a bug.
 - **Taking a gourd from a glass box:** only the lid opens. Aim through the open top; from the side, the crosshair stays hollow and "use" does nothing. The crosshair fills when it is on something usable.
 - **Pause:** `timeScale = 0` stops movement. Rendering, switching, spawning, and screenshots all work while paused.
 - **Mouse look:** 25 counts per degree at the default sensitivity, no Y inversion, positive pitch looks down. The camera has a vertical FOV of 90 degrees, so 121.3 degrees horizontal at 1366 x 768.
@@ -96,7 +101,7 @@ The Python side of this protocol is `server/bridge_client.py`. The tests in `tes
 | Head | `PlayerHead.headState` (Vector2), `runningTotalLookSpin`, `SetHeadStateLocal()`. Lead for an exact `look` |
 | Mover | `PlayerMover.cachedKernalPos`, `ResetPosition()` |
 | Save | `SaveManager`, `SaveData` (`slotName`, `entries`, `inventory`), `HostMenuSelect.ActionSelectSaveData` |
-| Text chat | `PlayerCharacter.texter` (`PlayerTexter`): `TrySendTextChat`, `CompleteInput`, `DisplayMessage` |
+| Text chat | `PlayerCharacter.texter` (`PlayerTexter`): `TrySendTextChat`, `CompleteInput(string, ref bool sent)`, `DisplayMessage`, `ReceieveMessage` (sic), `isPlayerTextChatting`, `source` (head text) and `globalTextChatOutput`. `TextChatInput.instance` (one `TMP_InputField` for the local player, `inputIsOpen`, `output`: the HUD echo). `TextChatSource` shows the messages at a body's head (`isLocalPlayer`, `audibility`, `isVisible`, static `IsPlayerTextLocallyReadable(pc)`). `TextChatHud` shows blips at the screen edge for speakers out of view |
 | Menus | `TitleMenu`, `HostMenuSelect`, `HostMenuConfirm`, `PlayerCountMenu` |
 | Rewired actions | `RewiredConsts.Action`: `moveX`, `moveY`, `use`, `drop`, `jump`, `sprint`, `crouch`, `sit`, `waveLeft`, `waveRight`, `textChat`, `mute` |
 

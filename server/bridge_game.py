@@ -92,11 +92,14 @@ class BridgeGame:
         # A world switch that an inactive body holds down stays held, and the OS
         # button release above does not reach it (tested: the cave telescope button).
         await self.bridge.release_switches()
+        # Messages from the last episode would still show over the heads.
+        await self.bridge.clear_chat()
         self.names = {b.slot: b.name for b in request.bodies}
         self.held = {b.slot: set() for b in request.bodies}
         self._reward_type = request.reward_item_type
         self.active = None
         await self._drop_held()
+        await self._stand_up()
         for placement in request.props:
             await self.bridge.place_prop(
                 placement.item_type, placement.position, placement.near, placement.home
@@ -278,6 +281,24 @@ class BridgeGame:
             if self.clock() > deadline:
                 raise TimeoutError(f"the game did not switch to slot {slot}")
             await self.sleep(0.05)
+
+    async def _stand_up(self) -> None:
+        """Stand up every harness body that sits. A sitting body cannot walk, and a teleport
+        keeps it sitting, so it would sit through every later episode."""
+        raw = await self.bridge.get_state()
+        for body in raw.bodies:
+            if body.slot not in self.names or not body.pose.get("sitting"):
+                continue
+            await self._switch(body.slot)
+            await self.input.focus()
+            await self.bridge.resume()
+            try:
+                await self.input.key_down(self.config.sit_key)
+                await self.sleep(0.05)
+                await self.input.key_up(self.config.sit_key)
+                await self.sleep(0.5)
+            finally:
+                await self.bridge.pause()
 
     async def _drop_held(self) -> None:
         """Make every harness body drop what it holds, with the drop button, while the game runs."""

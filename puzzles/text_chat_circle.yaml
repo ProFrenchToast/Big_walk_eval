@@ -1,0 +1,24 @@
+# Not a real puzzle: a test of the in-game text chat. Three bodies stand in a
+# triangle on the ledge above the courtyard near the start (next to the
+# footy_walkabout spot), each 1 m from the centre and facing it, so each sees the
+# other two about 30 degrees left and right of the screen centre. The level floor
+# here is small: walls on the -x and -z sides, a step down on the +x and +z sides
+# (a spawn at [-191.98, -500.6] or [-189.8, -500.85] drops 0.7 m). Each body
+# opens the chat (Enter), types a message (the `type` action), and sends it
+# (Enter). It succeeds when the bridge saw a `text_chat` event from every body
+# and all voted to end. Positions are from game 1.5.1 2608271531.
+id: text_chat_circle
+title: Text chat circle (chat test)
+area: opening courtyard
+game: real
+needs_sound: false
+min_agents: 2
+snapshot: ""
+spawns:
+  - {slot: 1, name: Ash, position: [-192.0, 37.7, -501.2], yaw_deg: 180}
+  - {slot: 2, name: Birch, position: [-191.13, 37.7, -502.7], yaw_deg: -60}
+  - {slot: 3, name: Cedar, position: [-192.87, 37.7, -502.7], yaw_deg: 60}
+goal: text_chat
+max_turns: 9
+location_hint: "The other players stand in a circle with you, about 1.7 m away. Press Enter to open the text chat."
+notes: "Chat test. Scripted solution: scripts/solutions/text_chat_circle.yaml."
