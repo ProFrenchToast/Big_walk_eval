@@ -42,10 +42,11 @@ internal static class GameEvents
             nameof(DropPrefix), prefix: true);
         Patch(harmony, AccessTools.Method(typeof(RewardGourd), nameof(RewardGourd.OnChangeGourdState)),
             nameof(GourdStatePostfix));
-        // NEEDS GAME: which of these run for each message, and how often, under hot-swap.
+        // Tested: CompleteInput and TextChatSource.AddMessage run once per message, for the
+        // body that sent it. PlayerTexter.DisplayMessage never runs (probably inlined).
         Patch(harmony, AccessTools.Method(typeof(PlayerTexter), nameof(PlayerTexter.CompleteInput)),
             nameof(ChatSentPostfix));
-        Patch(harmony, AccessTools.Method(typeof(PlayerTexter), nameof(PlayerTexter.DisplayMessage)),
+        Patch(harmony, AccessTools.Method(typeof(TextChatSource), nameof(TextChatSource.AddMessage)),
             nameof(ChatShownPostfix));
     }
 
@@ -137,12 +138,13 @@ internal static class GameEvents
         }
     }
 
-    /// <summary>The message shows at the speaker's head, so the other bodies can read it.</summary>
-    private static void ChatShownPostfix(PlayerTexter __instance, string message)
+    /// <summary>The message shows in the game, so the other bodies can read it.</summary>
+    private static void ChatShownPostfix(TextChatSource __instance)
     {
         try
         {
-            Push("text_chat", SlotOf(__instance.playerCharacter), new JsonObject { ["message"] = message });
+            var m = __instance.mostRecentMessage;
+            Push("text_chat", SlotOf(m.sendingPlayer), new JsonObject { ["message"] = m.message });
         }
         catch (Exception e)
         {

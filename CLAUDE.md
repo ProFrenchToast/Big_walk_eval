@@ -23,6 +23,6 @@ Read `docs/IMPLEMENTATION_PLAN.md` before you start work. It has the background,
 ## Real game (Windows machine only)
 
 - `powershell -NoProfile -ExecutionPolicy Bypass -File bridge\deploy.ps1` builds the bridge, installs it, and starts the game through Steam. Never start `Big Walk.exe` directly (see `bridge/README.md`).
-- `uv run --extra server python -m server.app --config server.yaml`, then `uv run python scripts/scripted_run.py scripts/solutions/footy_walkabout.yaml --backend http` must score C after changes to the bridge, the server, or reset. So must `scripts/solutions/cave_telescope.yaml` (the first real puzzle).
+- `uv run --extra server python -m server.app --config server.yaml`, then `uv run python scripts/scripted_run.py scripts/solutions/footy_walkabout.yaml --backend http` must score C after changes to the bridge, the server, or reset. So must `scripts/solutions/cave_telescope.yaml` (the first real puzzle) and `scripts/solutions/text_chat_circle.yaml` (in-game text chat). `footy_walkabout` can flake at the re-pickup (see `bridge/README.md`): run it again before you look for a bug.
 - The server sends real mouse and keyboard input to the game window. Nobody may use the PC during a run.
 - `bridge/README.md` lists what we learned in the game (teleports, screenshots, the practice mod bug) and the class names.
