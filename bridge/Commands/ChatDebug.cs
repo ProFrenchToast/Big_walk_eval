@@ -15,6 +15,29 @@ internal static class ChatDebug
     public static JsonNode Run(JsonObject args)
     {
         if (args["sync"]?.GetValue<bool>() ?? false) ChatSync.AfterSwitch();
+        var viewSlot = args["view_slot"]?.GetValue<int>() ?? 0;
+        if (viewSlot == 0) return Report(Camera.main != null ? Camera.main.transform.position : null);
+
+        var viewer = BodyCapture.Body(viewSlot) ?? throw new ArgumentException($"no body in slot {viewSlot}");
+        var look = BodyCapture.Look(viewer);
+        var undo = CaptureView.Apply(viewer, look.position, look.rotation);
+        try
+        {
+            return Report(look.position);
+        }
+        finally
+        {
+            CaptureView.Undo(undo);
+        }
+    }
+
+    /// <summary>
+    /// <paramref name="eye"/> is the camera to estimate readability from: the main
+    /// camera, or with view_slot that body's capture camera, with the scene set up as
+    /// for its capture.
+    /// </summary>
+    private static JsonNode Report(Vector3? eye)
+    {
         var bodies = new JsonArray();
         foreach (var pc in PlayerCharacter.allPlayerCharacters)
         {
@@ -42,7 +65,7 @@ internal static class ChatDebug
         {
             var s = obj.TryCast<TextChatSource>();
             if (s == null || !s.gameObject.scene.IsValid()) continue;
-            sources.Add(Describe(s));
+            sources.Add(Describe(s, eye));
         }
 
         var active = new JsonArray();
@@ -72,7 +95,7 @@ internal static class ChatDebug
         };
     }
 
-    private static JsonObject Describe(TextChatSource s)
+    private static JsonObject Describe(TextChatSource s, Vector3? eye)
     {
         var o = new JsonObject
         {
@@ -102,6 +125,13 @@ internal static class ChatDebug
             Try(o, "text_position", () => Json.Vec(text.transform.position));
             // TextMeshPro: world space (at a head). TextMeshProUGUI: screen space (on the HUD).
             Try(o, "text_type", () => text.GetIl2CppType().Name);
+            Try(o, "text_euler", () => Json.Vec(text.transform.eulerAngles));
+            Try(o, "text_scale", () => Math.Round(text.transform.lossyScale.x, 3));
+            if (eye is { } from && text.gameObject.activeInHierarchy)
+            {
+                Try(o, "eye_distance", () => Math.Round(Vector3.Distance(from, text.transform.position), 2));
+                Try(o, "estimated_readability", () => Math.Round(CaptureView.Readability(s, from, text.transform.position), 3));
+            }
         }
         return o;
     }
@@ -112,7 +142,8 @@ internal static class ChatDebug
     {
         try
         {
-            o[key] = JsonValue.Create(read());
+            var value = read();
+            o[key] = value as JsonNode ?? JsonValue.Create(value);
         }
         catch (Exception e)
         {

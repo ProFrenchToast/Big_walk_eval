@@ -29,6 +29,11 @@ namespace BigWalk.EvalBridge;
 /// frames match the agents' screenshots (without the HUD), and there is no head
 /// mesh in view. The frame rate was fine with 3 cameras. Not checked: many more
 /// bodies, or larger frames.
+///
+/// The game draws the scene for the active body only (head text faces its camera,
+/// its own head is hidden). For each idle body's camera, <see cref="CaptureView"/>
+/// sets the scene up as that body would see it and undoes it after the render
+/// (config Capture.PerBodyView).
 /// </summary>
 internal static class BodyCapture
 {
@@ -161,13 +166,25 @@ internal static class BodyCapture
 
     private static byte[] Render(BodyStream stream)
     {
-        var look = Look(stream.Slot);
+        var body = Body(stream.Slot);
+        var look = Look(body);
         if (look != null)
         {
             stream.Camera.transform.SetPositionAndRotation(look.position, look.rotation);
         }
 
-        stream.Camera.Render();
+        var undo = Plugin.CapturePerBodyView.Value && look != null
+            ? CaptureView.Apply(body, look.position, look.rotation)
+            : null;
+        try
+        {
+            stream.Camera.Render();
+        }
+        finally
+        {
+            if (undo != null) CaptureView.Undo(undo);
+        }
+
         var previous = RenderTexture.active;
         try
         {
@@ -199,10 +216,11 @@ internal static class BodyCapture
         return bytes;
     }
 
-    private static Transform Look(int slot)
+    internal static PlayerCharacter Body(int slot) =>
+        Practice.TryGetSlotIdentity(slot, out var identity) ? identity.GetComponent<PlayerCharacter>() : null;
+
+    internal static Transform Look(PlayerCharacter pc)
     {
-        if (!Practice.TryGetSlotIdentity(slot, out var identity)) return null;
-        var pc = identity.GetComponent<PlayerCharacter>();
         if (pc == null) return null;
         // NEEDS GAME: same fallback as StateReader.Body.
         return pc.cameraTransform != null ? pc.cameraTransform : pc.transform;
