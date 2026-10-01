@@ -29,6 +29,8 @@ public class Plugin : BasePlugin
     internal static ConfigEntry<bool> HideConnectionWarning;
     internal static ConfigEntry<string> FfmpegPath;
     internal static ConfigEntry<int> CaptureQueueFrames;
+    internal static ConfigEntry<bool> CapturePerBodyView;
+    internal static ConfigEntry<bool> CaptureActiveFromScreen;
 
     private static BridgeServer _server;
     private Harmony _harmony;
@@ -50,6 +52,12 @@ public class Plugin : BasePlugin
             "ffmpeg executable for capture_start. A full path, or a name on PATH.");
         CaptureQueueFrames = Config.Bind("Capture", "QueueFrames", 120,
             "Frames per body that wait for ffmpeg. When the queue is full, the game waits.");
+        CapturePerBodyView = Config.Bind("Capture", "PerBodyView", true,
+            "Render each idle body's capture as that body sees it: head text faces its camera, " +
+            "and the active body has its head. Off: every capture shows the active body's scene.");
+        CaptureActiveFromScreen = Config.Bind("Capture", "ActiveFromScreen", true,
+            "Take the active body's frames from the screen, so they have the HUD the agent sees " +
+            "(crosshair, chat input). Off: its own camera, like the idle bodies.");
 
         HideConnectionWarning = Config.Bind("Hud", "HideConnectionWarning", true,
             "Hide the bad-connection HUD warning. Long pauses trigger it, and it would appear in agent screenshots.");

@@ -51,6 +51,7 @@
     <Reference Include="Assembly-CSharp"><HintPath>$(Interop)\Assembly-CSharp.dll</HintPath></Reference>
     <Reference Include="Mirror"><HintPath>$(Interop)\Mirror.dll</HintPath></Reference>
     <Reference Include="Rewired_Core"><HintPath>$(Interop)\Rewired_Core.dll</HintPath></Reference>
+    <Reference Include="AudioSystem"><HintPath>$(Interop)\AudioSystem.dll</HintPath></Reference>
   </ItemGroup>
 
   <ItemGroup>

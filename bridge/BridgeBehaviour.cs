@@ -1,5 +1,7 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using BepInEx.Unity.IL2CPP.Utils.Collections;
 using System.Text.Json.Nodes;
 using UnityEngine;
 
@@ -27,6 +29,28 @@ public class BridgeBehaviour : MonoBehaviour
     private void Awake()
     {
         Instance = this;
+    }
+
+    private void Start()
+    {
+        StartCoroutine(EndOfFrames().WrapToIl2Cpp());
+    }
+
+    private static IEnumerator EndOfFrames()
+    {
+        var wait = new WaitForEndOfFrame();
+        while (true)
+        {
+            yield return wait;
+            try
+            {
+                BodyCapture.EndOfFrame();
+            }
+            catch (Exception e)
+            {
+                Plugin.Trace.LogError($"capture end of frame failed: {e}");
+            }
+        }
     }
 
     private void Update()
