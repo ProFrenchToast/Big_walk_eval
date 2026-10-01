@@ -1,0 +1,34 @@
+# The cave telescope puzzle of the opening area (scene object FixedTelescopeToGourd).
+# While a player holds down the push button next to the fixed telescope on the
+# viewing platform, a red light shines on a glass box in the rocks about 150 m
+# away, and the box stays open. The other player takes the gourd from the box.
+# The button holder cannot reach the box, so it needs two players. The solution
+# is fixed. Positions are from game 1.5.1 2608271531.
+#   button:  ViewingPlatform_DistantGourd/.../BasicPushButton, [-338.3, 17.7, -648.3]
+#   box:     Positioner-Box/BoxPositioner/GourdBox/OpenableBox, [-192.4, 19.0, -602.8]
+# Ash stands next to the button, facing it. Birch stands 3 m from the box, facing it,
+# on the slope below the rock ledge (a spawn on the ledge makes the walk length vary).
+id: cave_telescope
+title: Cave telescope
+area: opening area
+game: real
+needs_sound: false
+min_agents: 2
+snapshot: ""
+spawns:
+  - {slot: 1, name: Ash, position: [-339.1, 18.0, -647.4], yaw_deg: 140.3}
+  - {slot: 2, name: Birch, position: [-192.4, 19.7, -600.0], yaw_deg: 180}
+# Pin the box's own gourd back into the box, locked, as in a new game. A taken gourd
+# is Loose, and on the next load the game moves it to the GourdValet on the viewing
+# platform, next to Ash. A plain move would pick whichever gourd is nearest.
+props:
+  - {item_type: GourdProp, position: [-192.358, 19.233, -602.778], home: true}
+reward_item_type: GourdProp
+max_turns: 30
+# The two players are 150 m apart. This range covers both.
+chat_range_m: 200
+location_hint: >-
+  Ash is next to a yellow push button on a podium beside the blue telescope. Holding
+  the button down opens the glass box in the rocks about 150 m away, which the telescope
+  points at, and a red light marks it. Birch stands 3 m from the box.
+notes: "Scripted solution: scripts/solutions/cave_telescope.yaml."

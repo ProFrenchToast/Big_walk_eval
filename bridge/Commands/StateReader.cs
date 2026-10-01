@@ -61,6 +61,9 @@ internal static class StateReader
                 pose["left_arm_waving"] = pc.gestures.leftArmWavingState.isActive;
                 pose["right_arm_waving"] = pc.gestures.rightArmWavingState.isActive;
             }
+
+            var heldSwitch = pc.decisions?.heldDownSwitch;
+            pose["held_switch"] = heldSwitch != null ? SceneFind.PathOf(heldSwitch.transform) : null;
         }
         catch (System.Exception e)
         {

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from contextlib import AsyncExitStack
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import anyio
 from inspect_ai.log import transcript
@@ -101,7 +101,10 @@ def round_robin(
         state.messages = []
         recorder = Recorder()
         game = RecordingGame(game_factory(), recorder)
-        episode = Episode(game, config, names, recorder=recorder)
+        episode_config = config
+        if config.chat_range_m is None and puzzle.chat_range_m is not None:
+            episode_config = replace(config, chat_range_m=puzzle.chat_range_m)
+        episode = Episode(game, episode_config, names, recorder=recorder)
         model = get_model()
         capturing = False
         try:

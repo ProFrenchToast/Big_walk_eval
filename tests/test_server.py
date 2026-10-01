@@ -206,10 +206,11 @@ async def test_bridge_game_reset(bridge_env):
         )
     )
     # Each body is teleported while it is the local body, then the game runs briefly.
-    assert [c for c in bridge.cmds() if c not in ("get_state", "menu")][:13] == [
+    assert [c for c in bridge.cmds() if c not in ("get_state", "menu")][:14] == [
         "pause",
         "load_snapshot",
         "spawn_bodies",
+        "release_switches",
         "switch_slot",
         "teleport",
         "resume",
@@ -338,6 +339,34 @@ async def test_reset_drops_held_items_then_places_props(bridge_env):
     cmds = bridge.cmds()
     assert cmds.index("place_prop") < cmds.index("teleport")
     assert bridge.props == {"Ball": [1.0, 2.0, 3.0]}
+    assert bridge.homed_props == set()
+
+
+async def test_reset_can_pin_a_prop_to_its_home(bridge_env):
+    clock, bridge, client = bridge_env
+    game, _ = make_game(clock, client)
+    await game.reset(
+        ResetRequest(
+            puzzle_id="p",
+            bodies=[ASH, BIRCH],
+            props=[PropPlacement(item_type="GourdProp", position=(1.0, 2.0, 3.0), home=True)],
+        )
+    )
+    assert bridge.homed_props == {"GourdProp"}
+
+
+async def test_reset_releases_held_world_switches(bridge_env):
+    clock, bridge, client = bridge_env
+    game, _ = make_game(clock, client)
+    await game.reset(ResetRequest(puzzle_id="p", bodies=[ASH, BIRCH]))
+    bridge.held_switches["Podium/BasicPushButton/PeckSwitchTrigger"] = 1
+    bridge.commands.clear()
+
+    await game.reset(ResetRequest(puzzle_id="p", bodies=[ASH, BIRCH]))
+
+    assert bridge.held_switches == {}
+    cmds = bridge.cmds()
+    assert cmds.index("release_switches") < cmds.index("teleport")
 
 
 async def test_reset_levels_each_view(bridge_env):

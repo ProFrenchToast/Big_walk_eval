@@ -89,13 +89,18 @@ class BridgeGame:
             # NEEDS GAME: the mod's load_snapshot is TODO(dump).
             await self.bridge.load_snapshot(request.snapshot)
         await self.bridge.spawn_bodies(len(request.bodies))
+        # A world switch that an inactive body holds down stays held, and the OS
+        # button release above does not reach it (tested: the cave telescope button).
+        await self.bridge.release_switches()
         self.names = {b.slot: b.name for b in request.bodies}
         self.held = {b.slot: set() for b in request.bodies}
         self._reward_type = request.reward_item_type
         self.active = None
         await self._drop_held()
         for placement in request.props:
-            await self.bridge.place_prop(placement.item_type, placement.position, placement.near)
+            await self.bridge.place_prop(
+                placement.item_type, placement.position, placement.near, placement.home
+            )
         # A teleport sticks only if the body is the local one and the game then runs
         # for a moment. Otherwise the next switch puts the body back where the network
         # last saw it (measured in the game: 0.3 s is not enough, 1.5 s is).
@@ -248,8 +253,8 @@ class BridgeGame:
         if not self.input.per_body:
             # Backend A: OS input reaches only the active body. Release the old
             # body's buttons before the swap and press the new body's buttons
-            # after it. Carried props stay with the old body (tested). NEEDS GAME: a
-            # world switch that the old body holds down.
+            # after it. Carried props and held world switches stay with the old
+            # body (both tested; see bridge/README.md).
             await self.input.release_all()
         await self._switch_slot(slot)
         await self.input.select_slot(slot)

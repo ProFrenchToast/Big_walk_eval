@@ -32,6 +32,8 @@ class FakeBridge:
         self.fail: dict[str, str] = {}
         self.camera_vfov_deg = 60.0
         self.props: dict[str, list[float]] = {}
+        self.homed_props: set[str] = set()
+        self.held_switches: dict[str, int] = {}  # switch path -> slot
         self.saves: set[str] = set()
         self.menu = "ready"  # title, host_select, host_confirm, player_count, or ready
         self.screen: tuple[bytes, int, int] | None = None
@@ -106,6 +108,8 @@ class FakeBridge:
                 return {"png_base64": base64.b64encode(png).decode()}
             case "place_prop":
                 self.props[args["item_type"]] = args["position"]
+                if args.get("home"):
+                    self.homed_props.add(args["item_type"])
                 return {"item_id": "1", "item_type": args["item_type"]}
             case "menu":
                 return self._menu(args.get("action", "status"), args)
@@ -129,6 +133,16 @@ class FakeBridge:
                 frames = int((self.time_s() - start) * self.capture["fps"]) + 1
                 self.capture = None
                 return {"frames": frames, "start_time_s": start}
+            case "release_switches":
+                slots = args.get("slots")
+                released = [
+                    {"path": path, "slot": slot}
+                    for path, slot in self.held_switches.items()
+                    if slots is None or slot in slots
+                ]
+                for r in released:
+                    del self.held_switches[r["path"]]
+                return {"released": released}
             case "load_snapshot" | "chat" | "input":
                 return {}
         raise RuntimeError(f"unknown command {cmd}")

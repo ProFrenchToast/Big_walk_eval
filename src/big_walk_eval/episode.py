@@ -13,13 +13,16 @@ from big_walk_eval.game.client import GameClient
 from big_walk_eval.protocol import PRACTICE_MOD_KEYS, SCREEN_HEIGHT, SCREEN_WIDTH, GameEvent
 from big_walk_eval.replay import Recorder
 
+DEFAULT_CHAT_RANGE_M = 20.0
+
 
 @dataclass(frozen=True)
 class EpisodeConfig:
     max_game_ms_per_turn: int = 3000
     max_tool_calls_per_turn: int = 6
     max_generates_per_turn: int = 6
-    chat_range_m: float = 20.0
+    # None: the puzzle's chat_range_m, else DEFAULT_CHAT_RANGE_M.
+    chat_range_m: float | None = None
     hfov_deg: float = 90.0
     keep_images: int = 3
     echo_chat: bool = False
@@ -69,7 +72,8 @@ class Episode:
     recorder: Recorder = field(default_factory=Recorder)
 
     def __post_init__(self) -> None:
-        self.chat = ChatRouter(self.config.chat_range_m, self.names)
+        range_m = self.config.chat_range_m
+        self.chat = ChatRouter(DEFAULT_CHAT_RANGE_M if range_m is None else range_m, self.names)
         self.hfov_deg = self.config.hfov_deg
         self.votes = {slot: False for slot in self.names}
 
