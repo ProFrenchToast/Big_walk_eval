@@ -14,9 +14,11 @@ look_step_ms: 10
 switch_via_keys: false      # true: press the practice mod's slot keys instead of switch_slot
 
 # Reset: seconds of game time after each spawn teleport, so the teleport survives
-# later switches (0.3 is too short). The drop button empties the hands first.
+# later switches (0.3 is too short). The drop button empties the hands first, and
+# the sit key stands a sitting body up (a teleport does not).
 teleport_settle_s: 1.5
 drop_button: right
+sit_key: z
 
 # Reset: host a walk from the title screen if needed. Opens save_name, or makes it.
 # player_count picks the puzzle variant (2, 3, or 4+ players), not the number of bodies.

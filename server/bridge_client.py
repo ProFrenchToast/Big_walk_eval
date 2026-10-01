@@ -163,6 +163,10 @@ class BridgeClient:
         args: dict[str, Any] = {} if slots is None else {"slots": slots}
         return list((await self.call("release_switches", **args)).get("released", []))
 
+    async def clear_chat(self) -> None:
+        """Remove every text chat message from the heads and the HUD."""
+        await self.call("clear_chat")
+
     async def load_snapshot(self, name: str) -> None:
         await self.call("load_snapshot", name=name)
 

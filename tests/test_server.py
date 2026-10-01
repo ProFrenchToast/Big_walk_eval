@@ -211,11 +211,12 @@ async def test_bridge_game_reset(bridge_env):
         )
     )
     # Each body is teleported while it is the local body, then the game runs briefly.
-    assert [c for c in bridge.cmds() if c not in ("get_state", "menu")][:14] == [
+    assert [c for c in bridge.cmds() if c not in ("get_state", "menu")][:15] == [
         "pause",
         "load_snapshot",
         "spawn_bodies",
         "release_switches",
+        "clear_chat",
         "switch_slot",
         "teleport",
         "resume",
@@ -372,6 +373,22 @@ async def test_reset_releases_held_world_switches(bridge_env):
     assert bridge.held_switches == {}
     cmds = bridge.cmds()
     assert cmds.index("release_switches") < cmds.index("teleport")
+
+
+async def test_reset_stands_sitting_bodies_up(bridge_env):
+    clock, bridge, client = bridge_env
+    game, backend = make_game(clock, client)
+    for slot in (1, 2):
+        bridge.bodies[slot] = {"position": [0, 0, 0], "yaw_deg": 0.0, "pitch_deg": 0.0, "held": []}
+    bridge.bodies[2]["pose"] = {"sitting": True}
+
+    await game.reset(ResetRequest(puzzle_id="p", bodies=[ASH, BIRCH]))
+
+    # Only the sitting body taps the sit key, while it is the active body and the game runs.
+    taps = [i for i, (_, name, args) in enumerate(backend.calls) if name == "key_down"]
+    assert [backend.calls[i][2] for i in taps] == [("z",)]
+    switches = [(c, a) for c, a in bridge.commands if c in ("switch_slot", "resume", "pause")]
+    assert ("switch_slot", {"slot": 2}) in switches
 
 
 async def test_reset_levels_each_view(bridge_env):

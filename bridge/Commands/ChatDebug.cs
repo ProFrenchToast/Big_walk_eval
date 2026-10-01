@@ -1,0 +1,122 @@
+using System;
+using System.Text.Json.Nodes;
+using Il2CppInterop.Runtime;
+using UnityEngine;
+
+namespace BigWalk.EvalBridge;
+
+/// <summary>
+/// Text chat state, to find out where a message shows and to whom: every
+/// TextChatSource (a body's head text or the screen text), each body's texter,
+/// and the shared input field. For diagnosing only. Not an agent tool.
+/// </summary>
+internal static class ChatDebug
+{
+    public static JsonNode Run(JsonObject args)
+    {
+        if (args["sync"]?.GetValue<bool>() ?? false) ChatSync.AfterSwitch();
+        var bodies = new JsonArray();
+        foreach (var pc in PlayerCharacter.allPlayerCharacters)
+        {
+            if (pc == null) continue;
+            var entry = new JsonObject
+            {
+                ["slot"] = Practice.SlotOf(pc.netId),
+                ["net_id"] = pc.netId,
+                ["is_local_player"] = pc.isLocalPlayer,
+            };
+            Try(entry, "locally_readable", () => TextChatSource.IsPlayerTextLocallyReadable(pc));
+            var texter = pc.texter;
+            if (texter != null)
+            {
+                entry["source"] = Id(texter.source);
+                entry["global_output"] = Id(texter.globalTextChatOutput);
+                entry["is_player_text_chatting"] = texter.isPlayerTextChatting;
+                entry["is_local_player_text_chatting"] = texter.isLocalPlayerTextChatting;
+            }
+            bodies.Add(entry);
+        }
+
+        var sources = new JsonArray();
+        foreach (var obj in Resources.FindObjectsOfTypeAll(Il2CppType.Of<TextChatSource>()))
+        {
+            var s = obj.TryCast<TextChatSource>();
+            if (s == null || !s.gameObject.scene.IsValid()) continue;
+            sources.Add(Describe(s));
+        }
+
+        var active = new JsonArray();
+        if (TextChatSource.activeSources != null)
+            foreach (var s in TextChatSource.activeSources) active.Add(Id(s));
+
+        var input = new JsonObject();
+        var instance = TextChatInput.instance;
+        if (instance != null)
+        {
+            input["input_is_open"] = instance.inputIsOpen;
+            Try(input, "output_text", () => instance.output != null ? instance.output.text : null);
+            Try(input, "output_active", () => instance.output != null && instance.output.gameObject.activeInHierarchy);
+            Try(input, "field_text", () => instance.inputField != null ? instance.inputField.text : null);
+            var recent = new JsonArray();
+            if (instance.recentMessages != null)
+                foreach (var m in instance.recentMessages) recent.Add(m);
+            input["recent_messages"] = recent;
+        }
+
+        return new JsonObject
+        {
+            ["bodies"] = bodies,
+            ["sources"] = sources,
+            ["active_sources"] = active,
+            ["input"] = input,
+        };
+    }
+
+    private static JsonObject Describe(TextChatSource s)
+    {
+        var o = new JsonObject
+        {
+            ["id"] = Id(s),
+            ["path"] = SceneFind.PathOf(s.transform),
+            ["active"] = s.gameObject.activeInHierarchy,
+            ["enabled"] = s.enabled,
+            ["is_local_player"] = s.isLocalPlayer,
+            ["is_visible"] = s.isVisible,
+            ["position"] = Json.Vec(s.transform.position),
+        };
+        Try(o, "audibility", () => Math.Round(s.audibility, 3));
+        Try(o, "custom_aim", () => s.customAimTransform != null ? SceneFind.PathOf(s.customAimTransform) : null);
+        Try(o, "damped", () => s.dampedTransform != null ? SceneFind.PathOf(s.dampedTransform) : null);
+        Try(o, "n_active_messages", () => s.activeMessages != null ? s.activeMessages.Count : -1);
+        Try(o, "combined", () => s.GetCombinedString());
+        Try(o, "recent_message", () => s.mostRecentMessage.message);
+        Try(o, "recent_sender_slot", () =>
+            s.mostRecentMessage.sendingPlayer != null ? Practice.SlotOf(s.mostRecentMessage.sendingPlayer.netId) : 0);
+        var text = s.textField;
+        if (text != null)
+        {
+            Try(o, "text", () => text.text);
+            Try(o, "text_go_active", () => text.gameObject.activeInHierarchy);
+            Try(o, "text_enabled", () => text.enabled);
+            Try(o, "text_alpha", () => Math.Round(text.alpha, 3));
+            Try(o, "text_position", () => Json.Vec(text.transform.position));
+            // TextMeshPro: world space (at a head). TextMeshProUGUI: screen space (on the HUD).
+            Try(o, "text_type", () => text.GetIl2CppType().Name);
+        }
+        return o;
+    }
+
+    private static string Id(TextChatSource s) => s != null ? s.GetInstanceID().ToString() : null;
+
+    private static void Try(JsonObject o, string key, Func<object> read)
+    {
+        try
+        {
+            o[key] = JsonValue.Create(read());
+        }
+        catch (Exception e)
+        {
+            o[key] = $"error: {e.Message}";
+        }
+    }
+}

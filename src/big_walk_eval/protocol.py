@@ -193,7 +193,7 @@ class PuzzleConfig(_Wire):
     overview: OverviewCamera | None = None
     # Chat range for puzzles whose players work far apart. The task's chat_range_m wins.
     chat_range_m: float | None = None
-    # "gourd": a body holds the reward. "text_chat": every agent's message showed in the
+    # "gourd": a body holds the reward. "text_chat": every agent sent a message in the
     # in-game text chat (a `text_chat` event from its body).
     goal: Literal["gourd", "text_chat"] = "gourd"
 
