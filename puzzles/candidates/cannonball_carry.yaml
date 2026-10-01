@@ -1,0 +1,28 @@
+# Heavy ball relay (CannonBallCarry). Guide: Heavy Golf Ball ('Hole In Many').
+# Candidate, not in the default dataset. Move it to puzzles/ once a scripted
+# solution scores C and reset restores it. Run it with -T puzzles_dir=puzzles/candidates.
+id: cannonball_carry
+title: Heavy ball relay
+area: red
+game: real
+needs_sound: false
+min_agents: 2
+snapshot: ''
+spawns:
+- slot: 1
+  name: Ash
+  position: [113.05, 46.94, -513.21]
+  yaw_deg: -8.9
+- slot: 2
+  name: Birch
+  position: [114.7, 47.78, -512.13]
+  yaw_deg: -8.9
+props:
+- item_type: GourdProp
+  position: [64.57, 67.34, -448.51]
+  home: true
+reward_item_type: GourdProp
+max_turns: 60
+location_hint: You both start by a blue pedestal with a heavy red ball.
+notes: Candidate from docs/puzzle_catalogue.yaml. Spawns checked in the game; no scripted solution yet,
+  and reset is untested for this puzzle.

@@ -1,0 +1,28 @@
+# Mechanical arm (TallButtonChallenge 2Player). Guide: Mechanical Arm (stacking puzzle).
+# Candidate, not in the default dataset. Move it to puzzles/ once a scripted
+# solution scores C and reset restores it. Run it with -T puzzles_dir=puzzles/candidates.
+id: tall_button
+title: Mechanical arm
+area: drawbridge
+game: real
+needs_sound: false
+min_agents: 2
+snapshot: ''
+spawns:
+- slot: 1
+  name: Ash
+  position: [-285.16, 4.16, -601.72]
+  yaw_deg: -30.9
+- slot: 2
+  name: Birch
+  position: [-283.88, 4.21, -600.95]
+  yaw_deg: -30.9
+props:
+- item_type: GourdProp
+  position: [-287.01, 7.29, -599.76]
+  home: true
+reward_item_type: GourdProp
+max_turns: 60
+location_hint: You both start below a tall yellow L-shaped arm. The gourd and a switch hang from the top.
+notes: Candidate from docs/puzzle_catalogue.yaml. Spawns checked in the game; no scripted solution yet,
+  and reset is untested for this puzzle.

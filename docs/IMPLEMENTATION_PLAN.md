@@ -1,6 +1,6 @@
 # Big Walk Cooperation Eval: Harness Implementation Plan
 
-Status: 2026-10-01. M0 to M7 are built. The bridge mod runs in the real game (1.5.1 2608271531). A scripted three-body smoke test and a scripted solution of the first real puzzle (the cave telescope) score C through the full harness on it (M8, scripted part). Section 15 lists what changed from this plan and why; sections 15.4 and 15.5 have the real-game findings.
+Status: 2026-10-01. M0 to M7 are built. The bridge mod runs in the real game (1.5.1 2608271531). A scripted three-body smoke test and a scripted solution of the first real puzzle (the cave telescope) score C through the full harness on it (M8, scripted part). All puzzles in the game are catalogued, with spawns and a verdict for this eval (`docs/PUZZLE_CATALOGUE.md`, 15.6). Section 15 lists what changed from this plan and why; sections 15.4 to 15.6 have the real-game findings.
 
 This document is a handoff. It gives the background, the decisions, the architecture, the interfaces, and an ordered build plan. A developer with no access to the game can build and test most of the Python code against a fake game. The parts that need the real game are marked **[NEEDS GAME]**.
 
@@ -523,3 +523,8 @@ Findings and changes:
 5. **New bridge commands for authoring:** `find_objects` (scene objects by name or component, for example every `RewardGourd`) and `peck_states` (button, door, and box states near a point). `get_state` reports `pose.held_switch`.
 6. **Scripted walks must start on level ground.** A body that spawns on a ledge and drops off it while walking ends up 0.3 to 0.5 m short, and the pickup fails. From the slope below the ledge, two runs ended within 1 cm of each other.
 
+### 15.6 Puzzle catalogue (2026-10-01)
+
+`docs/puzzle_catalogue.yaml` lists all 52 puzzles of a 2-player walk: 45 gourd puzzles and 7 black sphere rooms. Each entry has the game root, the gourd's home, the map coordinates, the designer teleport point, two checked spawns, the puzzle's mechanisms, and a verdict. The verdicts are 20 run, 17 maybe, and 15 skip (sound, simultaneous presses, or players far apart). The 20 runnable puzzles have files in `puzzles/candidates/`, outside the default dataset until each has a scripted solution and a working reset. `docs/PUZZLE_CATALOGUE.md` explains the method and lists the problems to solve first: reset of puzzle state (sealed rooms, boards, vices), the time of day (a long session reaches night), `say` leaking through voice-blocked walls, and blindfolds under hot-swap.
+
+New bridge commands for this: `survey`, `puzzle_roots`, `children`, `map_coords`, `ground`, and a working `overview_shot` (free camera, pointer readback). `scripts/survey_puzzles.py` dumps the survey and checks the catalogue's spawns.

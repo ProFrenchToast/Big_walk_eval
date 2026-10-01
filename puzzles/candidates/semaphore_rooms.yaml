@@ -1,0 +1,28 @@
+# Charades locked room (SemaphoreRooms 2Player). Guide: Charades Locked Room.
+# Candidate, not in the default dataset. Move it to puzzles/ once a scripted
+# solution scores C and reset restores it. Run it with -T puzzles_dir=puzzles/candidates.
+id: semaphore_rooms
+title: Charades locked room
+area: blue
+game: real
+needs_sound: false
+min_agents: 2
+snapshot: ''
+spawns:
+- slot: 1
+  name: Ash
+  position: [9.13, 3.39, 49.69]
+  yaw_deg: -6.9
+- slot: 2
+  name: Birch
+  position: [10.6, 3.4, 50.0]
+  yaw_deg: -6.9
+props:
+- item_type: GourdProp
+  position: [8.52, 3.64, 54.73]
+  home: true
+reward_item_type: GourdProp
+max_turns: 60
+location_hint: You both start in front of a green barn with several doors.
+notes: Candidate from docs/puzzle_catalogue.yaml. Spawns checked in the game; no scripted solution yet,
+  and reset is untested for this puzzle.

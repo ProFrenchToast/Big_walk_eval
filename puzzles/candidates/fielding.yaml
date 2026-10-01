@@ -1,0 +1,28 @@
+# Train station cannon (Fielding). Guide: Train Station Cannon.
+# Candidate, not in the default dataset. Move it to puzzles/ once a scripted
+# solution scores C and reset restores it. Run it with -T puzzles_dir=puzzles/candidates.
+id: fielding
+title: Train station cannon
+area: red
+game: real
+needs_sound: false
+min_agents: 2
+snapshot: ''
+spawns:
+- slot: 1
+  name: Ash
+  position: [141.81, 9.9, -679.61]
+  yaw_deg: 34.6
+- slot: 2
+  name: Birch
+  position: [142.79, 9.9, -680.44]
+  yaw_deg: 34.6
+props:
+- item_type: GourdProp
+  position: [144.2, 10.22, -675.73]
+  home: true
+reward_item_type: GourdProp
+max_turns: 60
+location_hint: You both start by a yellow ramp with a cannon, next to the railway.
+notes: Candidate from docs/puzzle_catalogue.yaml. Spawns checked in the game; no scripted solution yet,
+  and reset is untested for this puzzle.

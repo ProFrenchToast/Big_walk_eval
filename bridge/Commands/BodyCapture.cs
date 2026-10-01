@@ -307,7 +307,7 @@ internal static class BodyCapture
     /// (see Screenshot). GetWritableImageData returns a plain pointer to the same
     /// memory that GetRawTextureData&lt;T&gt; wraps, so nothing is unmarshalled.
     /// </summary>
-    private static byte[] CopyPixels(Texture2D texture)
+    internal static byte[] CopyPixels(Texture2D texture)
     {
         var size = (long)texture.GetImageDataSize();
         var expected = (long)texture.width * texture.height * 4;

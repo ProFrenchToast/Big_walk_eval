@@ -1,0 +1,28 @@
+# Green observation room (ObservationRoom). Guide: Green Room (symbol call-out), or the Black Tower 'Green Room Red Light'.
+# Candidate, not in the default dataset. Move it to puzzles/ once a scripted
+# solution scores C and reset restores it. Run it with -T puzzles_dir=puzzles/candidates.
+id: observation_room
+title: Green observation room
+area: red_or_black
+game: real
+needs_sound: false
+min_agents: 2
+snapshot: ''
+spawns:
+- slot: 1
+  name: Ash
+  position: [-0.36, 70.61, -250.94]
+  yaw_deg: -166.7
+- slot: 2
+  name: Birch
+  position: [-1.82, 70.64, -250.61]
+  yaw_deg: -166.7
+props:
+- item_type: GourdProp
+  position: [-7.45, 73.28, -262.8]
+  home: true
+reward_item_type: GourdProp
+max_turns: 60
+location_hint: You both start on the steps inside a green building with several doors.
+notes: Candidate from docs/puzzle_catalogue.yaml. Spawns checked in the game; no scripted solution yet,
+  and reset is untested for this puzzle.

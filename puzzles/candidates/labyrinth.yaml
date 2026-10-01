@@ -1,0 +1,28 @@
+# Yellow maze timer hand-off (Labyrinth 2Player). Guide: Yellow Maze (timer hand-off).
+# Candidate, not in the default dataset. Move it to puzzles/ once a scripted
+# solution scores C and reset restores it. Run it with -T puzzles_dir=puzzles/candidates.
+id: labyrinth
+title: Yellow maze timer hand-off
+area: red
+game: real
+needs_sound: false
+min_agents: 2
+snapshot: ''
+spawns:
+- slot: 1
+  name: Ash
+  position: [3.76, 5.47, -773.79]
+  yaw_deg: -11.9
+- slot: 2
+  name: Birch
+  position: [5.21, 5.45, -773.49]
+  yaw_deg: -11.9
+props:
+- item_type: GourdProp
+  position: [2.5, 7.64, -765.55]
+  home: true
+reward_item_type: GourdProp
+max_turns: 60
+location_hint: You both start outside a yellow half-round maze on the beach.
+notes: Candidate from docs/puzzle_catalogue.yaml. Spawns checked in the game; no scripted solution yet,
+  and reset is untested for this puzzle.
