@@ -20,6 +20,7 @@ from big_walk_eval.look import pixel_to_angles
 from big_walk_eval.protocol import (
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
+    TYPE_MAX_CHARS,
     Action,
     HoldKeyAction,
     KeyAction,
@@ -27,6 +28,7 @@ from big_walk_eval.protocol import (
     LookAction,
     MouseAction,
     ScrollAction,
+    TypeAction,
     WaitAction,
     parse_keys,
 )
@@ -35,7 +37,6 @@ NOT_AVAILABLE = "`{action}` is not available in this game, use `say` to talk."
 
 UNSUPPORTED_ACTIONS = frozenset(
     {
-        "type",
         "zoom",
         "cursor_position",
         "left_click_drag",
@@ -140,6 +141,16 @@ def to_game_actions(
                 raise ToolError("`scroll` needs `scroll_direction`: up, down, left, or right.")
             amount = int(args.get("scroll_amount") or 1)
             return [ScrollAction(direction=direction, amount=max(1, min(amount, 50)))]
+        case "type":
+            if not text:
+                raise ToolError("`type` needs `text`.")
+            if any(not c.isprintable() for c in str(text)):
+                raise ToolError(
+                    "`text` must be one line. Press Enter with `key` to send a message."
+                )
+            if len(str(text)) > TYPE_MAX_CHARS:
+                raise ToolError(f"`text` can have at most {TYPE_MAX_CHARS} characters.")
+            return [TypeAction(text=str(text))]
     if action in UNSUPPORTED_ACTIONS:
         raise ToolError(NOT_AVAILABLE.format(action=action))
     raise ToolError(f"Unknown action {action!r}.")
@@ -175,6 +186,7 @@ def computer_tool(episode: Episode, slot: int) -> Tool:
               - `right_mouse_down`, `right_mouse_up`: Press or release the right mouse button.
               - `wait`: Let `duration` seconds of game time pass.
               - `scroll`: Turn the mouse wheel.
+              - `type`: Type `text` into the in-game text chat. Open the chat with `key` "Return" first, then press "Return" again to send.
               - `screenshot`: See your current view. No game time passes.
           coordinate: The [x, y] pixel on the screen, for `mouse_move` and clicks.
           duration: Seconds of game time, for `hold_key` and `wait`.
@@ -182,7 +194,7 @@ def computer_tool(episode: Episode, slot: int) -> Tool:
           scroll_amount: Number of wheel steps, for `scroll`.
           scroll_direction: "up", "down", "left", or "right", for `scroll`.
           start_coordinate: Not used in this game.
-          text: The key or key combination for `key` and `hold_key`.
+          text: The key or key combination for `key` and `hold_key`, or the text for `type`.
           repeat: Number of taps for `key`, 1 to 100.
           press_enter: Not used in this game.
           actions: A list of action objects with the same fields, run in order.

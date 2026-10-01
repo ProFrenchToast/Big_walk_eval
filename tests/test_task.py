@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+import yaml
 from inspect_ai import eval
 from inspect_ai.model import get_model
 
@@ -11,6 +12,7 @@ from big_walk_eval.task import big_walk_coop
 from tests.conftest import ROOT
 
 SOLUTION = ROOT / "scripts" / "solutions" / "fake_plate_gate.yaml"
+CHAT_SOLUTION = ROOT / "scripts" / "solutions" / "text_chat_circle.yaml"
 
 
 def run_task(tmp_path, policy=None, **task_args):
@@ -42,7 +44,7 @@ def test_dataset_filters():
 def test_scripted_solution_scores_correct(tmp_path):
     log = run_task(tmp_path, ScriptedPolicy(Script.load(SOLUTION)))
     sample = log.samples[0]
-    score = sample.scores["gourd_held"]
+    score = sample.scores["puzzle_solved"]
     assert score.value == "C", score.explanation
     assert score.metadata["gourd_holder"] == "Birch"
     assert score.metadata["ended_by_vote"] is True
@@ -55,7 +57,7 @@ def test_scripted_solution_scores_correct(tmp_path):
 
 def test_default_mockllm_ends_by_limit(tmp_path):
     log = run_task(tmp_path, max_turns=4)
-    score = log.samples[0].scores["gourd_held"]
+    score = log.samples[0].scores["puzzle_solved"]
     assert score.value == "I"
     assert score.metadata["ended_by_limit"] is True
     assert score.metadata["turns"] == 4
@@ -64,7 +66,7 @@ def test_default_mockllm_ends_by_limit(tmp_path):
 def test_vote_without_gourd_is_false_end(tmp_path):
     vote = ScriptStep(calls=[{"end_episode": {}}])
     log = run_task(tmp_path, ScriptedPolicy({"Ash": [vote], "Birch": [vote]}))
-    score = log.samples[0].scores["gourd_held"]
+    score = log.samples[0].scores["puzzle_solved"]
     assert score.value == "I"
     assert score.metadata["false_end"] is True
 
@@ -72,3 +74,45 @@ def test_vote_without_gourd_is_false_end(tmp_path):
 def test_http_backend_needs_real_puzzles():
     with pytest.raises(ValueError, match="no puzzle matches"):
         big_walk_coop(backend="http", puzzles="fake_plate_gate")
+
+
+@pytest.fixture
+def fake_chat_puzzles(tmp_path):
+    """The text chat puzzle on FakeGame: the same triangle, moved into the fake field."""
+    puzzle = yaml.safe_load((ROOT / "puzzles" / "text_chat_circle.yaml").read_text())
+    puzzle["game"] = "fake"
+    for spawn, position in zip(
+        puzzle["spawns"], [[0.0, 0.0, -1.5], [1.3, 0.0, 0.75], [-1.3, 0.0, 0.75]], strict=True
+    ):
+        spawn["position"] = position
+    root = tmp_path / "puzzles"
+    root.mkdir()
+    (root / "text_chat_circle.yaml").write_text(yaml.safe_dump(puzzle))
+    return root
+
+
+def test_text_chat_solution_scores_correct(tmp_path, fake_chat_puzzles):
+    log = run_task(
+        tmp_path / "logs",
+        ScriptedPolicy(Script.load(CHAT_SOLUTION)),
+        puzzles_dir=str(fake_chat_puzzles),
+        n_agents=3,
+    )
+    sample = log.samples[0]
+    assert sample.target == "every player sends a message in the in-game chat"
+    score = sample.scores["puzzle_solved"]
+    assert score.value == "C", score.explanation
+    assert [m["slot"] for m in score.metadata["text_chat"]] == [1, 2, 3]
+    assert score.metadata["text_chat"][0]["message"] == "Hello from Ash! Can you two read this?"
+    assert score.metadata["n_messages"] == 0
+
+
+def test_text_chat_needs_every_agent(tmp_path, fake_chat_puzzles):
+    script = Script.load(CHAT_SOLUTION)
+    script.agents["Cedar"] = [ScriptStep(calls=[{"end_episode": {}}])]
+    log = run_task(
+        tmp_path / "logs", ScriptedPolicy(script), puzzles_dir=str(fake_chat_puzzles), n_agents=3
+    )
+    score = log.samples[0].scores["puzzle_solved"]
+    assert score.value == "I"
+    assert score.metadata["silent"] == ["Cedar"]

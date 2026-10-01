@@ -8,6 +8,10 @@ on the plate while another walks through and takes the gourd.
 
 Like the real game under hot-swap, only the active body moves. Inactive
 bodies keep their position and whatever they hold.
+
+Text chat works as in the real game: Enter opens it, typed characters and
+letter keys go into the message, Enter sends it (a `text_chat` event), and
+Esc closes it. A body that has the chat open does not walk.
 """
 
 from __future__ import annotations
@@ -96,6 +100,8 @@ class FakeBody:
     pitch: float = 0.0
     held: dict[Hand, str] = field(default_factory=dict)
     buttons: set[str] = field(default_factory=set)
+    # None while the text chat is closed.
+    chat_draft: str | None = None
 
     def forward(self) -> tuple[float, float]:
         r = math.radians(self.yaw)
@@ -309,6 +315,8 @@ class FakeGame:
             self._capture_due()
 
     def _move(self, body: FakeBody, keys: set[str], step: int) -> None:
+        if body.chat_draft is not None:
+            return
         mx = sum(_MOVE_KEYS[k][0] for k in keys if k in _MOVE_KEYS)
         mz = sum(_MOVE_KEYS[k][1] for k in keys if k in _MOVE_KEYS)
         norm = math.hypot(mx, mz)
@@ -347,6 +355,8 @@ class FakeGame:
 
     def _apply(self, body: FakeBody, keys: set[str], ev: InputEvent) -> None:
         match ev.op:
+            case "key_down" if ev.key == "enter" or body.chat_draft is not None:
+                self._chat_key(body, ev.key or "")
             case "key_down":
                 keys.add(ev.key or "")
             case "key_up":
@@ -366,6 +376,24 @@ class FakeGame:
                     self._release(body, hand)
             case "wheel":
                 pass
+            case "char":
+                if body.chat_draft is not None:
+                    body.chat_draft += ev.char or ""
+
+    def _chat_key(self, body: FakeBody, key: str) -> None:
+        draft = body.chat_draft
+        if draft is None:
+            body.chat_draft = ""
+        elif key == "enter":
+            if draft:
+                self._emit("text_chat", body.slot, message=draft)
+            body.chat_draft = None
+        elif key == "esc":
+            body.chat_draft = None
+        elif key == "space":
+            body.chat_draft = draft + " "
+        elif len(key) == 1:
+            body.chat_draft = draft + key
 
     def _grab(self, body: FakeBody, hand: Hand) -> None:
         if hand in body.held:
@@ -420,6 +448,7 @@ class FakeGame:
                 )
                 for hand, item_id in sorted(b.held.items())
             ],
+            pose={"text_chatting": b.chat_draft is not None},
         )
 
     def _emit(self, type_: str, slot: int | None, **data: object) -> None:

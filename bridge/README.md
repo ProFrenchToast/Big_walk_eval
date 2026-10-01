@@ -2,7 +2,7 @@
 
 A BepInEx 6 IL2CPP plugin. It lets the eval game server (`server/`) control the game over TCP. It needs [big-walk-practice](https://github.com/iameli/big-walk-practice) 0.6.0 for extra bodies and slot switching.
 
-Status (2026-09-30): compiled and tested in game 1.5.1 2608271531 (Unity 6000.3.17f1) with BepInEx 6.0.0-be.788. A scripted three-body run (`scripts/solutions/footy_walkabout.yaml`) scores C through the full harness, and video capture of every body's view works (2026-10-01). The first real puzzle, the cave telescope (`puzzles/cave_telescope.yaml`), scores C with a scripted two-body solution (2026-10-01). Still missing: save snapshots, the exact `look` command, in-game chat, Backend B input.
+Status (2026-09-30): compiled and tested in game 1.5.1 2608271531 (Unity 6000.3.17f1) with BepInEx 6.0.0-be.788. A scripted three-body run (`scripts/solutions/footy_walkabout.yaml`) scores C through the full harness, and video capture of every body's view works (2026-10-01). The first real puzzle, the cave telescope (`puzzles/cave_telescope.yaml`), scores C with a scripted two-body solution (2026-10-01). Still missing: save snapshots, the exact `look` command, Backend B input. In-game text chat (the `type` action and the `text_chat` events) is written but not yet tested in the game: `scripts/solutions/text_chat_circle.yaml` tests it.
 
 ## One-time setup
 
@@ -49,7 +49,7 @@ Slots are 1-based. Slot 1 is key `1` and practice index 0 (the original player).
 | `teleport` | `slot`, `position`, `yaw_deg` | | tested. See "Teleports" below |
 | `place_prop` | `item_type`, `position`, `near`?, `home`? | `item_id`, `item_type`, `is_reward`, `moved_m`, `home`? | tested. Moves the nearest prop of that type. With `home: true`, pins the prop whose start home is nearest to `position` back into that home, and sets a gourd back to Locked |
 | `screenshot` | | `png_base64`, `width`, `height` | tested, about 0.12 s while paused |
-| `events` | | `events: [{type, slot, t_ms, data}]` | tested: `switched`, `item_picked_up`, `item_dropped`, `reward_state` (gourd `Locked` to `Loose` when taken) |
+| `events` | | `events: [{type, slot, t_ms, data}]` | tested: `switched`, `item_picked_up`, `item_dropped`, `reward_state` (gourd `Locked` to `Loose` when taken). Not yet tested: `text_chat` (`PlayerTexter.DisplayMessage`, a message shows at a body's head) and `text_chat_sent` (`PlayerTexter.CompleteInput`, the local body sent one) |
 | `controls` | | keyboard and mouse bindings per game action, from Rewired | tested |
 | `menu` | `action`: `status`, `title_host`, `new_game`, `load_save {name}`, `host_confirm {name}`, `player_count {n}` | `open_menus`, `hosting`, `local_player_ready` | tested. `server/host_walk.py` drives it |
 | `list_props` | `slot`?, `radius`?, `limit`? | props near a body, nearest first | tested. For writing puzzle files |
@@ -60,7 +60,7 @@ Slots are 1-based. Slot 1 is key `1` and practice index 0 (the original player).
 | `overview_shot` | `position`, `look_at` | `png_base64` (null without a position) | not supported, see "Screenshots" |
 | `look` | `dyaw_deg`, `dpitch_deg` | | TODO(dump). The server uses `look_mode: mouse` |
 | `load_snapshot` / `save_snapshot` | `name` | | TODO(dump). `place_prop` covers simple cases |
-| `chat` | `slot`, `text` | | TODO(dump). Optional. `PlayerTexter` is the lead |
+| `chat` | `slot`, `text` | | TODO(dump). Optional, for `echo_chat`. Agents chat in game through the keyboard instead: Enter, the `type` action, Enter |
 | `capture_start` | `directory`, `fps`, `width`, `height`, `slots` | | tested. One camera per body, frames to ffmpeg. See `Commands/BodyCapture.cs` and "Screenshots" below |
 | `capture_stop` | | `frames`, `start_time_s` | tested |
 | `input` | `slot`, `op`, ... | | TODO(dump). Backend B only |
@@ -96,7 +96,7 @@ The Python side of this protocol is `server/bridge_client.py`. The tests in `tes
 | Head | `PlayerHead.headState` (Vector2), `runningTotalLookSpin`, `SetHeadStateLocal()`. Lead for an exact `look` |
 | Mover | `PlayerMover.cachedKernalPos`, `ResetPosition()` |
 | Save | `SaveManager`, `SaveData` (`slotName`, `entries`, `inventory`), `HostMenuSelect.ActionSelectSaveData` |
-| Text chat | `PlayerCharacter.texter` (`PlayerTexter`): `TrySendTextChat`, `CompleteInput`, `DisplayMessage` |
+| Text chat | `PlayerCharacter.texter` (`PlayerTexter`): `TrySendTextChat`, `CompleteInput(string, ref bool sent)`, `DisplayMessage`, `ReceieveMessage` (sic), `isPlayerTextChatting`. `TextChatInput.instance` (one `TMP_InputField` for the local player, `inputIsOpen`). `TextChatSource` shows the messages at a body's head. `TextChatHud` shows blips at the screen edge for speakers out of view |
 | Menus | `TitleMenu`, `HostMenuSelect`, `HostMenuConfirm`, `PlayerCountMenu` |
 | Rewired actions | `RewiredConsts.Action`: `moveX`, `moveY`, `use`, `drop`, `jump`, `sprint`, `crouch`, `sit`, `waveLeft`, `waveRight`, `textChat`, `mute` |
 

@@ -19,16 +19,21 @@ from big_walk_eval.game.fake_game import FakeGame
 from big_walk_eval.game.http_game import GameServerError, HttpGame
 from big_walk_eval.prompts import FAKE_GAME_CONTROLS
 from big_walk_eval.protocol import (
+    KEY_GAP_MS,
+    KEY_TAP_MS,
+    TYPE_CHAR_MS,
     CaptureInfo,
     CaptureRequest,
     HoldKeyAction,
+    KeyAction,
     LookAction,
     MouseAction,
     PropPlacement,
     ResetRequest,
+    TypeAction,
     WaitAction,
 )
-from big_walk_eval.scorer import gourd_held
+from big_walk_eval.scorer import puzzle_solved
 from big_walk_eval.scripted import Script, ScriptedPolicy
 from big_walk_eval.solver import round_robin
 from big_walk_eval.timeline import build_timeline
@@ -39,7 +44,7 @@ from server.calibrate import calibrate
 from server.config import ServerConfig
 from server.input.backend import RecordingInputBackend
 from server.input.player import TimelinePlayer, mouse_look_steps
-from server.input.sendinput import SCAN_CODES, key_fields
+from server.input.sendinput import SCAN_CODES, key_fields, unicode_units
 from server.record_spawns import spawns_yaml
 from tests.conftest import ASH, BIRCH, ROOT, reset_request
 from tests.fake_bridge import FakeBridge, FakeClock
@@ -92,7 +97,7 @@ def test_scripted_episode_over_http(tmp_path):
             EpisodeConfig(),
             controls=FAKE_GAME_CONTROLS,
         ),
-        scorer=gourd_held(),
+        scorer=puzzle_solved(),
     )
     policy = ScriptedPolicy(Script.load(ROOT / "scripts" / "solutions" / "fake_plate_gate.yaml"))
     [log] = eval(
@@ -102,7 +107,7 @@ def test_scripted_episode_over_http(tmp_path):
         display="none",
     )
     assert log.status == "success", log.error
-    assert log.samples[0].scores["gourd_held"].value == "C"
+    assert log.samples[0].scores["puzzle_solved"].value == "C"
 
 
 def _free_port() -> int:
@@ -455,6 +460,27 @@ async def test_player_spreads_mouse_look_over_look_ms():
     assert sum(args[0] for _, args in moves) == 100
     assert moves[-1][0] == pytest.approx(0.09)
     assert clock() - start == pytest.approx(0.1)
+
+
+async def test_bridge_game_types_text_as_characters(bridge_env):
+    clock, bridge, client = bridge_env
+    game, backend = make_game(clock, client)
+    await game.reset(ResetRequest(puzzle_id="p", bodies=[ASH, BIRCH]))
+    backend.calls.clear()
+
+    actions = [KeyAction(keys=["enter"]), TypeAction(text="r1!"), KeyAction(keys=["enter"])]
+    result = await game.act(1, actions, 3000)
+
+    typed = [args[0] for _, name, args in backend.calls if name == "type_char"]
+    assert typed == ["r", "1", "!"]
+    keys = [args[0] for _, name, args in backend.calls if name == "key_down"]
+    assert keys == ["enter", "enter"]
+    assert result.game_ms == 2 * (KEY_TAP_MS + KEY_GAP_MS) + 3 * TYPE_CHAR_MS
+
+
+def test_unicode_units():
+    assert unicode_units("a") == [0x61]
+    assert unicode_units(chr(0x1F600)) == [0xD83D, 0xDE00]
 
 
 def test_scan_codes():

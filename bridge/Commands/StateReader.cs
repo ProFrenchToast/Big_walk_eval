@@ -62,6 +62,8 @@ internal static class StateReader
                 pose["right_arm_waving"] = pc.gestures.rightArmWavingState.isActive;
             }
 
+            if (pc.texter != null) pose["text_chatting"] = pc.texter.isPlayerTextChatting;
+
             var heldSwitch = pc.decisions?.heldDownSwitch;
             pose["held_switch"] = heldSwitch != null ? SceneFind.PathOf(heldSwitch.transform) : null;
         }

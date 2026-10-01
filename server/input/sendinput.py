@@ -1,7 +1,9 @@
 """Backend A: real OS input with Win32 SendInput. Windows only.
 
 Keys are sent as scan codes, because many games read scan codes and ignore
-virtual keys. Mouse look uses relative MOUSEEVENTF_MOVE counts.
+virtual keys. Mouse look uses relative MOUSEEVENTF_MOVE counts. Typed text
+(`type_char`) is sent as Unicode characters with no scan code, so it reaches
+the text chat field but not the key bindings or the practice-mod hotkeys.
 """
 
 from __future__ import annotations
@@ -15,6 +17,7 @@ INPUT_MOUSE = 0
 INPUT_KEYBOARD = 1
 KEYEVENTF_EXTENDEDKEY = 0x0001
 KEYEVENTF_KEYUP = 0x0002
+KEYEVENTF_UNICODE = 0x0004
 KEYEVENTF_SCANCODE = 0x0008
 MOUSEEVENTF_MOVE = 0x0001
 MOUSEEVENTF_WHEEL = 0x0800
@@ -64,6 +67,12 @@ SCAN_CODES: dict[str, int] = {
     "right": 0xE04D,
     "down": 0xE050,
 }
+
+
+def unicode_units(char: str) -> list[int]:
+    """UTF-16 code units of one character, one KEYEVENTF_UNICODE event pair each."""
+    data = char.encode("utf-16-le")
+    return [int.from_bytes(data[i : i + 2], "little") for i in range(0, len(data), 2)]
 
 
 def key_fields(key: str, up: bool) -> tuple[int, int]:
@@ -181,6 +190,15 @@ class SendInputBackend:
         self._mouse(
             MOUSEEVENTF_HWHEEL if horizontal else MOUSEEVENTF_WHEEL, data=clicks * WHEEL_DELTA
         )
+
+    async def type_char(self, char: str) -> None:
+        # NEEDS GAME: that the chat field takes these and the hotkeys ignore them.
+        events = []
+        for unit in unicode_units(char):
+            for flags in (KEYEVENTF_UNICODE, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP):
+                ki = KEYBDINPUT(0, unit, flags, 0, 0)
+                events.append(INPUT(type=INPUT_KEYBOARD, u=_INPUTUNION(ki=ki)))
+        self._send(*events)
 
     async def release_all(self) -> None:
         for key in sorted(self._keys):

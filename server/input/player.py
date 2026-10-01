@@ -91,6 +91,8 @@ class TimelinePlayer:
             case "wheel":
                 horizontal = ev.wheel_axis == "horizontal"
                 return [_Step(ev.t_ms, lambda: b.wheel(ev.wheel, horizontal))]
+            case "char":
+                return [_Step(ev.t_ms, lambda c=ev.char: b.type_char(c))]
             case "look":
                 if self.look_fn is not None:
                     fn = self.look_fn

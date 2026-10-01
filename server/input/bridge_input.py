@@ -58,6 +58,10 @@ class BridgeInputBackend:
         slot, _, _ = self._state()
         await self.bridge.input(slot, {"op": "wheel", "clicks": clicks, "horizontal": horizontal})
 
+    async def type_char(self, char: str) -> None:
+        slot, _, _ = self._state()
+        await self.bridge.input(slot, {"op": "char", "char": char})
+
     async def release_all(self) -> None:
         """Release held keys on the current body. Held buttons stay: they are the grip."""
         _, keys, _ = self._state()
