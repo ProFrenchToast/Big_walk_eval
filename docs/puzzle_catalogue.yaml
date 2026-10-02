@@ -9,7 +9,8 @@
 #
 # verdict: run   - fits the eval (no sound, no simultaneous presses, players stay close).
 #          maybe - fits those rules but has a practical problem (see reasons).
-#          skip  - needs sound, simultaneous presses, or players far apart.
+#          skip  - needs sound, simultaneous presses, or players far apart. Since 2026-10-02
+#                  also solo, long_wait, very_long and no_gourd (the black sphere rooms).
 # Spawns: Ash on the designer teleport point (TeleportPoint), Birch 1.5 m to its right,
 # both at the designer's yaw. Each spawn was teleported to in the game, settled, and moved
 # less than 0.1 m (2026-10-01).
@@ -726,7 +727,7 @@
     bodies (needs load_snapshot or a per-puzzle reset, untested).'
 - id: basketball
   title: Basketball court
-  verdict: maybe
+  verdict: skip
   reasons: [solo]
   guide_name: Basketball court (light / bulb puzzle)
   guide_match: description
@@ -760,7 +761,7 @@
     can do it alone, so it says little about cooperation.
 - id: cabin_fever
   title: Five-minute locked room
-  verdict: maybe
+  verdict: skip
   reasons: [long_wait, trivial]
   guide_name: Locked Room / Five-Minute Countdown
   guide_match: coordinates
@@ -793,7 +794,7 @@
     wait 5 minutes of game time. Little cooperation, 100 turns of waiting at 3 s per turn.
 - id: cabin_fever_long
   title: Thirty-minute locked room
-  verdict: maybe
+  verdict: skip
   reasons: [long_wait, trivial]
   guide_name: 'Wait 30 Minutes House (purple #1)'
   guide_match: description
@@ -825,7 +826,7 @@
   notes: Like cabin_fever with a 30-minute countdown.
 - id: cannonball_commute
   title: Long-distance golf
-  verdict: maybe
+  verdict: skip
   reasons: [very_long]
   guide_name: 'Long-Distance Golf (purple #2)'
   guide_match: guess
@@ -858,7 +859,7 @@
     but it takes very long.
 - id: egg_hunt
   title: Easter egg hunt
-  verdict: maybe
+  verdict: skip
   reasons: [very_long]
   guide_name: Easter Egg Hunt
   guide_match: coordinates
@@ -891,7 +892,7 @@
   notes: Find 36 wooden pieces across a large arena and put them on the wheel. Hours of play.
 - id: gauntlet_0_pegboard
   title: 'Black sphere room 0: Symbols on the Wall'
-  verdict: maybe
+  verdict: skip
   reasons: [no_gourd, voice_blocked]
   guide_name: Symbols on the Wall
   guide_match: guess
@@ -929,7 +930,7 @@
     the stairs.'
 - id: gauntlet_1_pointers
   title: 'Black sphere room 1: Blue Totems'
-  verdict: maybe
+  verdict: skip
   reasons: [no_gourd, voice_blocked]
   guide_name: Blue Totems
   guide_match: guess
@@ -967,7 +968,7 @@
     (NHold) to open the stairs.'
 - id: gauntlet_2_kick
   title: 'Black sphere room 2: Tomato Timer'
-  verdict: maybe
+  verdict: skip
   reasons: [no_gourd, voice_blocked]
   guide_name: Tomato Timer
   guide_match: guess
@@ -1005,7 +1006,7 @@
     (NHold) to open the stairs.'
 - id: gauntlet_4_volleyball
   title: 'Black sphere room 4: Red Kettle & Switches'
-  verdict: maybe
+  verdict: skip
   reasons: [no_gourd, voice_blocked]
   guide_name: Red Kettle & Switches
   guide_match: guess
@@ -1043,7 +1044,7 @@
     both players hold buttons (NHold) to open the stairs.'
 - id: gauntlet_5_invisible
   title: 'Black sphere room 5: Hidden Symbols'
-  verdict: maybe
+  verdict: skip
   reasons: [no_gourd, voice_blocked]
   guide_name: Hidden Symbols
   guide_match: guess
@@ -1081,7 +1082,7 @@
     (NHold) to open the stairs.'
 - id: gauntlet_6_sculptures
   title: 'Black sphere room 6: Shapes & Switches'
-  verdict: maybe
+  verdict: skip
   reasons: [no_gourd, voice_blocked]
   guide_name: Shapes & Switches
   guide_match: guess
@@ -1119,7 +1120,7 @@
     (NHold) to open the stairs.'
 - id: memory_bombs
   title: Yellow stands meter
-  verdict: maybe
+  verdict: skip
   reasons: [solo]
   guide_name: Yellow Stands (meter puzzle)
   guide_match: description

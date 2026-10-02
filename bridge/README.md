@@ -119,4 +119,5 @@ To regenerate the signatures, load the interop assemblies with reflection (a 40-
 1. `load_snapshot`: reset puzzle state (switches, doors, gourds), not only props and bodies. `release_switches` and `place_prop home` cover the cave telescope.
 2. `look` through `PlayerHead`, so turns do not depend on mouse sensitivity.
 3. More real puzzles. `docs/PUZZLE_CATALOGUE.md` lists every puzzle, with spawns and a verdict; `puzzles/candidates/` has the 20 that fit. Each needs a scripted solution and a working reset.
-4. Backend B (per-body Rewired input), for puzzles that need two bodies to act at the same moment (the green structure switches).
+4. `set_time`: set the time of day to a fixed point at each reset (Enviro). The game clock runs, so a long session reaches night and the screenshots go dark. Not started.
+5. Backend B (per-body Rewired input), for puzzles that need two bodies to act at the same moment (the green structure switches).

@@ -484,6 +484,8 @@ After M8: more puzzles, more agents, and ablations (see section 13).
 
 - `load_snapshot` is not written. `reset` places bodies and props (`props:` in the puzzle file), releases held world switches, and can pin a gourd back into its home (`home: true`). Other puzzle state (doors, counters, panels) keeps its value. Until `load_snapshot` is written, pick puzzles whose state these cover, as the cave telescope does.
 
+- The time of day is not reset. The game clock runs while the game is unpaused, so a long session reaches night and the agents' screenshots go nearly black. To do: a bridge command that sets the time of day to a fixed point, called by `reset` (see `bridge/README.md`, "Next").
+
 ### 15.4 First real-game session (2026-09-30)
 
 Setup: BepInEx 6.0.0-be.788 in the game folder, big-walk-practice 0.6.0, the bridge, and BigWalk.SkipIntro. The bridge talks only through interop signatures; we did not run Cpp2IL. `bridge/README.md` has the details and the class names.
@@ -525,6 +527,6 @@ Findings and changes:
 
 ### 15.6 Puzzle catalogue (2026-10-01)
 
-`docs/puzzle_catalogue.yaml` lists all 52 puzzles of a 2-player walk: 45 gourd puzzles and 7 black sphere rooms. Each entry has the game root, the gourd's home, the map coordinates, the designer teleport point, two checked spawns, the puzzle's mechanisms, and a verdict. The verdicts are 20 run, 17 maybe, and 15 skip (sound, simultaneous presses, or players far apart). The 20 runnable puzzles have files in `puzzles/candidates/`, outside the default dataset until each has a scripted solution and a working reset. `docs/PUZZLE_CATALOGUE.md` explains the method and lists the problems to solve first: reset of puzzle state (sealed rooms, boards, vices), the time of day (a long session reaches night), `say` leaking through voice-blocked walls, and blindfolds under hot-swap.
+`docs/puzzle_catalogue.yaml` lists all 52 puzzles of a 2-player walk: 45 gourd puzzles and 7 black sphere rooms. Each entry has the game root, the gourd's home, the map coordinates, the designer teleport point, two checked spawns, the puzzle's mechanisms, and a verdict. The verdicts are 20 run, 5 maybe, and 27 skip: sound, simultaneous presses, or players far apart, and since 2026-10-02 also puzzles one agent can solve alone, very long ones, and the black sphere rooms. The 20 runnable puzzles have files in `puzzles/candidates/`, outside the default dataset until each has a scripted solution and a working reset. `docs/PUZZLE_CATALOGUE.md` explains the method and lists the problems to solve first: reset of puzzle state (sealed rooms, boards, vices), the time of day (a long session reaches night), `say` leaking through voice-blocked walls, and blindfolds under hot-swap.
 
 New bridge commands for this: `survey`, `puzzle_roots`, `children`, `map_coords`, `ground`, and a working `overview_shot` (free camera, pointer readback). `scripts/survey_puzzles.py` dumps the survey and checks the catalogue's spawns.

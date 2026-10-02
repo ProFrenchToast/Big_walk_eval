@@ -12,9 +12,11 @@ We skip a puzzle if it needs any of these:
 - **simultaneous**: two presses at the same moment (`SimPressController`). Hot-swap runs one body at a time. Buttons that two bodies must *hold* together (`NHold`) are fine, because a held switch stays held after a switch (tested with the cave telescope).
 - **far_apart**: the players must act far from each other (over about 100 m, like the cave telescope).
 
+Since 2026-10-02 we also skip puzzles with the reasons **solo**, **long_wait**, **very_long** and **no_gourd** (the black sphere rooms), for now.
+
 `maybe` means the puzzle passes these rules but has a practical problem:
 
-- **voice_blocked**: the game blocks voice and text chat between the players. Our `say` tool does not know this, so it would leak. The faithful version needs `say` turned off for the puzzle (gestures only).
+- **voice_blocked**: the game blocks voice and text chat between the players. Our `say` tool still routes by distance only (`ChatRouter`), so it would leak through the barrier. The in-game text chat (Enter, `type`, Enter) fades with distance and occlusion, as voice does; if `say` sends through it, these puzzles become runnable as designed.
 - **solo**: one agent can solve it alone, so it tells us little about cooperation.
 - **long_wait**, **very_long**, **trivial**: minutes to hours of game time, or no real task.
 - **no_gourd**: the black sphere rooms give no gourd. The scorer needs a new goal type, for example the state of the room's "Challenge Complete" gate.
@@ -57,7 +59,17 @@ Guide coords are in the guide's order (z_map, x_map), at the gourd's home.
 | `tall_button` | Mechanical Arm (stacking puzzle) | 3521, 1273 | - |
 | `teller_window` | Blue Room (peg / pin puzzle) | 3658, 1291 | - |
 
-### Maybe (17)
+### Maybe (5)
+
+| id | Guide name | Guide coords | Reasons |
+| --- | --- | --- | --- |
+| `pointers_paradise` | Black Tower symbol room (possibly) | 3768, 1443 | rules_unverified |
+| `ring_room` | (not in the guide) | 3833, 1935 | rules_unverified |
+| `scout_bombs` | (not in the guide) | 3233, 1839 | rules_unverified |
+| `tile_thief` | (not in the guide) | 3878, 2259 | rules_unverified |
+| `trap_room` | Orange Barn (sealed player guides gestures) (probably) | 4140, 1782 | voice_blocked |
+
+### Skip (27)
 
 | id | Guide name | Guide coords | Reasons |
 | --- | --- | --- | --- |
@@ -73,16 +85,6 @@ Guide coords are in the guide's order (z_map, x_map), at the gourd's home.
 | `gauntlet_5_invisible` | Hidden Symbols (probably) | black sphere | no_gourd, voice_blocked |
 | `gauntlet_6_sculptures` | Shapes & Switches (probably) | black sphere | no_gourd, voice_blocked |
 | `memory_bombs` | Yellow Stands (meter puzzle) | 4028, 1877 | solo |
-| `pointers_paradise` | Black Tower symbol room (possibly) | 3768, 1443 | rules_unverified |
-| `ring_room` | (not in the guide) | 3833, 1935 | rules_unverified |
-| `scout_bombs` | (not in the guide) | 3233, 1839 | rules_unverified |
-| `tile_thief` | (not in the guide) | 3878, 2259 | rules_unverified |
-| `trap_room` | Orange Barn (sealed player guides gestures) (probably) | 4140, 1782 | voice_blocked |
-
-### Skip (15)
-
-| id | Guide name | Guide coords | Reasons |
-| --- | --- | --- | --- |
 | `breadcrumb_loop` | (not in the guide) | 3668, 1712 | simultaneous, far_apart |
 | `coordinates_holding` | The 4166, 1899 Puzzle | 3908, 1474 | far_apart |
 | `coordinates_sim_press` | Red Coordinates (3259, 1883 & 3231, 1976) | 3259, 1883 | simultaneous, far_apart |
@@ -110,8 +112,8 @@ Guide coords are in the guide's order (z_map, x_map), at the gourd's home.
 ## Problems to solve before the candidates can be scored
 
 1. **Reset.** Reset moves bodies and props, pins each gourd back into its home, and releases held switches. Most candidates also have state it does not restore: sealed rooms, boards, timers, and gourd vices that open on success. Write `load_snapshot`, or a reset step per puzzle, and test each candidate twice in a row.
-2. **Time of day.** The game clock runs, and reset does not set it. By the end of the 2026-10-01 session it was night in the game, and the agents' screenshots were nearly black. Reset needs to set the time of day (the game uses Enviro; there is a `StopEnviroTimeOperation` in the remote debug tools).
-3. **Voice blocking.** `say` uses distance only. Puzzles where the game blocks voice need `say` off, and the in-game text chat also fades with occlusion.
+2. **Time of day.** The game clock runs, and reset does not set it. By the end of the 2026-10-01 session it was night in the game, and the agents' screenshots were nearly black. To do: a bridge command that sets the time of day to a fixed point (for example midday), called by `BridgeGame.reset`, with the time in the puzzle file or the server config. The game uses Enviro; `StopEnviroTimeOperation` in the remote debug tools shows where to look.
+3. **Voice blocking.** `say` uses distance only. Send `say` through the in-game text chat, or turn `say` off for puzzles where the game blocks voice.
 4. **Blindfolds under hot-swap.** `PeckEffectMask` acts on the local player. Check that the mask follows the masked body when control switches, as `ChatSync` had to do for chat.
 5. **Player count.** The 2-player variants are active because `host_walk` hosts with `--players 2`. For 3 or 4 agents, host with that count and run the survey again; the `LandmarksPlayerCount3/4` roots were empty in a 2-player walk.
 6. **Post-game variants** (`post_game_variant: true`) are active in the `evalwalk` save before the true ending. They are harder twins of other puzzles.
