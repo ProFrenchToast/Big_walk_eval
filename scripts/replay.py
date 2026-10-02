@@ -39,7 +39,7 @@ async def run(recording: Recording, game: GameClient, args: argparse.Namespace) 
     held_ok = True
     n = 0
     try:
-        async for frame in play(recording, game, echo_chat=args.echo_chat):
+        async for frame in play(recording, game):
             n += 1
             step = frame.step
             name = recording.agents.get(step.slot, f"slot{step.slot}")
@@ -82,7 +82,6 @@ def main() -> int:
     parser.add_argument("--game-url", default=DEFAULT_URL)
     parser.add_argument("--seed", type=int, help="FakeGame seed; default: the task's seed")
     parser.add_argument("--frames", type=Path, help="write the view after each act as PNG here")
-    parser.add_argument("--echo-chat", action="store_true", help="show `say` messages in game")
     parser.add_argument("--tolerance-m", type=float, default=0.01)
     parser.add_argument("--tolerance-deg", type=float, default=0.5)
     parser.add_argument("-v", "--verbose", action="store_true", help="print one line per act")

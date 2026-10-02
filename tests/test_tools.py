@@ -14,8 +14,7 @@ from big_walk_eval.protocol import TYPE_MAX_CHARS, KeyAction, LookAction, MouseA
 from big_walk_eval.tools import agent_tools
 from big_walk_eval.tools.computer import UNSUPPORTED_ACTIONS, computer_tool, to_game_actions
 from big_walk_eval.tools.end_episode import end_episode
-from big_walk_eval.tools.say import say
-from tests.conftest import ASH_TO_PLATE_YAW, reset_request
+from tests.conftest import ASH_TO_PLATE_YAW
 
 
 @pytest.fixture
@@ -42,7 +41,7 @@ def test_other_tools_are_not_computer(episode: Episode):
 @pytest.mark.parametrize("action", sorted(UNSUPPORTED_ACTIONS))
 async def test_unsupported_actions_return_error_text(episode: Episode, action: str):
     tool = computer_tool(episode, 1)
-    with pytest.raises(ToolError, match="not available in this game, use `say` to talk"):
+    with pytest.raises(ToolError, match="not available in this game. To talk, press"):
         await tool(action=action, text="hi", coordinate=[1, 1])
 
 
@@ -109,14 +108,14 @@ async def test_tool_call_limit(game: FakeGame):
     ep.start_turn(0, 1)
     tool = computer_tool(ep, 1)
     await tool(action="screenshot")
-    await say(ep, 1)(message="hi")
+    await end_episode(ep, 1)()
     with pytest.raises(ToolError, match="all 2 actions"):
         await tool(action="screenshot")
 
 
 async def test_not_your_turn(episode: Episode):
     with pytest.raises(ToolError, match="not your turn"):
-        await say(episode, 2)(message="hi")
+        await end_episode(episode, 2)()
 
 
 async def test_actions_list(episode: Episode):
@@ -131,21 +130,21 @@ async def test_actions_list(episode: Episode):
     assert state.info["gate_open"] is True
 
 
-async def test_say_routes_by_range():
-    game = FakeGame()
-    await game.reset(reset_request())
-    ep = Episode(game, EpisodeConfig(chat_range_m=4.0), {1: "Ash", 2: "Birch"})
-    ep.start_turn(0, 1)
-    assert await say(ep, 1)(message="  too far?  ") == "sent"
-    assert ep.chat.deliver(2) == []
-    assert ep.chat.log[0].text == "too far?"
+def test_agents_talk_only_through_the_game(episode: Episode):
+    assert [ToolDef(t).name for t in agent_tools(episode, 1)] == ["computer", "end_episode"]
 
-    ep = Episode(game, EpisodeConfig(chat_range_m=6.0, echo_chat=True), {1: "Ash", 2: "Birch"})
-    ep.start_turn(0, 1)
-    await say(ep, 1)(message="hello")
-    [msg] = ep.chat.deliver(2)
-    assert (msg.sender_name, msg.text, msg.recipients) == ("Ash", "hello", [2])
-    assert game.chat_echoes == [(1, "hello")]
+
+async def test_chat_through_the_computer_tool(episode: Episode):
+    tool = computer_tool(episode, 1)
+    await tool(
+        actions=[
+            {"action": "key", "text": "Return"},
+            {"action": "type", "text": "hello Birch"},
+            {"action": "key", "text": "Return"},
+        ]
+    )
+    [event] = [e for r in episode.events if (e := r.event).type == "text_chat"]
+    assert (event.slot, event.data) == (1, {"message": "hello Birch"})
 
 
 async def test_end_episode_votes(episode: Episode):

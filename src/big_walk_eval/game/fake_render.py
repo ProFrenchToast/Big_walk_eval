@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import math
+import textwrap
 from dataclasses import dataclass
 from functools import cache
 from typing import TYPE_CHECKING, Literal
@@ -84,6 +85,7 @@ class _Billboard:
     color: tuple[int, int, int]
     shape: Literal["rect", "ellipse"]
     label: str = ""
+    chat: str = ""
 
 
 def first_person(game: FakeGame, viewer: FakeBody) -> bytes:
@@ -91,7 +93,7 @@ def first_person(game: FakeGame, viewer: FakeBody) -> bytes:
 
 
 def first_person_image(game: FakeGame, viewer: FakeBody) -> Image.Image:
-    from big_walk_eval.game.fake_game import HFOV_DEG, PLATE_RADIUS, PLATE_XZ
+    from big_walk_eval.game.fake_game import CHAT_READ_M, HFOV_DEG, PLATE_RADIUS, PLATE_XZ
 
     w, h = SCREEN_WIDTH, SCREEN_HEIGHT
     f = focal_px(HFOV_DEG, w)
@@ -137,7 +139,10 @@ def first_person_image(game: FakeGame, viewer: FakeBody) -> Image.Image:
         if body.slot == viewer.slot:
             continue
         color = BODY_COLORS[(body.slot - 1) % len(BODY_COLORS)]
-        boards.append(_Billboard(body.x, body.z, 0.6, 0.0, 1.35, color, "rect", body.name))
+        chat = game.shown_chat(body)
+        if math.hypot(body.x - viewer.x, body.z - viewer.z) > CHAT_READ_M:
+            chat = ""
+        boards.append(_Billboard(body.x, body.z, 0.6, 0.0, 1.35, color, "rect", body.name, chat))
         boards.append(_Billboard(body.x, body.z, 0.45, 1.3, 0.45, color, "ellipse"))
     for item in game.items.values():
         if item.holder is not None and item.holder[0] == viewer.slot:
@@ -156,7 +161,7 @@ def first_person_image(game: FakeGame, viewer: FakeBody) -> Image.Image:
     visible = [(b, *cam(b)) for b in boards]
     visible = [v for v in visible if v[2] > 0.2]
     visible.sort(key=lambda v: -v[2])
-    labels: list[tuple[float, float, str]] = []
+    labels: list[tuple[float, float, str, str]] = []
     for b, xc, zc in visible:
         cx = w / 2 + f * xc / zc
         half = f * b.width / zc / 2
@@ -176,9 +181,11 @@ def first_person_image(game: FakeGame, viewer: FakeBody) -> Image.Image:
                 draw.rectangle([x, top, x + COL_STEP - 1, bottom], fill=b.color)
             drawn = True
         if drawn and b.label:
-            labels.append((cx, top - f * 0.6 / zc, b.label))
-    for cx, y, text in labels:
+            labels.append((cx, top - f * 0.6 / zc, b.label, b.chat))
+    for cx, y, text, chat in labels:
         draw.text((cx, y), text, fill=(20, 20, 20), anchor="ms", font=_font(22))
+        if chat:
+            _bubble(draw, cx, y - 28, textwrap.wrap(chat, 32))
 
     cx, cy = w // 2, h // 2
     draw.line([cx - 10, cy, cx + 10, cy], fill=(255, 255, 255), width=2)
@@ -189,7 +196,31 @@ def first_person_image(game: FakeGame, viewer: FakeBody) -> Image.Image:
         hands.append(f"{hand} hand: {game.items[item_id].type if item_id else 'empty'}")
     draw.rectangle([10, h - 44, 430, h - 10], fill=(0, 0, 0))
     draw.text((20, h - 27), "   ".join(hands), fill=(255, 255, 255), anchor="lm", font=_font(20))
+    # The HUD line fits about 130 characters: show the end of a draft, the start of a message.
+    if viewer.chat_draft is not None:
+        draft = viewer.chat_draft
+        chat_line = f"chat: {'...' + draft[-120:] if len(draft) > 120 else draft}_"
+    elif own := game.shown_chat(viewer):
+        chat_line = textwrap.shorten(f"{viewer.name}: {own}", 130, placeholder="...")
+    else:
+        chat_line = ""
+    if chat_line:
+        draw.rectangle([10, h - 84, w - 10, h - 50], fill=(0, 0, 0))
+        draw.text((20, h - 67), chat_line, fill=(255, 255, 255), anchor="lm", font=_font(18))
     return img
+
+
+def _bubble(draw: ImageDraw.ImageDraw, cx: float, bottom: float, lines: list[str]) -> None:
+    """Chat text over a body's head: white box, lines centered on `cx`, ending at `bottom`."""
+    font = _font(18)
+    line_h = 22
+    top = bottom - len(lines) * line_h
+    width = max(draw.textlength(line, font=font) for line in lines)
+    draw.rectangle(
+        [cx - width / 2 - 6, top - 4, cx + width / 2 + 6, bottom + 4], fill=(255, 255, 255)
+    )
+    for i, line in enumerate(lines):
+        draw.text((cx, top + i * line_h), line, fill=(20, 20, 20), anchor="ma", font=font)
 
 
 def overview(game: FakeGame) -> bytes:

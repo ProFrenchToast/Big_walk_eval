@@ -14,7 +14,6 @@ from big_walk_eval.protocol import (
     CaptureInfo,
     CaptureRequest,
     CaptureStopResponse,
-    ChatEchoRequest,
     GameState,
     HealthResponse,
     OkResponse,
@@ -76,9 +75,6 @@ class HttpGame:
 
     async def state(self) -> GameState:
         return await self._call("GET", "/state", GameState)
-
-    async def echo_chat(self, slot: int, text: str) -> None:
-        await self._call("POST", "/chat_echo", OkResponse, ChatEchoRequest(slot=slot, text=text))
 
     async def overview_shot(
         self, position: Vec3 | None = None, look_at: Vec3 | None = None

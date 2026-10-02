@@ -43,10 +43,6 @@ class GameClient(Protocol):
         """Current state. `events` holds the events not yet returned by `act` or `state`."""
         ...
 
-    async def echo_chat(self, slot: int, text: str) -> None:
-        """Optional: show a chat message in game, for replays."""
-        ...
-
     async def overview_shot(
         self, position: Vec3 | None = None, look_at: Vec3 | None = None
     ) -> bytes | None:

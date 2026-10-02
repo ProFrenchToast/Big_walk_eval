@@ -110,10 +110,6 @@ def main() -> int:
     record = sample.store_as(EpisodeLog)
     print(f"\nscore: {score.value}  ({score.explanation})")
     print(f"turns: {record.n_turns}, game time: {record.total_game_ms} ms")
-    for msg in record.chat:
-        print(
-            f"  turn {msg['turn'] + 1} {msg['sender_name']} -> {msg['recipients']}: {msg['text']}"
-        )
     for event in record.events:
         print(
             f"  turn {event['turn'] + 1} event {event['type']} slot={event['slot']} {event['data']}"

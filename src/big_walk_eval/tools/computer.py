@@ -33,7 +33,10 @@ from big_walk_eval.protocol import (
     parse_keys,
 )
 
-NOT_AVAILABLE = "`{action}` is not available in this game, use `say` to talk."
+NOT_AVAILABLE = (
+    '`{action}` is not available in this game. To talk, press `key` "Return", '
+    '`type` your message, and press "Return" again.'
+)
 
 UNSUPPORTED_ACTIONS = frozenset(
     {

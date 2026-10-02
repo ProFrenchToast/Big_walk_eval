@@ -1,9 +1,11 @@
 """Compose the per-body capture frames of an episode into one video.
 
 Each body gets a tile with its own view. A yellow border marks the body that
-acts. Each tile shows the chat that its body said or heard, so the video
-shows who heard what. The chat and the active body come from the episode
-recording (`EpisodeLog.replay`), matched to the frames by game time.
+acts. Each tile captions the messages that its body sent in the in-game chat.
+The other views show a message only where the game shows it, over the
+speaker's head. The messages (`text_chat` events) and the active body come
+from the episode recording (`EpisodeLog.replay`), matched to the frames by
+game time. A message gets the game time at the end of the act that sent it.
 
 Frames exist only while game time runs, so the video skips the pauses
 between actions. A chat message freezes the video for `hold_s` seconds so
@@ -24,7 +26,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 from big_walk_eval.protocol import CaptureInfo
-from big_walk_eval.replay import ActStep, CaptureStep, Recording, SayStep
+from big_walk_eval.replay import ActStep, CaptureStep, Recording
 
 ACTIVE = (250, 204, 21)
 IDLE = (40, 40, 46)
@@ -86,13 +88,14 @@ class Composer:
             ]
             self.captions = [
                 Caption(
-                    s.game_ms - start,
-                    recording.agents.get(s.slot, str(s.slot)),
-                    s.text,
-                    frozenset([s.slot, *s.recipients]),
+                    a.game_ms + a.used_ms,
+                    recording.agents.get(e.slot, str(e.slot)),
+                    str(e.data.get("message", "")),
+                    frozenset([e.slot]),
                 )
-                for s in recording.steps
-                if isinstance(s, SayStep)
+                for a in self.acts
+                for e in a.events
+                if e.type == "text_chat" and e.slot is not None
             ]
         self.cols = math.ceil(math.sqrt(len(self.slots)))
         self.rows = math.ceil(len(self.slots) / self.cols)

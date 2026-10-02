@@ -23,7 +23,6 @@ from big_walk_eval.protocol import (
     ActRequest,
     CaptureRequest,
     CaptureStopResponse,
-    ChatEchoRequest,
     OkResponse,
     OverviewRequest,
     ResetRequest,
@@ -100,15 +99,6 @@ def create_app(game: GameClient) -> FastAPI:
     @app.get("/state")
     async def state() -> Response:
         return await run(game.state)
-
-    @app.post("/chat_echo")
-    async def chat_echo(request: Request) -> Response:
-        async def call():
-            req = await body(request, ChatEchoRequest)
-            await game.echo_chat(req.slot, req.text)
-            return OkResponse()
-
-        return await run(call)
 
     @app.post("/overview_shot")
     async def overview_shot(request: Request) -> Response:

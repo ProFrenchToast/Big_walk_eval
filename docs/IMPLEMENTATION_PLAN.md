@@ -14,7 +14,7 @@ The eval measures whether LLM agents can cooperate to solve puzzles in the game 
 
 - Each agent controls one player body.
 - Each agent gets screenshots from its own body only.
-- Agents talk through text chat. A message reaches only agents within range, like the in-game proximity chat.
+- Agents talk through the game's own text chat. Only players near the speaker who can see it read a message.
 - An episode succeeds when a body holds the puzzle reward (a "gourd") and all agents agree to end.
 
 Big Walk puzzles often need two players to act at the same time. For example, one player holds a button while a partner takes the gourd. This is why the game is a good cooperation test, and it is also the main technical risk (see section 3).
@@ -86,7 +86,7 @@ Backend B is a new idea from reading the practice mod notes. It is not in the pl
 | Actions | Computer-use style actions. Real OS input to the active body (Backend A). Mouse-look and held keys are supported. |
 | Timing | The game is paused between turns. Game time moves only while the active agent's actions run. |
 | Observation | One screenshot from the active body's own camera, at 1366 x 768. |
-| Communication | A `say` tool. The harness delivers each message only to agents within range. Optional echo into in-game chat for replays. |
+| Communication | The game's own text chat: key Return, `type`, key Return. The game shows the message over the speaker's head, and only nearby players read it. |
 | Audio | Skip puzzles that need sound. |
 | Ending | Each agent has an `end_episode` tool. The episode ends when all agents have an active vote. |
 | Scoring | The bridge mod reads the held item of each body. Success means a body holds the gourd. A screenshot judge is a spot check only. |
@@ -117,8 +117,8 @@ Three components. They talk over JSON.
 +-------------------------------------v--------------------------------------------+
 |  harness (NEW, Python, Inspect AI). Can run on the same machine or another one.  |
 |   - task, dataset (puzzle configs), round-robin solver                           |
-|   - tools: computer (native binding), say, end_episode                           |
-|   - chat routing by distance, vote tracking, scorer                              |
+|   - tools: computer (native binding), end_episode                                |
+|   - vote tracking, scorer                                                        |
 |   - GameClient interface with two implementations: HttpGame and FakeGame          |
 +----------------------------------------------------------------------------------+
 ```
@@ -133,12 +133,10 @@ while not all_votes_active and turn < max_turns:
     agent = agents[turn % n]
     game.switch(agent.slot)        # while paused
     obs = game.screenshot()
-    inbox = chat.deliver(agent)    # messages in range since this agent's last turn
-    append user message to agent history: header text + inbox + screenshot
+    append user message to agent history: header text + screenshot
     output = model.generate(agent.history, tools)
     for each tool call in output:
-        computer -> game.act(slot, [action], budget)   # resume, input, pause
-        say      -> chat.post(sender, text, positions from game.state())
+        computer -> game.act(slot, [action], budget)   # resume, input, pause (also chat)
         end_episode -> votes[agent] = True / False
     turn += 1
 score from game.state(): any body holds the gourd
@@ -200,7 +198,6 @@ class GameClient(Protocol):
     async def screenshot(self) -> bytes: ...
     async def act(self, slot: int, actions: list[Action], budget_ms: int) -> ActResult: ...
     async def state(self) -> GameState: ...
-    async def echo_chat(self, slot: int, text: str) -> None: ...   # optional, for replays
     async def overview_shot(self) -> bytes | None: ...             # optional free-cam image
 ```
 
@@ -216,7 +213,6 @@ class GameClient(Protocol):
 | `GET /screenshot` | | PNG, base64 |
 | `POST /act` | `{slot, actions: [...], budget_ms}` | `ActResult` |
 | `GET /state` | | `GameState` |
-| `POST /chat_echo` | `{slot, text}` | `{ok}` |
 | `POST /overview_shot` | `{position, look_at}` | PNG, base64 |
 | `POST /capture/start` | `CaptureRequest {episode_id, fps, width, height, slots}` | `{ok}` |
 | `POST /capture/stop` | | `{info: CaptureInfo \| null}` |
@@ -257,7 +253,8 @@ Line-delimited JSON over TCP on `127.0.0.1:47800`. One request per line, one res
 | `left_mouse_down` / `left_mouse_up`, `left_click`, `right_click` | Mouse buttons. Big Walk uses these for hand actions (confirm the exact controls). |
 | `wait` | Let game time pass with no input. Cap at the turn budget. |
 | `scroll` | Pass through as mouse wheel, if the game uses it. |
-| `type`, `zoom`, `cursor_position`, `left_click_drag`, `double_click`, `triple_click`, `middle_click`, `back_click`, `forward_click`, `open_web_browser`, `navigate` | Return an error text: "not available in this game, use `say` to talk". |
+| `type` | Type text into the in-game chat. Open the chat with key Return first, and send with Return. |
+| `zoom`, `cursor_position`, `left_click_drag`, `double_click`, `triple_click`, `middle_click`, `back_click`, `forward_click`, `open_web_browser`, `navigate` | Return an error text: "not available in this game", and how to talk in the chat. |
 
 "Look toward the pixel" makes absolute `mouse_move` useful in a first-person game. Models already point at things by pixel, so this uses a skill they have.
 
@@ -272,17 +269,16 @@ counts = angle_deg * counts_per_degree      # calibrate once per machine
 
 Write a calibration script (M5) that turns by a known count, reads the yaw from `get_state`, and computes `counts_per_degree`.
 
-### 7.2 `say(message: str)`
+### 7.2 Talking: the in-game text chat
 
-- Records the message with the sender's position at that moment.
-- Delivers it to each other agent at the start of that agent's next turn, if the distance between the two bodies is at most `chat_range_m` at send time.
-- Returns only the text "sent". It does not tell the sender who heard the message. Agents must find this out themselves.
-- Optionally echoes the message into in-game chat for replays. Spawned bodies probably share one name in-game chat, so the harness is the source of truth.
+- There is no chat tool. An agent talks as a player does, with the `computer` tool: key Return opens the chat, `type` writes the message, key Return sends it.
+- The game shows the message over the speaker's head. Other agents read it in their own screenshots, so the game decides who can read it (distance and occlusion). The harness does not deliver messages and does not tell the sender who read one.
+- The game reports each message as a `text_chat` event. The scorer counts them (`n_messages`).
 
 ### 7.3 `end_episode(withdraw: bool = False)`
 
 - Sets or clears this agent's vote.
-- Returns the text "vote recorded". It does not tell the agent how many other votes exist. Agents must ask each other through `say`.
+- Returns the text "vote recorded". It does not tell the agent how many other votes exist. Agents must ask each other in the chat.
 - The loop ends when all agents have an active vote at the end of a turn.
 
 ### 7.4 System prompt (draft, one per agent)
@@ -292,7 +288,7 @@ Content, in order:
 1. You are one of N players in the game Big Walk. Your name is `<name>`.
 2. The goal: work with the other players to solve the puzzle near you and get the reward, a gourd. At least one player must hold the gourd at the end.
 3. You see only your own first-person view. The other players see different views.
-4. You can talk only with `say`. Players far away do not hear you.
+4. To talk, use the in-game text chat (Return, `type`, Return). Only nearby players who can see you read it.
 5. The game pauses while you think. Time moves only while your actions run.
 6. Controls (fill in after Patrick confirms them).
 7. When the gourd is held and you agree the task is done, call `end_episode`. The episode ends only when all players have called it.
@@ -305,9 +301,9 @@ Keep puzzle hints out of the prompt. Put the puzzle name and a one-line location
 
 - Python 3.11+. Use `uv` and a `pyproject.toml`. Use `ruff` and `pytest` with `pytest-asyncio`.
 - Do not use `react()`. It runs one agent until it submits. Write a custom `@solver` that holds N message histories and calls `get_model().generate()` for one agent at a time. Use `inspect_ai.model.execute_tools` to run tool calls.
-- Store per-sample data in the sample store: votes, chat log (sender, recipients, text, turn), per-turn game time, and events.
+- Store per-sample data in the sample store: votes, per-turn game time, and events. In-game chat messages are `text_chat` events.
 - Put each agent's full history in the transcript with `transcript().info` or spans, so the log viewer shows each agent separately.
-- Task parameters: `game_url`, `puzzles` (list of IDs or "all"), `n_agents`, `max_turns`, `max_game_ms_per_turn`, `max_tool_calls_per_turn`, `chat_range_m`, `backend` (`http` or `fake`).
+- Task parameters: `game_url`, `puzzles` (list of IDs or "all"), `n_agents`, `max_turns`, `max_game_ms_per_turn`, `max_tool_calls_per_turn`, `backend` (`http` or `fake`).
 - Set `max_samples=1` for the HTTP backend. One game instance runs one sample at a time.
 - Scorer returns a `Score` with value `C` or `I` and metadata: `gourd_holder`, `votes`, `turns`, `total_game_ms`, `n_messages`, `ended_by_vote` (true) or `ended_by_limit` (false), and `false_end` (all voted but no gourd held).
 
@@ -375,11 +371,9 @@ big_walk_eval/
     task.py              # @task big_walk_coop
     dataset.py           # puzzles/*.yaml -> Samples
     solver.py            # round-robin multi-agent solver
-    chat.py              # message routing by distance
     scorer.py
     prompts.py
     tools/computer.py    # native-bound computer tool shim
-    tools/say.py
     tools/end_episode.py
     game/client.py       # GameClient protocol
     game/http_game.py    # client for the game server
@@ -435,7 +429,7 @@ After M8: more puzzles, more agents, and ablations (see section 13).
 ## 13. Later work (not in scope now)
 
 - Ablations: pixels plus low-level actions, pixels plus semantic actions (`walk_to`, `pick_up`, as in Ramblers), and text state plus semantic actions. This separates perception and motor skill from cooperation.
-- Chat on or off, and chat range as a variable.
+- Chat on or off.
 - More agents (up to 4) and harder puzzles.
 - Audio puzzles, with audio-capable models or audio encoded as text.
 - Perspective-taking probes: ask an agent what a partner can see, and compare with the partner's real screenshot.
@@ -443,7 +437,6 @@ After M8: more puzzles, more agents, and ablations (see section 13).
 ## 14. Open questions
 
 - Does the Anthropic computer toolset (`computer_toolset_20260801`) map calls back into our `action` argument without changes? **Partly answered.** In inspect_ai 0.3.273, `anthropic.py` sends each toolset member call to the tool named `computer` with `action = <member name>` and the member input as the other arguments. So our shim receives the calls. Not checked: whether the member input names match the legacy names (`text`, `coordinate`, `duration`). The Anthropic SDK is not installed in CI. A real model call must still confirm this.
-- Does in-game text chat show a separate name for each spawned body? This matters only for the echo feature.
 - The right value for `max_game_ms_per_turn`. Start at 3000 and tune after the scripted run.
 - Does `timeScale = 0` stop every puzzle timer? Some timers can use unscaled time.
 
@@ -465,6 +458,7 @@ After M8: more puzzles, more agents, and ablations (see section 13).
 12. **Each episode records its inputs for replays.** `RecordingGame` (`src/big_walk_eval/replay.py`) wraps the `GameClient`. It records each reset, switch, and act in order, with the game time. The tools add `say` messages and votes. After each act, it reads the state of all bodies as a checkpoint. The events of that read go back to the harness on the next call, so no event is lost. The solver puts the recording in `EpisodeLog.replay`. Screenshots are not in the recording, because the Inspect log has them. `scripts/replay.py` sends the recorded inputs to a fresh game and shows the drift from each checkpoint. FakeGame replays with zero drift. **[NEEDS GAME]** Measure the drift on the real game. If the drift is large, the bridge `teleport` can move each body to its checkpoint during a playback. A smooth video also needs frames during an act, not only after it. That needs a bridge command that captures frames at a fixed game-time step.
 13. **Per-agent video.** With `-T capture=true`, the game records each body's own view in one run. We do not replay the episode once per agent. Under hot-swap the camera follows the control, and each replay on the real game can drift in a different way. So the N videos would not show the same episode. `CaptureRequest` asks the game to write one JPEG per body for each 1/fps step of game time. Frames are only made while game time runs, so the pauses between actions are not in them. The game writes the frames on its own machine, to `<capture_dir>/<episode_id>/slot<N>/`, with `capture.json` (a `CaptureInfo`). The solver starts the capture after the reset and puts the `CaptureInfo` in `EpisodeLog.capture`. The recording gets a `capture` step, so `src/big_walk_eval/video.py` can match frames to acts and chat by game time. `scripts/make_video.py` makes the grid video. FakeGame renders every body with its raycast view. The bridge (`Commands/BodyCapture.cs`) renders one extra camera per body and sends raw frames to one ffmpeg process per body. Tested in the game on 2026-10-01 (`footy_walkabout`, 3 bodies): each camera follows its own body's head while the body is inactive, no head mesh is in view, and 3 cameras at 683x384 and 30 fps do not slow the run noticeably. The frames are read through a pointer (`Texture2D.GetWritableImageData`), because Unity byte arrays fail in this interop build. If many more bodies slow the live run too much, run the capture during a playback instead, with `Time.captureDeltaTime`. The game draws head text, its fade, and the active body's hidden head for the active camera only, so the bridge (`Commands/CaptureView.cs`) sets the scene up as each idle body sees it before that body's render and undoes it after. Tested on 2026-10-01 (`text_chat_circle`): every view shows the other bodies' messages, and the active body has its head. The active body's frames are a copy of the screen, so they have the HUD of the agent's screenshots (crosshair, chat input while typing).
 14. **In-game text chat through the keyboard.** The `computer` tool supports `type` (it was on the unsupported list). A `TypeAction` becomes one `char` input event per character, `TYPE_CHAR_MS` apart. The game server sends each character with `SendInput` and `KEYEVENTF_UNICODE`, with no scan code, so typed text reaches the chat field but not the key bindings or the practice-mod hotkeys (`r`, `g`, digits). An agent chats as a player does: key "Return", `type`, key "Return". The message shows at the speaker's head. The bridge reports it as a `text_chat` event (`TextChatSource.AddMessage`). FakeGame has the same chat. A puzzle can set `goal: text_chat`: it scores C when every agent's body has a `text_chat` event and all voted. The scorer is now `puzzle_solved` (it was `gourd_held`). `puzzles/text_chat_circle.yaml` puts three bodies in a triangle that face each other, and `scripts/solutions/text_chat_circle.yaml` has each one send a message. Tested in the game on 2026-10-01: the chat field takes the Unicode input, typing does not trigger the hotkeys, and each body sends as itself after a hot-swap. Under hot-swap the game first showed every message on the HUD of whoever was active, and no head text at all, because every spawned body counted as the local player. The bridge (`ChatSync`) fixes this on each switch. Now the other bodies see a message only over the speaker's head, within the game's own range (readable at 8 m, hidden at 154 m), and the speaker sees its own echo on its HUD (see `bridge/README.md`). So in-game chat is range-limited by the game, while `say` uses `chat_range_m`: a puzzle like the cave telescope (players 150 m apart, `chat_range_m: 200`) cannot be solved by in-game chat alone. The agent prompt still says agents talk only with `say`.
+15. **`say` is removed (2026-10-02).** Agents talk only through the in-game text chat (item 14): key Return, `type`, key Return. `say` was a stand-in from before the in-game chat worked. It routed by distance only (`chat_range_m`), so it leaked through walls and the game's voice-blocked zones, and the turn header listed what each agent "heard". Now an agent reads the chat in its own view, and the game decides who can read a message. Removed with it: `ChatRouter`, the "you heard" lines in the turn header, `EpisodeLog.chat`, the `chat_range_m` and `echo_chat` task parameters, `PuzzleConfig.chat_range_m`, `GameClient.echo_chat` with `POST /chat_echo` and the unfinished bridge `chat` command, the replay `say` step (recording version 2), and `wait_for` in scripted solutions (a script cannot read the chat in its view, so scripts order their steps by the turn order). FakeGame now shows a sent message over the speaker's head for 10 s of game time, to bodies within 20 m that can see the speaker, and the speaker's draft and last message on its own HUD. `n_messages` counts `text_chat` events. The video captions each message on the speaker's tile only. Consequence: players far apart cannot talk. In the cave telescope (150 m) the players cannot read each other, and the Centurion rooms (25 to 30 m, they had `chat_range_m: 40`) are probably past the game's readable range (head text fades out between 10 and 20 m). Check them in the game before they run.
 
 ### 15.2 Status per milestone
 
@@ -476,7 +470,7 @@ After M8: more puzzles, more agents, and ablations (see section 13).
 | M3 | Done. Tests use `mockllm` with `ScriptedPolicy` (`src/big_walk_eval/scripted.py`). |
 | M4 | Done. `inspect eval big_walk_eval/big_walk_coop --model mockllm/model` runs. The scripted solution scores C. |
 | M5 | Done except real input. Tests use a TCP fake bridge. `SendInputBackend` is **[NEEDS GAME]**. |
-| M6 | Done and tested in the game: state, held items, pickup and drop events, switch, spawn, teleport, prop placement, screenshots, menus, controls. `TODO(dump)`: look, snapshots, the `chat` echo command, Backend B input. Text chat events are tested (15.1 item 14). See `bridge/README.md`. |
+| M6 | Done and tested in the game: state, held items, pickup and drop events, switch, spawn, teleport, prop placement, screenshots, menus, controls. `TODO(dump)`: look, snapshots, Backend B input. Text chat events are tested (15.1 item 14). See `bridge/README.md`. |
 | M7 | Done on FakeGame and on the real game. `scripts/solutions/footy_walkabout.yaml` is a three-body smoke test that uses every action. |
 | M8 | Scripted part done: `footy_walkabout` and the real two-player puzzle `cave_telescope` score C. Next: agents on `cave_telescope`. |
 
@@ -514,19 +508,19 @@ Changes this needed:
 
 Puzzle: `puzzles/cave_telescope.yaml`. Scripted solution: `scripts/solutions/cave_telescope.yaml`. It scored C five times in a row, once right after a `footy_walkabout` run (two bodies, 5 turns, about 3.3 s of game time).
 
-How it works in the game: holding down the push button beside the fixed telescope on the viewing platform opens a glass box in the rocks 150 m away, and a red light marks the box. The box closes when the button is released. Ash holds the button. Birch walks 3 m to the box and takes the gourd from above. Ash lets go only after Birch says "I have the gourd".
+How it works in the game: holding down the push button beside the fixed telescope on the viewing platform opens a glass box in the rocks 150 m away, and a red light marks the box. The box closes when the button is released. Ash holds the button. Birch walks 3 m to the box and takes the gourd from above. Ash lets go only after Birch has the gourd. The scripted solution does not talk: the players are too far apart to read each other's chat.
 
 Findings and changes:
 
 1. **Held world switches survive hot-swap** (check 1 for world switches). See `bridge/README.md`. Backend A is enough for hold-and-act puzzles. Puzzles where two bodies must act at the same moment (green structure switches) still need Backend B.
 2. **A held switch never lets go by itself.** `BridgeGame.reset` calls the new bridge command `release_switches`.
 3. **A taken gourd moves on the next load** (to a "valet" home). `PropPlacement.home` pins a prop back into its start home and sets a gourd back to Locked.
-4. **`PuzzleConfig.chat_range_m`.** The two players are 150 m apart, beyond the 20 m default. A puzzle can set its own range. The task's `chat_range_m`, if given, still wins.
+4. **`PuzzleConfig.chat_range_m`.** The two players are 150 m apart, beyond the 20 m default. A puzzle can set its own range. The task's `chat_range_m`, if given, still wins. (Removed with `say` on 2026-10-02, see 15.1 item 15.)
 5. **New bridge commands for authoring:** `find_objects` (scene objects by name or component, for example every `RewardGourd`) and `peck_states` (button, door, and box states near a point). `get_state` reports `pose.held_switch`.
 6. **Scripted walks must start on level ground.** A body that spawns on a ledge and drops off it while walking ends up 0.3 to 0.5 m short, and the pickup fails. From the slope below the ledge, two runs ended within 1 cm of each other.
 
 ### 15.6 Puzzle catalogue (2026-10-01)
 
-`docs/puzzle_catalogue.yaml` lists all 52 puzzles of a 2-player walk: 45 gourd puzzles and 7 black sphere rooms. Each entry has the game root, the gourd's home, the map coordinates, the designer teleport point, two checked spawns, the puzzle's mechanisms, and a verdict. The verdicts are 20 run, 5 maybe, and 27 skip: sound, simultaneous presses, or players far apart, and since 2026-10-02 also puzzles one agent can solve alone, very long ones, and the black sphere rooms. The 20 runnable puzzles have files in `puzzles/candidates/`, outside the default dataset until each has a scripted solution and a working reset. `docs/PUZZLE_CATALOGUE.md` explains the method and lists the problems to solve first: reset of puzzle state (sealed rooms, boards, vices), the time of day (a long session reaches night), `say` leaking through voice-blocked walls, and blindfolds under hot-swap.
+`docs/puzzle_catalogue.yaml` lists all 52 puzzles of a 2-player walk: 45 gourd puzzles and 7 black sphere rooms. Each entry has the game root, the gourd's home, the map coordinates, the designer teleport point, two checked spawns, the puzzle's mechanisms, and a verdict. The verdicts are 20 run, 5 maybe, and 27 skip: sound, simultaneous presses, or players far apart, and since 2026-10-02 also puzzles one agent can solve alone, very long ones, and the black sphere rooms. The 20 runnable puzzles have files in `puzzles/candidates/`, outside the default dataset until each has a scripted solution and a working reset. `docs/PUZZLE_CATALOGUE.md` explains the method and lists the problems to solve first: reset of puzzle state (sealed rooms, boards, vices), the time of day (a long session reaches night), voice-blocked walls (the game now enforces them, since `say` is gone), and blindfolds under hot-swap.
 
 New bridge commands for this: `survey`, `puzzle_roots`, `children`, `map_coords`, `ground`, and a working `overview_shot` (free camera, pointer readback). `scripts/survey_puzzles.py` dumps the survey and checks the catalogue's spawns.

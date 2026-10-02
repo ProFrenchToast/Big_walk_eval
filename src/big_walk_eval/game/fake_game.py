@@ -11,7 +11,9 @@ bodies keep their position and whatever they hold.
 
 Text chat works as in the real game: Enter opens it, typed characters and
 letter keys go into the message, Enter sends it (a `text_chat` event), and
-Esc closes it. A body that has the chat open does not walk.
+Esc closes it. A body that has the chat open does not walk. A sent message
+shows over the speaker's head for CHAT_SHOW_MS of game time, to bodies
+within CHAT_READ_M that can see the speaker.
 """
 
 from __future__ import annotations
@@ -54,6 +56,8 @@ REACH_M = 1.5
 TICK_MS = 20
 HFOV_DEG = 90.0
 MAX_PITCH_DEG = 80.0
+CHAT_SHOW_MS = 10_000
+CHAT_READ_M = 20.0
 
 _MOVE_KEYS = {
     "w": (0.0, 1.0),
@@ -102,6 +106,8 @@ class FakeBody:
     buttons: set[str] = field(default_factory=set)
     # None while the text chat is closed.
     chat_draft: str | None = None
+    chat_message: str = ""
+    chat_sent_ms: int = 0
 
     def forward(self) -> tuple[float, float]:
         r = math.radians(self.yaw)
@@ -171,7 +177,6 @@ class FakeGame:
         self.paused = True
         self.game_ms = 0
         self.gate_open = False
-        self.chat_echoes: list[tuple[int, str]] = []
         self._events: list[GameEvent] = []
 
     # ------------------------------------------------------------ GameClient
@@ -246,9 +251,6 @@ class FakeGame:
             info={"gate_open": self.gate_open},
         )
 
-    async def echo_chat(self, slot: int, text: str) -> None:
-        self.chat_echoes.append((slot, text))
-
     async def overview_shot(
         self, position: Vec3 | None = None, look_at: Vec3 | None = None
     ) -> bytes | None:
@@ -287,6 +289,12 @@ class FakeGame:
         await self.stop_capture()
 
     # ------------------------------------------------------------- world rules
+
+    def shown_chat(self, body: FakeBody) -> str:
+        """The message over `body`'s head now, or ""."""
+        if body.chat_message and self.game_ms - body.chat_sent_ms < CHAT_SHOW_MS:
+            return body.chat_message
+        return ""
 
     def blocking_walls(self) -> list[Wall]:
         return [w for w in WALLS if w.kind != "gate" or not self.gate_open]
@@ -386,6 +394,7 @@ class FakeGame:
             body.chat_draft = ""
         elif key == "enter":
             if draft:
+                body.chat_message, body.chat_sent_ms = draft, self.game_ms
                 self._emit("text_chat", body.slot, message=draft)
             body.chat_draft = None
         elif key == "esc":

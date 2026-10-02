@@ -25,8 +25,13 @@ from big_walk_eval.scripted import ScriptedPolicy, ScriptStep
 from big_walk_eval.solver import OLD_SCREENSHOT, round_robin, trim_images
 
 
-def step(*calls: tuple[str, dict], wait_for: str | None = None) -> ScriptStep:
-    return ScriptStep(wait_for=wait_for, calls=[{f: a} for f, a in calls])
+def step(*calls: tuple[str, dict]) -> ScriptStep:
+    return ScriptStep(calls=[{f: a} for f, a in calls])
+
+
+def chat(text: str) -> tuple[str, dict]:
+    keys = [{"action": "key", "text": "Return"}]
+    return ("computer", {"actions": [*keys, {"action": "type", "text": text}, *keys]})
 
 
 def run(
@@ -59,61 +64,29 @@ def run(
     return sample, sample.store_as(EpisodeLog)
 
 
-def test_chat_in_range_arrives(tmp_path, fake_puzzle):
+def test_agents_chat_in_game(tmp_path, fake_puzzle):
     sample, log = run(
         tmp_path,
         fake_puzzle,
         {
-            "Ash": [step(("say", {"message": "hello Birch"})), step(("end_episode", {}))],
-            "Birch": [step(("end_episode", {}), wait_for="hello Birch")],
+            "Ash": [step(chat("hello Birch")), step(("end_episode", {}))],
+            "Birch": [step(("end_episode", {}))],
         },
     )
-    assert log.chat == [
-        {
-            "turn": 0,
-            "sender": 1,
-            "sender_name": "Ash",
-            "text": "hello Birch",
-            "sender_position": [-5.0, 0.0, 0.0],
-            "recipients": [2],
-        }
+    chats = [e for e in log.events if e["type"] == "text_chat"]
+    assert [(e["turn"], e["slot"], e["data"]) for e in chats] == [
+        (0, 1, {"message": "hello Birch"})
     ]
     birch_headers = [
         m
         for m in sample.messages
         if isinstance(m, ChatMessageUser) and (m.metadata or {}).get("agent") == "Birch"
     ]
-    assert 'Ash: "hello Birch"' in birch_headers[0].text
+    # Birch reads the chat in its view, not in the header.
+    assert birch_headers[0].text == "Turn 2. It is your turn, Birch.\nYour current view:"
     assert log.ended_by_vote
     assert log.n_turns == 3
     assert log.votes == {"Ash": True, "Birch": True}
-
-
-def test_chat_out_of_range_does_not_arrive(tmp_path, fake_puzzle):
-    _, log = run(
-        tmp_path,
-        fake_puzzle,
-        {
-            "Ash": [step(("say", {"message": "hello Birch"})), step(("end_episode", {}))],
-            "Birch": [step(("end_episode", {}), wait_for="hello Birch")],
-        },
-        config=EpisodeConfig(chat_range_m=1.0),
-        max_turns=6,
-    )
-    assert log.chat[0]["recipients"] == []
-    assert not log.ended_by_vote
-    assert log.n_turns == 6
-    assert log.votes == {"Ash": True, "Birch": False}
-
-
-def test_puzzle_chat_range_applies_unless_the_task_sets_one(tmp_path, fake_puzzle):
-    agents = {"Ash": [step(("say", {"message": "hello Birch"}))], "Birch": []}
-    near = fake_puzzle.model_copy(update={"chat_range_m": 1.0})
-    _, log = run(tmp_path, near, agents, max_turns=2)
-    assert log.chat[0]["recipients"] == []
-
-    _, log = run(tmp_path, near, agents, config=EpisodeConfig(chat_range_m=100.0), max_turns=2)
-    assert log.chat[0]["recipients"] == [2]
 
 
 def test_votes_end_the_loop(tmp_path, fake_puzzle):
@@ -170,7 +143,7 @@ def test_game_time_budget_ends_turn(tmp_path, fake_puzzle):
         {
             "Ash": [
                 step(("computer", {"action": "hold_key", "text": "w", "duration": 5})),
-                step(("say", {"message": "second step"})),
+                step(chat("second step")),
             ]
         },
         max_turns=1,
@@ -178,7 +151,7 @@ def test_game_time_budget_ends_turn(tmp_path, fake_puzzle):
     assert log.turns[0]["game_ms"] == 3000
     assert log.turns[0]["truncated"]
     assert log.turns[0]["generates"] == 1
-    assert log.chat == []
+    assert not [e for e in log.events if e["type"] == "text_chat"]
 
 
 class ImageCountingPolicy(ScriptedPolicy):
@@ -236,21 +209,21 @@ def test_every_message_is_tagged_with_its_agent(tmp_path, fake_puzzle, n_agents)
 def test_scripted_policy_runs_one_step_per_turn():
     """Inspect can move tool-result images into a trailing user message. That
     message must not start the next step: a step is one turn."""
-    steps = [step(("say", {"message": "one"})), step(("say", {"message": "two"}))]
+    steps = [step(("end_episode", {})), step(("end_episode", {"withdraw": True}))]
     policy = ScriptedPolicy({"Ash": steps})
     header = ChatMessageUser(content="Turn 1. It is your turn, Ash.\nYour current view:")
     history: list[ChatMessage] = [ChatMessageSystem(content="Your name is Ash."), header]
 
     first = policy(history, [], "auto", GenerateConfig())
-    assert first.message.tool_calls[0].arguments == {"message": "one"}
+    assert first.message.tool_calls[0].arguments == {}
     history += [
         first.message,
-        ChatMessageTool(content="sent", tool_call_id=first.message.tool_calls[0].id),
+        ChatMessageTool(content="vote recorded", tool_call_id=first.message.tool_calls[0].id),
         ChatMessageUser(content=[ContentImage(image="data:image/png;base64,AA==")]),
     ]
     assert not policy(history, [], "auto", GenerateConfig()).message.tool_calls
 
     history.append(ChatMessageUser(content="Turn 3. It is your turn, Ash."))
     second = policy(history, [], "auto", GenerateConfig())
-    assert second.message.tool_calls[0].arguments == {"message": "two"}
+    assert second.message.tool_calls[0].arguments == {"withdraw": True}
     assert isinstance(second.message, ChatMessageAssistant)

@@ -1,4 +1,4 @@
-# Scripted test of the in-game text chat on the real game. Nobody uses `say`.
+# Scripted test of the in-game text chat on the real game.
 # Turn order: Ash, Birch, Cedar. In its first turn each body opens the chat
 # (Return), types a message, and sends it (Return). The message shows over the
 # speaker's head and stays while the game is paused, so the next bodies' views show it.

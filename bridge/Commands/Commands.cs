@@ -43,7 +43,6 @@ internal static class Commands
         "look" => Unfinished.Look(args),
         "load_snapshot" => Unfinished.LoadSnapshot(args),
         "save_snapshot" => Unfinished.SaveSnapshot(args),
-        "chat" => Unfinished.Chat(args),
         "input" => Unfinished.Input(args),
         _ => throw new ArgumentException($"unknown command {cmd}"),
     };

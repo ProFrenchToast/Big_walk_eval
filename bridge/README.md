@@ -67,7 +67,6 @@ Slots are 1-based. Slot 1 is key `1` and practice index 0 (the original player).
 | `ground` | `positions`, `up`?, `down`? | the first surface below `up` (2 m) above each position (`Physics.Raycast`) | tested |
 | `look` | `dyaw_deg`, `dpitch_deg` | | TODO(dump). The server uses `look_mode: mouse` |
 | `load_snapshot` / `save_snapshot` | `name` | | TODO(dump). `place_prop` covers simple cases |
-| `chat` | `slot`, `text` | | TODO(dump). Optional, for `echo_chat`. Agents chat in game through the keyboard instead: Enter, the `type` action, Enter |
 | `capture_start` | `directory`, `fps`, `width`, `height`, `slots` | | tested. One camera per body, frames to ffmpeg. Each idle body's frame shows the scene as that body sees it (`Commands/CaptureView.cs`). The active body's frame is a copy of the screen, with the HUD. See `Commands/BodyCapture.cs` and "Screenshots" below |
 | `capture_stop` | | `frames`, `start_time_s` | tested |
 | `input` | `slot`, `op`, ... | | TODO(dump). Backend B only |

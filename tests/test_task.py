@@ -104,7 +104,7 @@ def test_text_chat_solution_scores_correct(tmp_path, fake_chat_puzzles):
     assert score.value == "C", score.explanation
     assert [m["slot"] for m in score.metadata["text_chat"]] == [1, 2, 3]
     assert score.metadata["text_chat"][0]["message"] == "Hello from Ash! Can you two read this?"
-    assert score.metadata["n_messages"] == 0
+    assert score.metadata["n_messages"] == 3
 
 
 def test_text_chat_needs_every_agent(tmp_path, fake_chat_puzzles):

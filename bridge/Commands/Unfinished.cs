@@ -30,14 +30,6 @@ internal static class Unfinished
         throw new NotSupportedException("save_snapshot is not written yet (TODO(dump))");
 
     /// <summary>
-    /// Show a message in the in-game text chat, for replays.
-    /// TODO(dump): the text chat sender.
-    ///   rg -n "class .*(Chat|Texter)" out/dummy/Assembly-CSharp   (PlayerCharacter has a `texter` field)
-    /// </summary>
-    public static JsonNode Chat(JsonObject args) =>
-        throw new NotSupportedException("chat is not written yet (TODO(dump))");
-
-    /// <summary>
     /// Backend B: inject input into one body's Rewired player
     /// (PlayerCharacter.inputPlayer) with a Rewired CustomController per body.
     /// TODO(dump): the Rewired action names the game reads.

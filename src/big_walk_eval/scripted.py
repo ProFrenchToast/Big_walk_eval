@@ -3,8 +3,8 @@
 Pass a `ScriptedPolicy` as `custom_outputs` to Inspect's `mockllm` model. It
 runs the real turn loop and the real tools, with no LLM. Each agent has a
 list of steps. A step is one turn: one generate call with a fixed list of tool calls.
-A step with `wait_for` runs only after the agent has heard a chat message
-that contains that text. The policy reads its progress from the agent's own
+The policy cannot read the chat in its view, so a script orders its steps by
+the turn order. The policy reads its progress from the agent's own
 history, so one instance can serve many samples.
 """
 
@@ -26,7 +26,7 @@ from inspect_ai.model import (
     ModelOutput,
 )
 from inspect_ai.tool import ToolCall, ToolChoice, ToolInfo
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 MODEL_NAME = "mockllm/model"
 _NAME = re.compile(r"Your name is (\w+)\.")
@@ -34,7 +34,8 @@ _TURN = re.compile(r"Turn \d+\. It is your turn")
 
 
 class ScriptStep(BaseModel):
-    wait_for: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
     calls: list[dict[str, dict[str, Any]]] = Field(default_factory=list)
 
     def tool_calls(self) -> list[ToolCall]:
@@ -75,8 +76,6 @@ class ScriptedPolicy:
         if done >= len(steps):
             return _text("I have nothing more to do.")
         step = steps[done]
-        if step.wait_for and step.wait_for.lower() not in _heard(input).lower():
-            return _text(f"Waiting to hear {step.wait_for!r}.")
         return ModelOutput(
             model=MODEL_NAME,
             choices=[
@@ -113,10 +112,6 @@ def _acted_this_turn(input: list[ChatMessage]) -> bool:
         default=-1,
     )
     return any(isinstance(m, ChatMessageAssistant) for m in input[header + 1 :])
-
-
-def _heard(input: list[ChatMessage]) -> str:
-    return "\n".join(m.text for m in input if isinstance(m, ChatMessageUser))
 
 
 def _text(content: str) -> ModelOutput:

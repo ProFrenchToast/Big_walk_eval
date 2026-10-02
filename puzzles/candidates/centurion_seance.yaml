@@ -23,7 +23,6 @@ props:
   home: true
 reward_item_type: GourdProp
 max_turns: 60
-chat_range_m: 40
 location_hint: You both start outside a building with a signal room and an input room.
 notes: Candidate from docs/puzzle_catalogue.yaml. Spawns checked in the game; no scripted solution yet,
   and reset is untested for this puzzle.

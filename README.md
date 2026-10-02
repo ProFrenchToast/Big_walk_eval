@@ -1,6 +1,6 @@
 # Big Walk Cooperation Eval
 
-An [Inspect AI](https://inspect.aisi.org.uk/) eval. LLM agents cooperate to solve puzzles in the game *Big Walk*. Each agent controls one player body, sees only its own first-person view, and talks through range-limited text chat.
+An [Inspect AI](https://inspect.aisi.org.uk/) eval. LLM agents cooperate to solve puzzles in the game *Big Walk*. Each agent controls one player body, sees only its own first-person view, and talks through the game's own text chat (Enter, type, Enter), which only nearby players can read.
 
 Read `docs/IMPLEMENTATION_PLAN.md` for the design. Section 15 there gives the current status.
 
@@ -45,7 +45,7 @@ The server binds to `127.0.0.1:47801`. From another machine, use an SSH tunnel: 
 
 ## Replay
 
-Each episode records every input that the agents send to the game. The solver puts the recording in the sample store (`EpisodeLog.replay`), so the Inspect log holds it. The recording also has `say` messages, votes, and the position of each body after each action.
+Each episode records every input that the agents send to the game. The solver puts the recording in the sample store (`EpisodeLog.replay`), so the Inspect log holds it. The recording also has the votes, the game events of each action (chat messages are `text_chat` events), and the position of each body after each action.
 
 ```bash
 # Send the recorded inputs to a fresh game and compare each body with the recording.
@@ -58,7 +58,7 @@ FakeGame replays exactly. On the real game, the drift shows how deterministic th
 
 ## Video
 
-With `-T capture=true`, the game records each body's own view while game time runs. It writes the frames on the machine that runs the game. `scripts/make_video.py` puts the views of all agents side by side in one video. A yellow border shows the agent that acts. Each view shows only the chat that its agent said or heard.
+With `-T capture=true`, the game records each body's own view while game time runs. It writes the frames on the machine that runs the game. `scripts/make_video.py` puts the views of all agents side by side in one video. A yellow border shows the agent that acts. Each view captions the chat messages that its agent sent. The other views show a message only where the game shows it, over the speaker's head.
 
 ```bash
 uv sync --extra video     # ffmpeg, if it is not on PATH
@@ -76,7 +76,7 @@ The frames have no pauses between actions, because no game time passes then. Eac
 | `src/big_walk_eval/protocol.py` | Models shared by the harness and the game server |
 | `src/big_walk_eval/task.py` | `@task big_walk_coop` and its parameters |
 | `src/big_walk_eval/solver.py` | Round-robin multi-agent solver |
-| `src/big_walk_eval/tools/` | `computer` (native computer-use binding), `say`, `end_episode` |
+| `src/big_walk_eval/tools/` | `computer` (native computer-use binding, also used to chat in game), `end_episode` |
 | `src/big_walk_eval/game/` | `GameClient` interface, `FakeGame`, `HttpGame` |
 | `src/big_walk_eval/replay.py` | Records the inputs of an episode and plays them back |
 | `src/big_walk_eval/video.py` | Makes one video from the per-body frames of an episode |

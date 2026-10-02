@@ -70,7 +70,6 @@ async def test_http_game_matches_fake_game():
     assert await remote.screenshot() == await direct.screenshot()
     assert (await remote.health()).backend == "fake"
     assert await remote.overview_shot() == await direct.overview_shot()
-    await remote.echo_chat(1, "hi")
     await remote.close()
 
 
