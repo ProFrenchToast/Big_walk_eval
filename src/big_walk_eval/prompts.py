@@ -50,7 +50,8 @@ To talk, use the in-game text chat: press Enter (`key` "Return"), write your mes
 with `type`, and press Enter again to send it. While the chat is open, your keys go into \
 the message and you do not move. Your message shows above your head. The other players \
 read it in their own view, so only players near you who can see you read it, and you are \
-not told who did. Read what the other players say in your view.
+not told who did. Read what the other players say in your view. To read small text, \
+`zoom` into that part of your view.
 
 The game pauses while you think. Time moves only while your actions run. \
 The players take turns. In your turn you can use up to {max_tool_calls} tool calls and \
