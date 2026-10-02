@@ -1,0 +1,29 @@
+# Button room (CenturionSong 2Player). Guide: Button Room.
+# Candidate, not in the default dataset. Move it to puzzles/ once a scripted
+# solution scores C and reset restores it. Run it with -T puzzles_dir=puzzles/candidates.
+id: centurion_song
+title: Button room
+area: yellow
+game: real
+needs_sound: false
+min_agents: 2
+snapshot: ''
+spawns:
+- slot: 1
+  name: Ash
+  position: [-177.84, 83.68, -148.58]
+  yaw_deg: 19.2
+- slot: 2
+  name: Birch
+  position: [-176.42, 83.68, -149.07]
+  yaw_deg: 19.2
+props:
+- item_type: GourdProp
+  position: [-176.17, 85.2, -141.26]
+  home: true
+reward_item_type: GourdProp
+max_turns: 60
+chat_range_m: 40
+location_hint: You both start on a red platform between a building of buttons and a yellow cage.
+notes: Candidate from docs/puzzle_catalogue.yaml. Spawns checked in the game; no scripted solution yet,
+  and reset is untested for this puzzle.

@@ -1,0 +1,28 @@
+# Thirty-six drawings (PoetAndPontiff). Guide: 36 Drawings (purple #3).
+# Candidate, not in the default dataset. Move it to puzzles/ once a scripted
+# solution scores C and reset restores it. Run it with -T puzzles_dir=puzzles/candidates.
+id: poet_and_pontiff
+title: Thirty-six drawings
+area: post_game
+game: real
+needs_sound: false
+min_agents: 2
+snapshot: ''
+spawns:
+- slot: 1
+  name: Ash
+  position: [850.98, 21.79, -859.35]
+  yaw_deg: 67.1
+- slot: 2
+  name: Birch
+  position: [851.57, 21.75, -860.74]
+  yaw_deg: 67.1
+props:
+- item_type: GourdProp
+  position: [865.24, 24.26, -856.07]
+  home: true
+reward_item_type: GourdProp
+max_turns: 60
+location_hint: You both start by a red building with yellow turnstile gates.
+notes: Candidate from docs/puzzle_catalogue.yaml. Spawns checked in the game; no scripted solution yet,
+  and reset is untested for this puzzle.

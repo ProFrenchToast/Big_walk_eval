@@ -1,0 +1,1846 @@
+# Big Walk puzzle catalogue: every puzzle in the game, where it is, where two agents
+# spawn, and whether it fits the eval. Built from the bridge survey (scripts/survey_puzzles.py)
+# and the community guide at https://big-walk.net/puzzles/. See docs/PUZZLE_CATALOGUE.md.
+#
+# Game 1.5.1 2608271531, hosted for 2 players (the player count picks each puzzle's variant).
+# Positions are Unity world coordinates. map_xz is what the in-game GPS device shows
+# (GPSTracker.GetX/GetZ): x_map = 0.7071 (x + z) + 1900, z_map = 0.7071 (x - z) + 3300.
+# guide_coordinates are the same numbers in the guide's order (z_map, x_map).
+#
+# verdict: run   - fits the eval (no sound, no simultaneous presses, players stay close).
+#          maybe - fits those rules but has a practical problem (see reasons).
+#          skip  - needs sound, simultaneous presses, or players far apart. Since 2026-10-02
+#                  also solo, long_wait, very_long and no_gourd (the black sphere rooms).
+# Spawns: Ash on the designer teleport point (TeleportPoint), Birch 1.5 m to its right,
+# both at the designer's yaw. Each spawn was teleported to in the game, settled, and moved
+# less than 0.1 m (2026-10-01).
+
+- id: blindfold_catwalk
+  title: Blindfold catwalk
+  verdict: run
+  reasons: []
+  guide_name: Blindfolded Obstacle Course
+  guide_match: coordinates
+  guide_group: blue
+  post_game_variant: false
+  game_root: LandmarksPlayerCountAny/BlindfoldCatwalk
+  gourd:
+    save_name: gourdBlindfoldCatwalk
+    house_number: '153'
+    home: [61.76, 20.55, -0.81]
+    map_xz: [1943, 3344]
+  guide_coordinates: [3344, 1943]
+  teleport_point:
+    name: 248 BlindfoldCatwalk
+    position: [84.2, 19.83, -35.81]
+    yaw_deg: -32.7
+    map_xz: [1934, 3384]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [84.55, 19.7, -36.37]
+    yaw_deg: -32.7
+  - slot: 2
+    name: Birch
+    position: [85.71, 20.39, -34.91]
+    yaw_deg: -32.7
+  mechanisms:
+    PeckEffectMask: 1
+  switch_spread_m: 47
+  notes: One player puts on the golden head (PeckEffectMask Blindfold) and sees only blur; the other guides
+    them through the course to the red button. Check that the blindfold follows the right body under hot-swap
+    (like the chat fix).
+- id: blindfold_fishtrap
+  title: Blindfold fish trap
+  verdict: run
+  reasons: []
+  guide_name: Golden Mask Obstacle Race (possibly)
+  guide_match: guess
+  guide_group: black
+  post_game_variant: false
+  game_root: LandmarksPlayerCountAny/BlindfoldFishTrap
+  gourd:
+    save_name: gourdBlindfoldFishtrap
+    house_number: '154'
+    home: [598.02, 30.45, -311.98]
+    map_xz: [2102, 3943]
+  guide_coordinates: [3943, 2102]
+  teleport_point:
+    name: 249 BlindfoldFishtrap
+    position: [602.25, 29.21, -310.87]
+    yaw_deg: -114.5
+    map_xz: [2106, 3945]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [602.59, 29.02, -310.92]
+    yaw_deg: -114.5
+  - slot: 2
+    name: Birch
+    position: [601.63, 29.02, -309.5]
+    yaw_deg: -114.5
+  mechanisms:
+    PeckEffectMask: 1
+    PegTileValidator: 1
+    PlayerZone: 1
+  switch_spread_m: 17
+  notes: A second blindfold course (PeckEffectMask Blindfold) with a tile validator. Same hot-swap check
+    as blindfold_catwalk.
+- id: cannonball_carry
+  title: Heavy ball relay
+  verdict: run
+  reasons: []
+  guide_name: Heavy Golf Ball ('Hole In Many')
+  guide_match: guess
+  guide_group: red
+  post_game_variant: false
+  game_root: LandmarksPlayerCountAny/CannonBallCarry
+  gourd:
+    save_name: gourdCannonBall
+    house_number: '104'
+    home: [64.57, 67.34, -448.51]
+    map_xz: [1629, 3663]
+  guide_coordinates: [3663, 1629]
+  teleport_point:
+    name: 127 cannonball carry
+    position: [113.21, 47.75, -512.35]
+    yaw_deg: -8.9
+    map_xz: [1617, 3742]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [113.05, 46.94, -513.21]
+    yaw_deg: -8.9
+  - slot: 2
+    name: Birch
+    position: [114.7, 47.78, -512.13]
+    yaw_deg: -8.9
+  mechanisms: {}
+  switch_spread_m: 83
+  notes: A heavy ball must go from its pedestal to the receiver about 80 m away. Only one player can carry
+    it, a short way, so the players pass it along. They travel together.
+- id: carousel
+  title: Aerial seat
+  verdict: run
+  reasons: []
+  guide_name: Aerial Seat
+  guide_match: coordinates
+  guide_group: yellow
+  post_game_variant: false
+  game_root: LandmarksPlayerCountAny/Carousel
+  gourd:
+    save_name: gourdCarousel
+    house_number: '114'
+    home: [5.42, 111.0, -374.36]
+    map_xz: [1639, 3569]
+  guide_coordinates: [3569, 1639]
+  teleport_point:
+    name: 174 carousel
+    position: [4.45, 111.97, -383.95]
+    yaw_deg: -116.2
+    map_xz: [1631, 3574]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [4.45, 111.86, -383.95]
+    yaw_deg: -116.2
+  - slot: 2
+    name: Birch
+    position: [3.79, 111.85, -382.6]
+    yaw_deg: -116.2
+  mechanisms:
+    PeckEffectTelescope: 1
+    PegTileValidator: 1
+  switch_spread_m: 50
+  notes: A crescent-moon chair runs on a track between two platforms about 40 m apart. The far side shows
+    a five-piece sequence; ferry the right pieces and place them. Binoculars help. The players can ride
+    together.
+- id: centurion_seance
+  title: Many lights
+  verdict: run
+  reasons: []
+  guide_name: 'Many Lights (purple #7)'
+  guide_match: guess
+  guide_group: post_game
+  post_game_variant: true
+  game_root: LandmarksPlayerCountAny/CenturionSeance
+  gourd:
+    save_name: gourdCenturionSeance
+    house_number: '156'
+    home: [634.93, 29.62, -931.27]
+    map_xz: [1690, 4407]
+  guide_coordinates: [4407, 1690]
+  teleport_point:
+    name: 256 - centurion seance
+    position: [630.12, 28.38, -937.03]
+    yaw_deg: 46.2
+    map_xz: [1682, 4408]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [630.12, 28.1, -937.03]
+    yaw_deg: 46.2
+  - slot: 2
+    name: Birch
+    position: [631.16, 28.1, -938.11]
+    yaw_deg: 46.2
+  mechanisms:
+    PressInOrder: 1
+    ProgressTracker: 1
+    PeckEffectTimer: 100
+  switch_spread_m: 39
+  chat_range_m: 40
+  notes: 'Harder twin of the Button Room: a flashing-light question-and-answer code between two rooms
+    25 m apart (ProgressTracker 5).'
+- id: centurion_song
+  title: Button room
+  verdict: run
+  reasons: []
+  guide_name: Button Room
+  guide_match: coordinates
+  guide_group: yellow
+  post_game_variant: false
+  game_root: LandmarksPlayerCount2/Contents/CenturionSong 2Player
+  gourd:
+    save_name: gourdCenturonSong
+    house_number: '147'
+    home: [-176.17, 85.2, -141.26]
+    map_xz: [1676, 3275]
+  guide_coordinates: [3275, 1676]
+  teleport_point:
+    name: 255 - centurion song
+    position: [-177.84, 83.96, -148.58]
+    yaw_deg: 19.2
+    map_xz: [1669, 3279]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [-177.84, 83.68, -148.58]
+    yaw_deg: 19.2
+  - slot: 2
+    name: Birch
+    position: [-176.42, 83.68, -149.07]
+    yaw_deg: 19.2
+  mechanisms:
+    PressInOrder: 1
+    ProgressTracker: 1
+    PeckEffectTimer: 100
+    PeckLogicSimPressOld: 1
+  switch_spread_m: 268
+  chat_range_m: 40
+  notes: Two buildings 30 m apart, one with lights and one with buttons, a yellow cage between. The light
+    player describes which light is on; the button player presses it (ProgressTracker 5). chat_range_m
+    is 40 so the rooms can hear each other.
+- id: charades_rooms
+  title: Charades rooms (variant)
+  verdict: run
+  reasons: []
+  guide_name: Double Green Barn (possibly)
+  guide_match: guess
+  guide_group: post_game
+  post_game_variant: true
+  game_root: LandmarksPlayerCount2/Contents/CharadesRooms 2Player
+  gourd:
+    save_name: gourdCharadesRooms
+    house_number: '134'
+    home: [774.66, 55.7, -823.99]
+    map_xz: [1865, 4430]
+  guide_coordinates: [4430, 1865]
+  teleport_point:
+    name: 187 charades rooms
+    position: [776.06, 55.98, -828.7]
+    yaw_deg: -16.6
+    map_xz: [1862, 4434]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [776.12, 55.43, -828.91]
+    yaw_deg: -16.6
+  - slot: 2
+    name: Birch
+    position: [777.51, 55.46, -828.29]
+    yaw_deg: -16.6
+  mechanisms:
+    PegTileValidator: 1
+  switch_spread_m: 19
+  notes: 'Harder twin of the Charades Locked Room. If it is the Double Green Barn, voice is blocked and
+    `say` leaks. Reset: the game must reopen the sealed room and clear the board; reset only moves props
+    and bodies (needs load_snapshot or a per-puzzle reset, untested).'
+- id: conductor_concert
+  title: Stage directions
+  verdict: run
+  reasons: []
+  guide_name: Stage Directions
+  guide_match: coordinates
+  guide_group: yellow
+  post_game_variant: false
+  game_root: LandmarksPlayerCount2/Contents/ConductorConcert 2 Player
+  gourd:
+    save_name: gourdConcert
+    house_number: '122'
+    home: [-150.53, 71.67, -292.02]
+    map_xz: [1587, 3400]
+  guide_coordinates: [3400, 1587]
+  teleport_point:
+    name: 174 conductor's concert
+    position: [-137.68, 72.72, -304.7]
+    yaw_deg: -46.7
+    map_xz: [1587, 3418]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [-137.68, 73.21, -304.7]
+    yaw_deg: -46.7
+  - slot: 2
+    name: Birch
+    position: [-136.65, 73.21, -303.61]
+    yaw_deg: -46.7
+  mechanisms:
+    PressInOrder: 1
+    ProgressTracker: 1
+    PeckEffectTimer: 7
+  switch_spread_m: 13
+  notes: 'One player is locked in the booth and sees which of seven lights is on; positions are mirrored
+    for the player at the button panel. 8 correct presses fill the meter (PressInOrder, ProgressTracker
+    8). Reset: the game must reopen the sealed room and clear the board; reset only moves props and bodies
+    (needs load_snapshot or a per-puzzle reset, untested).'
+- id: dancer_and_selecter
+  title: Nine symbols (posing)
+  verdict: run
+  reasons: []
+  guide_name: '9 Symbols / Posing (purple #5)'
+  guide_match: guess
+  guide_group: post_game
+  post_game_variant: true
+  game_root: LandmarksPlayerCountAny/DancerAndSelecter
+  gourd:
+    save_name: gourdDancerAndSelecter
+    house_number: '151'
+    home: [705.37, 57.01, -839.33]
+    map_xz: [1805, 4392]
+  guide_coordinates: [4392, 1805]
+  teleport_point:
+    name: 301 - Dancer and Selector
+    position: [708.47, 56.11, -831.6]
+    yaw_deg: -179.2
+    map_xz: [1812, 4388]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [708.47, 55.48, -831.6]
+    yaw_deg: -179.2
+  - slot: 2
+    name: Birch
+    position: [706.97, 55.48, -831.57]
+    yaw_deg: -179.2
+  mechanisms:
+    PegTileValidator: 1
+  switch_spread_m: 16
+  notes: 'Visual twin of the Music Room: one player sees symbols or poses, the other selects the matching
+    tiles. No sound.'
+- id: fielding
+  title: Train station cannon
+  verdict: run
+  reasons: []
+  guide_name: Train Station Cannon
+  guide_match: description
+  guide_group: red
+  post_game_variant: false
+  game_root: LandmarksPlayerCountAny/Fielding
+  gourd:
+    save_name: gourdFielding
+    house_number: '103'
+    home: [144.2, 10.22, -675.73]
+    map_xz: [1524, 3880]
+  guide_coordinates: [3880, 1524]
+  teleport_point:
+    name: 121 fielding
+    position: [141.81, 9.88, -679.61]
+    yaw_deg: 34.6
+    map_xz: [1519, 3880]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [141.81, 9.9, -679.61]
+    yaw_deg: 34.6
+  - slot: 2
+    name: Birch
+    position: [142.79, 9.9, -680.44]
+    yaw_deg: 34.6
+  mechanisms:
+    PeckEffectTimer: 1
+  switch_spread_m: 12
+  notes: A cannon fires a timer across the station. One player chases it and throws it to a partner, who
+    puts it on the green pot before it runs out. Hard throwing and catching.
+- id: invisible_ink
+  title: Invisible ink
+  verdict: run
+  reasons: []
+  guide_name: null
+  guide_match: none
+  guide_group: unknown
+  post_game_variant: false
+  game_root: LandmarksPlayerCountAny/InvisibleInkChallenge
+  gourd:
+    save_name: gourdInvisibleInk
+    house_number: '105'
+    home: [496.68, 49.42, -144.16]
+    map_xz: [2149, 3753]
+  guide_coordinates: [3753, 2149]
+  teleport_point:
+    name: 145 invisible ink
+    position: [500.87, 49.77, -145.8]
+    yaw_deg: -43.9
+    map_xz: [2151, 3757]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [500.86, 48.89, -145.8]
+    yaw_deg: -43.9
+  - slot: 2
+    name: Birch
+    position: [501.94, 48.96, -144.77]
+    yaw_deg: -43.9
+  mechanisms:
+    PeckEffectTelescope: 1
+    PegTileValidator: 1
+  switch_spread_m: 10
+  notes: A fixed telescope (about 8 m from the pegboard) reveals symbols that are invisible to the eye;
+    the other player places the matching tiles. Like the black sphere's Hidden Symbols room.
+- id: kick_up_pits
+  title: Deep well
+  verdict: run
+  reasons: []
+  guide_name: Deep Well
+  guide_match: description
+  guide_group: black
+  post_game_variant: false
+  game_root: LandmarksPlayerCountAny/KickUpPits
+  gourd:
+    save_name: gourdKickUpPits
+    house_number: '149'
+    home: [-25.83, 52.5, -449.86]
+    map_xz: [1564, 3600]
+  guide_coordinates: [3600, 1564]
+  teleport_point:
+    name: 34 - Kick Up Pits
+    position: [-22.9, 54.07, -445.6]
+    yaw_deg: 0
+    map_xz: [1568, 3598]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [-22.9, 53.05, -445.6]
+    yaw_deg: 0
+  - slot: 2
+    name: Birch
+    position: [-21.4, 53.05, -445.6]
+    yaw_deg: 0
+  mechanisms:
+    PlayerZone: 1
+  switch_spread_m: 59
+  notes: The gourd is at the bottom of a tall shaft. Taking it closes the stairs (one-way turnstiles),
+    so it must be thrown up level by level and caught by the partner. The designer teleport has a second
+    point at the top (34 - Kick Up Pits Top).
+- id: labyrinth
+  title: Yellow maze timer hand-off
+  verdict: run
+  reasons: []
+  guide_name: Yellow Maze (timer hand-off)
+  guide_match: description
+  guide_group: red
+  post_game_variant: false
+  game_root: LandmarksPlayerCount2/Contents/Labyrinth 2Player
+  gourd:
+    save_name: gourdWindowLabyrinth
+    house_number: '118'
+    home: [2.5, 7.64, -765.55]
+    map_xz: [1360, 3843]
+  guide_coordinates: [3843, 1360]
+  teleport_point:
+    name: 124 labyrinth
+    position: [3.75, 6.85, -773.77]
+    yaw_deg: -11.9
+    map_xz: [1355, 3849]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [3.76, 5.47, -773.79]
+    yaw_deg: -11.9
+  - slot: 2
+    name: Birch
+    position: [5.21, 5.45, -773.49]
+    yaw_deg: -11.9
+  mechanisms:
+    PeckEffectTimer: 1
+  switch_spread_m: 20
+  notes: Two paths split around a yellow half-round maze. A timer must be passed through the windows and
+    put on the green pot before it runs out. The timer runs on game time, so the pauses between turns
+    do not count.
+- id: observation_room
+  title: Green observation room
+  verdict: run
+  reasons: []
+  guide_name: Green Room (symbol call-out), or the Black Tower 'Green Room Red Light'
+  guide_match: guess
+  guide_group: red_or_black
+  post_game_variant: false
+  game_root: LandmarksPlayerCountAny/ObservationRoom
+  gourd:
+    save_name: gourdObservationRoom
+    house_number: '117'
+    home: [-7.45, 73.28, -262.8]
+    map_xz: [1709, 3481]
+  guide_coordinates: [3481, 1709]
+  teleport_point:
+    name: 161 observation room
+    position: [-0.37, 70.5, -251.0]
+    yaw_deg: -166.7
+    map_xz: [1722, 3477]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [-0.36, 70.61, -250.94]
+    yaw_deg: -166.7
+  - slot: 2
+    name: Birch
+    position: [-1.82, 70.64, -250.61]
+    yaw_deg: -166.7
+  mechanisms:
+    PegTileValidator: 1
+  switch_spread_m: 13
+  notes: 'Green building with rooms and a tile validator (PegTileValidator). One player sees a pattern,
+    the other rebuilds it. If it is the Black Tower version, voice is blocked between the rooms and `say`
+    would leak; check in the game. Reset: the game must reopen the sealed room and clear the board; reset
+    only moves props and bodies (needs load_snapshot or a per-puzzle reset, untested).'
+- id: perspective_counting
+  title: Signal counting
+  verdict: run
+  reasons: []
+  guide_name: Blue Signal Counting (counting / face puzzle)
+  guide_match: guess
+  guide_group: green
+  post_game_variant: false
+  game_root: LandmarksPlayerCountAny/PerspectiveCounting
+  gourd:
+    save_name: gourdPerspectiveCounting
+    house_number: '155'
+    home: [536.45, 20.12, -576.95]
+    map_xz: [1871, 4087]
+  guide_coordinates: [4087, 1871]
+  teleport_point:
+    name: 135 perspective counting
+    position: [552.03, 19.46, -583.43]
+    yaw_deg: -146.8
+    map_xz: [1877, 4102]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [552.03, 17.92, -583.43]
+    yaw_deg: -146.8
+  - slot: 2
+    name: Birch
+    position: [550.78, 17.6, -582.61]
+    yaw_deg: -146.8
+  mechanisms:
+    CountingController: 1
+    PlayerZone: 1
+  switch_spread_m: 21
+  notes: A switch starts faces flashing across signals and monitors (CountingController). The players
+    count them and enter the total. The count changes each attempt.
+- id: poet_and_pontiff
+  title: Thirty-six drawings
+  verdict: run
+  reasons: []
+  guide_name: '36 Drawings (purple #3)'
+  guide_match: guess
+  guide_group: post_game
+  post_game_variant: true
+  game_root: LandmarksPlayerCountAny/PoetAndPontiff
+  gourd:
+    save_name: gourdPoetAndPontiff
+    house_number: '159'
+    home: [865.24, 24.26, -856.07]
+    map_xz: [1906, 4517]
+  guide_coordinates: [4517, 1906]
+  teleport_point:
+    name: 164 poet and pontiff
+    position: [850.98, 22.79, -859.35]
+    yaw_deg: 67.1
+    map_xz: [1894, 4509]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [850.98, 21.79, -859.35]
+    yaw_deg: 67.1
+  - slot: 2
+    name: Birch
+    position: [851.57, 21.75, -860.74]
+    yaw_deg: 67.1
+  mechanisms:
+    PegTileValidator: 1
+  switch_spread_m: 14
+  notes: 'Harder twin of the Turnstile House (37 props): sort and place drawings from a description. Reset:
+    the game must reopen the sealed room and clear the board; reset only moves props and bodies (needs
+    load_snapshot or a per-puzzle reset, untested).'
+- id: poet_and_priest
+  title: Turnstile house
+  verdict: run
+  reasons: []
+  guide_name: Turnstile House
+  guide_match: coordinates
+  guide_group: blue
+  post_game_variant: false
+  game_root: LandmarksPlayerCountAny/PoetAndPreist
+  gourd:
+    save_name: gourdPoetAndPreist
+    house_number: '125'
+    home: [194.77, 79.67, -103.8]
+    map_xz: [1964, 3511]
+  guide_coordinates: [3511, 1964]
+  teleport_point:
+    name: 163 poet and priest
+    position: [183.56, 78.2, -113.21]
+    yaw_deg: 40
+    map_xz: [1949, 3509]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [183.56, 77.18, -113.22]
+    yaw_deg: 40
+  - slot: 2
+    name: Birch
+    position: [184.71, 77.1, -114.19]
+    yaw_deg: 40
+  mechanisms:
+    PegTileValidator: 1
+  switch_spread_m: 14
+  notes: 'Each player goes through one turnstile. The right-hand player sees five symbols; the left-hand
+    player places matching pieces and presses the button. Players drop carried items at the turnstiles.
+    Reset: the game must reopen the sealed room and clear the board; reset only moves props and bodies
+    (needs load_snapshot or a per-puzzle reset, untested).'
+- id: semaphore_rooms
+  title: Charades locked room
+  verdict: run
+  reasons: []
+  guide_name: Charades Locked Room
+  guide_match: coordinates
+  guide_group: blue
+  post_game_variant: false
+  game_root: LandmarksPlayerCount2/Contents/SemaphoreRooms 2Player
+  gourd:
+    save_name: gourdIndoorSemaphore
+    house_number: '123'
+    home: [8.52, 3.64, 54.73]
+    map_xz: [1945, 3267]
+  guide_coordinates: [3267, 1945]
+  teleport_point:
+    name: 162 semaphore rooms
+    position: [9.11, 3.92, 49.85]
+    yaw_deg: -6.9
+    map_xz: [1941, 3271]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [9.13, 3.39, 49.69]
+    yaw_deg: -6.9
+  - slot: 2
+    name: Birch
+    position: [10.6, 3.4, 50.0]
+    yaw_deg: -6.9
+  mechanisms:
+    PegTileValidator: 1
+  switch_spread_m: 19
+  notes: 'Lock the room; the player in the right-hand room acts out arm poses at the window, and the other
+    picks the matching pieces in order. Agents have few gestures (wave left or right, point, crouch, sit,
+    jump), so they will mostly describe the poses in words. Reset: the game must reopen the sealed room
+    and clear the board; reset only moves props and bodies (needs load_snapshot or a per-puzzle reset,
+    untested).'
+- id: tall_button
+  title: Mechanical arm
+  verdict: run
+  reasons: []
+  guide_name: Mechanical Arm (stacking puzzle)
+  guide_match: description
+  guide_group: drawbridge
+  post_game_variant: false
+  game_root: LandmarksPlayerCount2/Contents/TallButtonChallenge 2Player
+  gourd:
+    save_name: gourdHighButton
+    house_number: '101'
+    home: [-287.01, 7.29, -599.76]
+    map_xz: [1273, 3521]
+  guide_coordinates: [3521, 1273]
+  teleport_point:
+    name: 210 - tall button
+    position: [-285.17, 5.51, -601.72]
+    yaw_deg: -30.9
+    map_xz: [1272, 3523]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [-285.16, 4.16, -601.72]
+    yaw_deg: -30.9
+  - slot: 2
+    name: Birch
+    position: [-283.88, 4.21, -600.95]
+    yaw_deg: -30.9
+  mechanisms: {}
+  switch_spread_m: 5
+  notes: The gourd and its switch hang too high to reach. One player stands on the other's shoulders to
+    press the switch. Physical co-op (jumping onto a partner); untested with agent controls.
+- id: teller_window
+  title: Blue Room pegboard
+  verdict: run
+  reasons: []
+  guide_name: Blue Room (peg / pin puzzle)
+  guide_match: description
+  guide_group: drawbridge
+  post_game_variant: false
+  game_root: LandmarksPlayerCountAny/TellerWindow
+  gourd:
+    save_name: gourdTellerWindow
+    house_number: '140'
+    home: [-177.55, 13.86, -683.9]
+    map_xz: [1291, 3658]
+  guide_coordinates: [3658, 1291]
+  teleport_point:
+    name: 113 teller window
+    position: [-175.91, 11.93, -681.28]
+    yaw_deg: 94.9
+    map_xz: [1293, 3657]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [-175.91, 12.68, -681.28]
+    yaw_deg: 94.9
+  - slot: 2
+    name: Birch
+    position: [-176.04, 12.68, -682.77]
+    yaw_deg: 94.9
+  mechanisms:
+    PegTileValidator: 1
+  switch_spread_m: 8
+  notes: 'One player goes into the small blue house and is sealed in. They see a row of symbols. The other
+    player recreates the row with tiles on the pegboard outside, from the description, and presses the
+    switch. Reset: the game must reopen the sealed room and clear the board; reset only moves props and
+    bodies (needs load_snapshot or a per-puzzle reset, untested).'
+- id: basketball
+  title: Basketball court
+  verdict: skip
+  reasons: [solo]
+  guide_name: Basketball court (light / bulb puzzle)
+  guide_match: description
+  guide_group: red
+  post_game_variant: false
+  game_root: LandmarksPlayerCountAny/BasketballChallenge
+  gourd:
+    save_name: gourdBasketball
+    house_number: '121'
+    home: [142.54, 9.95, -612.33]
+    map_xz: [1568, 3834]
+  guide_coordinates: [3834, 1568]
+  teleport_point:
+    name: 123 - basketball
+    position: [137.27, 10.21, -615.66]
+    yaw_deg: 57.6
+    map_xz: [1561, 3832]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [137.27, 9.84, -615.66]
+    yaw_deg: 57.6
+  - slot: 2
+    name: Birch
+    position: [138.07, 9.89, -616.93]
+    yaw_deg: 57.6
+  mechanisms:
+    ProgressTracker: 1
+  switch_spread_m: 4
+  notes: Throw light bulbs through the hoops until 8 lights turn green (ProgressTracker 8). One agent
+    can do it alone, so it says little about cooperation.
+- id: cabin_fever
+  title: Five-minute locked room
+  verdict: skip
+  reasons: [long_wait, trivial]
+  guide_name: Locked Room / Five-Minute Countdown
+  guide_match: coordinates
+  guide_group: blue
+  post_game_variant: false
+  game_root: LandmarksPlayerCount2/Contents/CabinFever 2Player
+  gourd:
+    save_name: gourdCabinFever
+    house_number: '100'
+    home: [298.43, 20.42, -115.0]
+    map_xz: [2030, 3592]
+  guide_coordinates: [3592, 2030]
+  teleport_point:
+    name: 153 cabin fever
+    position: [298.43, 20.65, -112.43]
+    yaw_deg: -132.7
+    map_xz: [2031, 3590]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [298.43, 20.38, -112.43]
+    yaw_deg: -132.7
+  - slot: 2
+    name: Birch
+    position: [297.41, 20.38, -111.33]
+    yaw_deg: -132.7
+  mechanisms: {}
+  switch_spread_m: 340
+  notes: Both players hold the two buttons to lock the room (hold buttons, which hot-swap supports), then
+    wait 5 minutes of game time. Little cooperation, 100 turns of waiting at 3 s per turn.
+- id: cabin_fever_long
+  title: Thirty-minute locked room
+  verdict: skip
+  reasons: [long_wait, trivial]
+  guide_name: 'Wait 30 Minutes House (purple #1)'
+  guide_match: description
+  guide_group: post_game
+  post_game_variant: true
+  game_root: LandmarksPlayerCount2/Contents/CabinFeverLong 2Player
+  gourd:
+    save_name: gourdCabinFeverLong
+    house_number: '142'
+    home: [526.6, 74.32, -869.82]
+    map_xz: [1657, 4287]
+  guide_coordinates: [4287, 1657]
+  teleport_point:
+    name: 191 cabin fever long
+    position: [524.84, 74.55, -867.94]
+    yaw_deg: -175.8
+    map_xz: [1657, 4284]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [524.84, 74.28, -867.94]
+    yaw_deg: -175.8
+  - slot: 2
+    name: Birch
+    position: [523.35, 74.28, -867.83]
+    yaw_deg: -175.8
+  mechanisms: {}
+  switch_spread_m: 340
+  notes: Like cabin_fever with a 30-minute countdown.
+- id: cannonball_commute
+  title: Long-distance golf
+  verdict: skip
+  reasons: [very_long]
+  guide_name: 'Long-Distance Golf (purple #2)'
+  guide_match: guess
+  guide_group: post_game
+  post_game_variant: true
+  game_root: LandmarksPlayerCountAny/CannonBallCommute
+  gourd:
+    save_name: gourdCannonballCommute
+    house_number: '158'
+    home: [662.16, 87.97, -705.77]
+    map_xz: [1869, 4267]
+  guide_coordinates: [4267, 1869]
+  teleport_point:
+    name: 851 Cannonball Commmute
+    position: [662.19, 88.37, -706.98]
+    yaw_deg: 87.4
+    map_xz: [1868, 4268]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [662.19, 88.49, -706.98]
+    yaw_deg: 87.4
+  - slot: 2
+    name: Birch
+    position: [662.26, 88.3, -708.48]
+    yaw_deg: 87.4
+  mechanisms: {}
+  switch_spread_m: 2
+  notes: A heavy-ball relay over half the island, with a chairlift ride. The players travel together,
+    but it takes very long.
+- id: egg_hunt
+  title: Easter egg hunt
+  verdict: skip
+  reasons: [very_long]
+  guide_name: Easter Egg Hunt
+  guide_match: coordinates
+  guide_group: yellow
+  post_game_variant: false
+  game_root: LandmarksPlayerCountAny/EggHunt
+  gourd:
+    save_name: gourdEggHunt
+    house_number: '139'
+    home: [-249.74, 58.21, -346.63]
+    map_xz: [1478, 3369]
+  guide_coordinates: [3369, 1478]
+  teleport_point:
+    name: 179 egg hunt
+    position: [-234.5, 56.21, -334.24]
+    yaw_deg: -129.1
+    map_xz: [1497, 3370]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [-234.5, 56.54, -334.24]
+    yaw_deg: -129.1
+  - slot: 2
+    name: Birch
+    position: [-235.44, 56.54, -333.07]
+    yaw_deg: -129.1
+  mechanisms:
+    PegTileValidator: 1
+  switch_spread_m: 87
+  notes: Find 36 wooden pieces across a large arena and put them on the wheel. Hours of play.
+- id: gauntlet_0_pegboard
+  title: 'Black sphere room 0: Symbols on the Wall'
+  verdict: skip
+  reasons: [no_gourd, voice_blocked]
+  guide_name: Symbols on the Wall
+  guide_match: guess
+  guide_group: black_sphere
+  post_game_variant: false
+  game_root: LandmarksPlayerCount2/Contents/SilentGauntlet 2Player
+  gourd: null
+  teleport_point:
+    name: 883 - silent gauntlet chamber 0
+    position: [-738.1, 33.77, 696.48]
+    yaw_deg: 42.9
+    map_xz: [1870, 2285]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [-738.1, 32.75, 696.48]
+    yaw_deg: 42.9
+  - slot: 2
+    name: Birch
+    position: [-737.0, 32.75, 695.46]
+    yaw_deg: 42.9
+  mechanisms:
+    SimPressController: 1
+    PeckEffectTelescope: 1
+    SpeechlessZone: 1
+    PegTileValidator: 2
+    PressInOrder: 3
+    ProgressTracker: 3
+    PeckEffectTimer: 25
+    PlayerZone: 2
+  notes: 'One player reads a symbol board, the other places the symbols. Black sphere room, reached only
+    through the Black Key gate (teleport works). No gourd: success is the level''s ''Challenge Complete''
+    gate, so the scorer needs a new goal type. The whole sphere is inside a SpeechlessZone (radius 120
+    m), so the faithful version needs `say` off. Between levels both players hold buttons (NHold) to open
+    the stairs.'
+- id: gauntlet_1_pointers
+  title: 'Black sphere room 1: Blue Totems'
+  verdict: skip
+  reasons: [no_gourd, voice_blocked]
+  guide_name: Blue Totems
+  guide_match: guess
+  guide_group: black_sphere
+  post_game_variant: false
+  game_root: LandmarksPlayerCount2/Contents/SilentGauntlet 2Player
+  gourd: null
+  teleport_point:
+    name: 883 - silent gauntlet chamber 1
+    position: [-743.5, 43.77, 678.12]
+    yaw_deg: -137.1
+    map_xz: [1853, 2294]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [-743.5, 42.75, 678.12]
+    yaw_deg: -137.1
+  - slot: 2
+    name: Birch
+    position: [-744.6, 42.75, 679.14]
+    yaw_deg: -137.1
+  mechanisms:
+    SimPressController: 1
+    PeckEffectTelescope: 1
+    SpeechlessZone: 1
+    PegTileValidator: 2
+    PressInOrder: 3
+    ProgressTracker: 3
+    PeckEffectTimer: 25
+    PlayerZone: 2
+  notes: 'One player watches totems for glowing symbols, the other presses switches. Black sphere room,
+    reached only through the Black Key gate (teleport works). No gourd: success is the level''s ''Challenge
+    Complete'' gate, so the scorer needs a new goal type. The whole sphere is inside a SpeechlessZone
+    (radius 120 m), so the faithful version needs `say` off. Between levels both players hold buttons
+    (NHold) to open the stairs.'
+- id: gauntlet_2_kick
+  title: 'Black sphere room 2: Tomato Timer'
+  verdict: skip
+  reasons: [no_gourd, voice_blocked]
+  guide_name: Tomato Timer
+  guide_match: guess
+  guide_group: black_sphere
+  post_game_variant: false
+  game_root: LandmarksPlayerCount2/Contents/SilentGauntlet 2Player
+  gourd: null
+  teleport_point:
+    name: 883 - silent gauntlet chamber 2
+    position: [-738.1, 54.94, 696.48]
+    yaw_deg: 42.9
+    map_xz: [1870, 2285]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [-738.1, 52.75, 696.48]
+    yaw_deg: 42.9
+  - slot: 2
+    name: Birch
+    position: [-737.0, 52.75, 695.46]
+    yaw_deg: 42.9
+  mechanisms:
+    SimPressController: 1
+    PeckEffectTelescope: 1
+    SpeechlessZone: 1
+    PegTileValidator: 2
+    PressInOrder: 3
+    ProgressTracker: 3
+    PeckEffectTimer: 25
+    PlayerZone: 2
+  notes: 'Kick a tomato timer back and forth through turnstiles before it runs out. Black sphere room,
+    reached only through the Black Key gate (teleport works). No gourd: success is the level''s ''Challenge
+    Complete'' gate, so the scorer needs a new goal type. The whole sphere is inside a SpeechlessZone
+    (radius 120 m), so the faithful version needs `say` off. Between levels both players hold buttons
+    (NHold) to open the stairs.'
+- id: gauntlet_4_volleyball
+  title: 'Black sphere room 4: Red Kettle & Switches'
+  verdict: skip
+  reasons: [no_gourd, voice_blocked]
+  guide_name: Red Kettle & Switches
+  guide_match: guess
+  guide_group: black_sphere
+  post_game_variant: false
+  game_root: LandmarksPlayerCount2/Contents/SilentGauntlet 2Player
+  gourd: null
+  teleport_point:
+    name: 883 - silent gauntlet chamber 4
+    position: [-738.1, 74.27, 696.48]
+    yaw_deg: 42.9
+    map_xz: [1870, 2285]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [-738.1, 72.75, 696.48]
+    yaw_deg: 42.9
+  - slot: 2
+    name: Birch
+    position: [-737.0, 72.75, 695.46]
+    yaw_deg: 42.9
+  mechanisms:
+    SimPressController: 1
+    PeckEffectTelescope: 1
+    SpeechlessZone: 1
+    PegTileValidator: 2
+    PressInOrder: 3
+    ProgressTracker: 3
+    PeckEffectTimer: 25
+    PlayerZone: 2
+  notes: 'Lit buttons on one side show which wall switch to press; a kettle thrown over the wall marks
+    it. Black sphere room, reached only through the Black Key gate (teleport works). No gourd: success
+    is the level''s ''Challenge Complete'' gate, so the scorer needs a new goal type. The whole sphere
+    is inside a SpeechlessZone (radius 120 m), so the faithful version needs `say` off. Between levels
+    both players hold buttons (NHold) to open the stairs.'
+- id: gauntlet_5_invisible
+  title: 'Black sphere room 5: Hidden Symbols'
+  verdict: skip
+  reasons: [no_gourd, voice_blocked]
+  guide_name: Hidden Symbols
+  guide_match: guess
+  guide_group: black_sphere
+  post_game_variant: false
+  game_root: LandmarksPlayerCount2/Contents/SilentGauntlet 2Player
+  gourd: null
+  teleport_point:
+    name: 883 - silent gauntlet chamber 5
+    position: [-743.5, 83.77, 678.12]
+    yaw_deg: -137.1
+    map_xz: [1853, 2294]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [-743.5, 82.75, 678.12]
+    yaw_deg: -137.1
+  - slot: 2
+    name: Birch
+    position: [-744.6, 82.75, 679.14]
+    yaw_deg: -137.1
+  mechanisms:
+    SimPressController: 1
+    PeckEffectTelescope: 1
+    SpeechlessZone: 1
+    PegTileValidator: 2
+    PressInOrder: 3
+    ProgressTracker: 3
+    PeckEffectTimer: 25
+    PlayerZone: 2
+  notes: 'Symbol cards visible only through a viewfinder; placed through the window. Black sphere room,
+    reached only through the Black Key gate (teleport works). No gourd: success is the level''s ''Challenge
+    Complete'' gate, so the scorer needs a new goal type. The whole sphere is inside a SpeechlessZone
+    (radius 120 m), so the faithful version needs `say` off. Between levels both players hold buttons
+    (NHold) to open the stairs.'
+- id: gauntlet_6_sculptures
+  title: 'Black sphere room 6: Shapes & Switches'
+  verdict: skip
+  reasons: [no_gourd, voice_blocked]
+  guide_name: Shapes & Switches
+  guide_match: guess
+  guide_group: black_sphere
+  post_game_variant: false
+  game_root: LandmarksPlayerCount2/Contents/SilentGauntlet 2Player
+  gourd: null
+  teleport_point:
+    name: 883 - silent gauntlet chamber 6
+    position: [-738.1, 93.77, 696.48]
+    yaw_deg: 42.9
+    map_xz: [1870, 2285]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [-738.1, 92.75, 696.48]
+    yaw_deg: 42.9
+  - slot: 2
+    name: Birch
+    position: [-737.0, 92.75, 695.46]
+    yaw_deg: 42.9
+  mechanisms:
+    SimPressController: 1
+    PeckEffectTelescope: 1
+    SpeechlessZone: 1
+    PegTileValidator: 2
+    PressInOrder: 3
+    ProgressTracker: 3
+    PeckEffectTimer: 25
+    PlayerZone: 2
+  notes: 'Glowing shapes on one side, switches on the other; act the shapes out at the window. Black sphere
+    room, reached only through the Black Key gate (teleport works). No gourd: success is the level''s
+    ''Challenge Complete'' gate, so the scorer needs a new goal type. The whole sphere is inside a SpeechlessZone
+    (radius 120 m), so the faithful version needs `say` off. Between levels both players hold buttons
+    (NHold) to open the stairs.'
+- id: memory_bombs
+  title: Yellow stands meter
+  verdict: skip
+  reasons: [solo]
+  guide_name: Yellow Stands (meter puzzle)
+  guide_match: description
+  guide_group: green
+  post_game_variant: false
+  game_root: LandmarksPlayerCountAny/MemoryBombs
+  gourd:
+    save_name: gourdMemoryBombs
+    house_number: '127'
+    home: [497.97, 39.48, -530.93]
+    map_xz: [1877, 4028]
+  guide_coordinates: [4028, 1877]
+  teleport_point:
+    name: 139 Memory Bombs
+    position: [498.55, 39.98, -528.73]
+    yaw_deg: -167.7
+    map_xz: [1878, 4026]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [498.58, 39.22, -528.58]
+    yaw_deg: -167.7
+  - slot: 2
+    name: Birch
+    position: [497.08, 39.26, -528.41]
+    yaw_deg: -167.7
+  mechanisms:
+    ProgressTracker: 1
+  switch_spread_m: 22
+  notes: Press only the stands that show a green item through their glass to fill the meter (22 steps);
+    a red one resets it. One agent can probably do it alone.
+- id: pointers_paradise
+  title: Pointers paradise
+  verdict: maybe
+  reasons: [rules_unverified]
+  guide_name: Black Tower symbol room (possibly)
+  guide_match: guess
+  guide_group: black
+  post_game_variant: false
+  game_root: LandmarksPlayerCount2/Contents/PointersParadise_2Player
+  gourd:
+    save_name: gourdPointersParadise
+    house_number: '137'
+    home: [7.48, 46.22, -654.28]
+    map_xz: [1443, 3768]
+  guide_coordinates: [3768, 1443]
+  teleport_point:
+    name: 124 pointer's paradise
+    position: [10.82, 45.95, -654.14]
+    yaw_deg: -108.8
+    map_xz: [1445, 3770]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [10.82, 45.89, -654.14]
+    yaw_deg: -108.8
+  - slot: 2
+    name: Birch
+    position: [10.33, 45.93, -652.72]
+    yaw_deg: -108.8
+  mechanisms:
+    PressInOrder: 1
+    ProgressTracker: 1
+    PeckEffectTimer: 5
+  switch_spread_m: 11
+  notes: 'Green walled yard with a grid of lamps, a door and indicator lights (PressInOrder, ConductorPanel,
+    ProgressTracker 8). Likely: lamps light inside, the outside player presses the matching switch, a
+    wrong press resets. If voice is blocked here, `say` leaks.'
+- id: ring_room
+  title: Ring room
+  verdict: maybe
+  reasons: [rules_unverified]
+  guide_name: null
+  guide_match: none
+  guide_group: unknown
+  post_game_variant: false
+  game_root: LandmarksPlayerCount2/Contents/RingRoomChallenge 2 Player
+  gourd:
+    save_name: gourdRingRoom
+    house_number: '109'
+    home: [401.85, 47.05, -352.05]
+    map_xz: [1935, 3833]
+  guide_coordinates: [3833, 1935]
+  teleport_point:
+    name: 156 ring room
+    position: [400.71, 47.64, -355.47]
+    yaw_deg: 38.7
+    map_xz: [1931, 3834]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [400.87, 45.76, -355.07]
+    yaw_deg: 38.7
+  - slot: 2
+    name: Birch
+    position: [401.88, 46.07, -356.38]
+    yaw_deg: 38.7
+  mechanisms:
+    PegTileValidator: 1
+    PeckLogicSimPressOld: 1
+  switch_spread_m: 29
+  notes: Round yellow-green room with a red grid floor, a tile validator and 37 props. Rules not checked.
+- id: scout_bombs
+  title: Scout bombs
+  verdict: maybe
+  reasons: [rules_unverified]
+  guide_name: null
+  guide_match: none
+  guide_group: unknown
+  post_game_variant: false
+  game_root: LandmarksPlayerCountAny/ScoutBombs
+  gourd:
+    save_name: gourdScoutBombs
+    house_number: '144'
+    home: [-90.9, 16.39, 4.21]
+    map_xz: [1839, 3233]
+  guide_coordinates: [3233, 1839]
+  teleport_point:
+    name: 284 - ScoutBombs
+    position: [-89.14, 14.66, 4.99]
+    yaw_deg: 64.4
+    map_xz: [1840, 3233]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [-89.14, 14.82, 4.99]
+    yaw_deg: 64.4
+  - slot: 2
+    name: Birch
+    position: [-88.5, 14.82, 3.64]
+    yaw_deg: 64.4
+  mechanisms:
+    PegTileValidator: 1
+    PlayerZone: 3
+  switch_spread_m: 23
+  notes: Red building with stairs, three player zones and a tile validator. Rules not checked; possibly
+    the Beach House (count the heads, build the number with tiles).
+- id: tile_thief
+  title: Tile thief
+  verdict: maybe
+  reasons: [rules_unverified]
+  guide_name: null
+  guide_match: none
+  guide_group: unknown
+  post_game_variant: false
+  game_root: LandmarksPlayerCountAny/TileThief
+  gourd:
+    save_name: gourdTileThief
+    house_number: '133'
+    home: [662.64, 21.9, -155.35]
+    map_xz: [2259, 3878]
+  guide_coordinates: [3878, 2259]
+  teleport_point:
+    name: 147 - TileThief
+    position: [647.97, 23.89, -156.12]
+    yaw_deg: 60.6
+    map_xz: [2247, 3868]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [647.78, 23.45, -156.12]
+    yaw_deg: 60.6
+  - slot: 2
+    name: Birch
+    position: [648.7, 23.54, -157.46]
+    yaw_deg: 60.6
+  mechanisms:
+    PegTileValidator: 1
+  switch_spread_m: 3
+  notes: Blue block structure with a tile validator and one prop. Rules not checked. The designer teleport
+    point faces a wall at arm's length.
+- id: trap_room
+  title: Trap room
+  verdict: maybe
+  reasons: [voice_blocked]
+  guide_name: Orange Barn (sealed player guides gestures)
+  guide_match: guess
+  guide_group: green
+  post_game_variant: false
+  game_root: LandmarksPlayerCount2/Contents/TrapRoom 2Player
+  gourd:
+    save_name: gourdTrapRoom
+    house_number: '106'
+    home: [510.44, 11.04, -677.22]
+    map_xz: [1782, 4140]
+  guide_coordinates: [4140, 1782]
+  teleport_point:
+    name: 132 trap room
+    position: [517.22, 11.57, -679.85]
+    yaw_deg: -84.8
+    map_xz: [1785, 4146]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [517.22, 11.37, -679.85]
+    yaw_deg: -84.8
+  - slot: 2
+    name: Birch
+    position: [517.6, 11.37, -678.38]
+    yaw_deg: -84.8
+  mechanisms:
+    PegTileValidator: 1
+    PlayerZone: 2
+    PeckLogicSimPressOld: 1
+  switch_spread_m: 12
+  notes: 'Pressing the buttons at the two doorways seals one player in; a hidden switch shows a tile pattern
+    to be rebuilt outside. The guide says the barrier blocks voice and text chat, so the faithful version
+    needs `say` off (gestures only). Has hold buttons (NHold), which hot-swap supports. Reset: the game
+    must reopen the sealed room and clear the board; reset only moves props and bodies (needs load_snapshot
+    or a per-puzzle reset, untested).'
+- id: breadcrumb_loop
+  title: Breadcrumb loop
+  verdict: skip
+  reasons: [simultaneous, far_apart]
+  guide_name: null
+  guide_match: none
+  guide_group: unknown
+  post_game_variant: false
+  game_root: LandmarksPlayerCount2/Contents/BreadcrumbLoop 2Player
+  gourd:
+    save_name: gourdBreadcrumbLoop
+    house_number: '143'
+    home: [127.61, 149.98, -393.37]
+    map_xz: [1712, 3668]
+  guide_coordinates: [3668, 1712]
+  teleport_point:
+    name: 600 - breadcrumb station
+    position: [127.39, 149.38, -394.39]
+    yaw_deg: 103.8
+    map_xz: [1711, 3668]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [127.39, 150.13, -394.39]
+    yaw_deg: 103.8
+  - slot: 2
+    name: Birch
+    position: [127.01, 149.62, -395.88]
+    yaw_deg: 103.8
+  mechanisms:
+    SimPressController: 1
+    PeckEffectTelescope: 2
+    PeckEffectTimer: 4
+  switch_spread_m: 655
+  notes: Four telescope stations up to 650 m apart, with a SimPress.
+- id: coordinates_holding
+  title: 4166, 1899 button
+  verdict: skip
+  reasons: [far_apart]
+  guide_name: The 4166, 1899 Puzzle
+  guide_match: coordinates
+  guide_group: green
+  post_game_variant: false
+  game_root: LandmarksPlayerCountAny/CoordinatesHolding
+  gourd:
+    save_name: gourdCoordinatesHolding
+    house_number: '138'
+    home: [128.29, 4.37, -731.25]
+    map_xz: [1474, 3908]
+  guide_coordinates: [3908, 1474]
+  teleport_point:
+    name: 268 - coordinates holding
+    position: [128.29, 4.76, -729.55]
+    yaw_deg: 180
+    map_xz: [1474, 3906]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [128.29, 4.91, -729.55]
+    yaw_deg: 180
+  - slot: 2
+    name: Birch
+    position: [127.04, 4.91, -729.55]
+    yaw_deg: 180
+  mechanisms: {}
+  switch_spread_m: 499
+  notes: The hidden button (designer point '267 - coordinates holding destination', map 4167, 1900) is
+    500 m from the box.
+- id: coordinates_sim_press
+  title: Red coordinates
+  verdict: skip
+  reasons: [simultaneous, far_apart]
+  guide_name: Red Coordinates (3259, 1883 & 3231, 1976)
+  guide_match: coordinates
+  guide_group: independent
+  post_game_variant: false
+  game_root: LandmarksPlayerCountAny/CoordinatesSimPress
+  gourd:
+    save_name: gourdCoordinates
+    house_number: '115'
+    home: [-40.85, 14.41, 17.11]
+    map_xz: [1883, 3259]
+  guide_coordinates: [3259, 1883]
+  teleport_point:
+    name: 155 cordinates sim press A
+    position: [-41.56, 14.41, 16.94]
+    yaw_deg: 51.8
+    map_xz: [1882, 3258]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [-41.68, 14.96, 17.87]
+    yaw_deg: 51.8
+  - slot: 2
+    name: Birch
+    position: [-40.63, 14.73, 15.68]
+    yaw_deg: 51.8
+  mechanisms:
+    SimPressController: 1
+    PeckEffectTimer: 4
+  switch_spread_m: 748
+  notes: Two buttons 100 m apart, pressed at the same moment.
+- id: flare_run
+  title: Green flare
+  verdict: skip
+  reasons: [far_apart]
+  guide_name: Green Flare
+  guide_match: description
+  guide_group: independent
+  post_game_variant: false
+  game_root: LandmarksPlayerCountAny/FlareRun
+  gourd:
+    save_name: gourdFlareRun
+    house_number: '157'
+    home: [544.53, 1.11, -57.12]
+    map_xz: [2245, 3725]
+  guide_coordinates: [3725, 2245]
+  teleport_point:
+    name: 830 - flare run
+    position: [367.05, 9.44, -153.01]
+    yaw_deg: 61.7
+    map_xz: [2051, 3667]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [367.04, 9.54, -153.01]
+    yaw_deg: 61.7
+  - slot: 2
+    name: Birch
+    position: [367.76, 9.55, -154.33]
+    yaw_deg: 61.7
+  mechanisms: {}
+  switch_spread_m: 210
+  notes: The flare and the hidden box are 210 m apart.
+- id: gauntlet_3_sim_press
+  title: 'Black sphere room 3: Race Track'
+  verdict: skip
+  reasons: [simultaneous, voice_blocked]
+  guide_name: Race Track
+  guide_match: guess
+  guide_group: black_sphere
+  post_game_variant: false
+  game_root: LandmarksPlayerCount2/Contents/SilentGauntlet 2Player
+  gourd: null
+  teleport_point:
+    name: 883 - silent gauntlet chamber 3
+    position: [-743.5, 63.77, 678.12]
+    yaw_deg: -137.1
+    map_xz: [1853, 2294]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [-743.5, 62.75, 678.12]
+    yaw_deg: -137.1
+  - slot: 2
+    name: Birch
+    position: [-744.6, 62.75, 679.14]
+    yaw_deg: -137.1
+  mechanisms:
+    SimPressController: 1
+    PeckEffectTelescope: 1
+    SpeechlessZone: 1
+    PegTileValidator: 2
+    PressInOrder: 3
+    ProgressTracker: 3
+    PeckEffectTimer: 25
+    PlayerZone: 2
+  notes: 'Two switches pressed at the same moment. Black sphere room, reached only through the Black Key
+    gate (teleport works). No gourd: success is the level''s ''Challenge Complete'' gate, so the scorer
+    needs a new goal type. The whole sphere is inside a SpeechlessZone (radius 120 m), so the faithful
+    version needs `say` off. Between levels both players hold buttons (NHold) to open the stairs.'
+- id: medium_sim_press
+  title: Medium sim press
+  verdict: skip
+  reasons: [simultaneous]
+  guide_name: null
+  guide_match: none
+  guide_group: unknown
+  post_game_variant: false
+  game_root: LandmarksPlayerCount2/Contents/MediumSimPressChallenge 2Player
+  gourd:
+    save_name: gourdMediumSimPress
+    house_number: '107'
+    home: [597.43, 31.98, -90.81]
+    map_xz: [2258, 3787]
+  guide_coordinates: [3787, 2258]
+  teleport_point:
+    name: 142 medium sim press
+    position: [592.9, 11.2, -111.8]
+    yaw_deg: 0
+    map_xz: [2240, 3798]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [592.93, 2.95, -109.32]
+    yaw_deg: 0
+  - slot: 2
+    name: Birch
+    position: [594.43, 3.17, -109.9]
+    yaw_deg: 0
+  mechanisms:
+    SimPressController: 1
+    PeckEffectTimer: 4
+  switch_spread_m: 78
+  notes: Two SimPress stations about 75 m apart. The designer teleport point is in the air.
+- id: microphone_array
+  title: Microphone array
+  verdict: skip
+  reasons: [sound]
+  guide_name: Microphone puzzle (chair / headphones)
+  guide_match: coordinates
+  guide_group: yellow
+  post_game_variant: false
+  game_root: LandmarksPlayerCountAny/MicrophoneArray
+  gourd:
+    save_name: gourdMicrophoneArray
+    house_number: '135'
+    home: [-405.54, 15.31, -540.2]
+    map_xz: [1231, 3395]
+  guide_coordinates: [3395, 1231]
+  teleport_point:
+    name: 187 - Microphone Array
+    position: [-398.52, 15.46, -548.09]
+    yaw_deg: 85.5
+    map_xz: [1230, 3405]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [-398.52, 15.54, -548.09]
+    yaw_deg: 85.5
+  - slot: 2
+    name: Birch
+    position: [-398.4, 15.54, -549.58]
+    yaw_deg: 85.5
+  mechanisms:
+    PeckEffectHeadset: 6
+    PressInOrder: 1
+    ProgressTracker: 1
+    PeckEffectTimer: 6
+    PeckLogicSimPressOld: 6
+  switch_spread_m: 27
+  notes: The listener identifies the live microphone by ear (PeckEffectHeadset).
+- id: musical_holiday
+  title: Green seat speaker mic
+  verdict: skip
+  reasons: [sound, far_apart]
+  guide_name: Green Seat Speaker Mic
+  guide_match: coordinates
+  guide_group: independent
+  post_game_variant: false
+  game_root: LandmarksPlayerCountAny/MusicalHoliday
+  gourd:
+    save_name: gourdMusicalHoliday
+    house_number: '148'
+    home: [337.67, 60.28, -505.88]
+    map_xz: [1781, 3896]
+  guide_coordinates: [3896, 1781]
+  teleport_point:
+    name: 165 - MusicalHoliday
+    position: [285.58, 66.47, -84.42]
+    yaw_deg: -51.1
+    map_xz: [2042, 3561]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [285.58, 66.04, -84.42]
+    yaw_deg: -51.1
+  - slot: 2
+    name: Birch
+    position: [286.24, 66.04, -83.43]
+    yaw_deg: -51.1
+  mechanisms:
+    PeckEffectHeadset: 1
+  switch_spread_m: 426
+  notes: The sitter listens to music; the walker treks 430 m to a radio station.
+- id: obby
+  title: Obstacle course
+  verdict: skip
+  reasons: [simultaneous]
+  guide_name: Obstacle Course
+  guide_match: coordinates
+  guide_group: blue
+  post_game_variant: false
+  game_root: LandmarksPlayerCount2/Contents/Obby 2Player
+  gourd:
+    save_name: gourdObby
+    house_number: '113'
+    home: [342.85, 27.61, -204.57]
+    map_xz: [1998, 3687]
+  guide_coordinates: [3687, 1998]
+  teleport_point:
+    name: 161 obby
+    position: [321.76, 27.05, -257.64]
+    yaw_deg: 21.5
+    map_xz: [1945, 3709]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [321.75, 26.1, -257.66]
+    yaw_deg: 21.5
+  - slot: 2
+    name: Birch
+    position: [323.15, 26.1, -258.21]
+    yaw_deg: 21.5
+  mechanisms:
+    SimPressController: 1
+    PeckEffectTimer: 5
+  switch_spread_m: 60
+  notes: The final door needs two switches pressed at the same moment (SimPressController).
+- id: optical_telegraph
+  title: Mountain gesture telescopes
+  verdict: skip
+  reasons: [far_apart]
+  guide_name: Mountain Gesture (telescopes & charades)
+  guide_match: description
+  guide_group: red
+  post_game_variant: false
+  game_root: LandmarksPlayerCountAny/OpticalTelegraph
+  gourd:
+    save_name: gourdOpticalTelegraph
+    house_number: '124'
+    home: [236.64, 71.5, -641.81]
+    map_xz: [1614, 3921]
+  guide_coordinates: [3921, 1614]
+  teleport_point:
+    name: 125 optical telegraph
+    position: [237.47, 71.79, -640.79]
+    yaw_deg: 35.1
+    map_xz: [1614, 3921]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [237.47, 71.65, -640.79]
+    yaw_deg: 35.1
+  - slot: 2
+    name: Birch
+    position: [238.7, 71.65, -641.65]
+    yaw_deg: 35.1
+  mechanisms:
+    PeckEffectTelescope: 5
+    PegTileValidator: 1
+  switch_spread_m: 2
+  notes: One player stays at five fixed telescopes; the other walks to distant platforms and poses there.
+- id: signal_flags
+  title: Seaside counting
+  verdict: skip
+  reasons: [far_apart]
+  guide_name: Seaside Counting Binoculars
+  guide_match: description
+  guide_group: independent
+  post_game_variant: false
+  game_root: LandmarksPlayerCountAny/SignalFlags
+  gourd:
+    save_name: gourdSignalFlags
+    house_number: '141'
+    home: [820.09, 16.2, -427.86]
+    map_xz: [2177, 4182]
+  guide_coordinates: [4182, 2177]
+  teleport_point:
+    name: 131 - Signal Flags
+    position: [811.28, 10.91, -439.83]
+    yaw_deg: 105
+    map_xz: [2162, 4184]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [809.65, 8.85, -439.38]
+    yaw_deg: 105
+  - slot: 2
+    name: Birch
+    position: [810.83, 9.86, -441.16]
+    yaw_deg: 105
+  mechanisms:
+    PeckEffectTelescope: 1
+    CountingController: 1
+    PlayerZone: 1
+  switch_spread_m: 169
+  notes: The board is read through a telescope about 170 m away from the room.
+- id: singer_and_selecter
+  title: Music room
+  verdict: skip
+  reasons: [sound]
+  guide_name: Music Room
+  guide_match: coordinates
+  guide_group: yellow
+  post_game_variant: false
+  game_root: LandmarksPlayerCountAny/SingerAndSelecter
+  gourd:
+    save_name: gourdSingerAndSelecter
+    house_number: '150'
+    home: [-528.34, 21.1, -377.67]
+    map_xz: [1259, 3193]
+  guide_coordinates: [3193, 1259]
+  teleport_point:
+    name: 300 - Singer And Selecter
+    position: [-527.7, 20.2, -369.36]
+    yaw_deg: 163.3
+    map_xz: [1265, 3188]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [-527.7, 19.57, -369.36]
+    yaw_deg: 163.3
+  - slot: 2
+    name: Birch
+    position: [-529.14, 19.57, -369.79]
+    yaw_deg: 163.3
+  mechanisms:
+    PegTileValidator: 1
+  switch_spread_m: 16
+  notes: The locked player hums the sound of a speaker for the other to match.
+- id: small_sim_press
+  title: Green structure switches
+  verdict: skip
+  reasons: [simultaneous]
+  guide_name: Green Structure (simultaneous switches)
+  guide_match: description
+  guide_group: drawbridge
+  post_game_variant: false
+  game_root: LandmarksPlayerCount2/Contents/SmallSimPressChallenge 2Player
+  gourd:
+    save_name: gourdEasySimPress
+    house_number: '108'
+    home: [-228.35, 21.11, -727.84]
+    map_xz: [1224, 3653]
+  guide_coordinates: [3653, 1224]
+  teleport_point:
+    name: 223 - small sim press
+    position: [-221.59, 22.38, -732.52]
+    yaw_deg: -109.6
+    map_xz: [1225, 3661]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [-221.59, 21.43, -732.52]
+    yaw_deg: -109.6
+  - slot: 2
+    name: Birch
+    position: [-222.09, 21.43, -731.11]
+    yaw_deg: -109.6
+  mechanisms:
+    SimPressController: 1
+    PeckEffectTimer: 4
+  switch_spread_m: 11
+  notes: Switches on the columns work only when pressed at the same moment (SimPressController).
+- id: speed_obby
+  title: Platforming
+  verdict: skip
+  reasons: [simultaneous]
+  guide_name: 'Platforming (purple #6)'
+  guide_match: description
+  guide_group: post_game
+  post_game_variant: true
+  game_root: LandmarksPlayerCount2/Contents/SpeedObby 2Player
+  gourd:
+    save_name: gourdSpeedObby
+    house_number: '152'
+    home: [780.92, 26.75, -1001.48]
+    map_xz: [1744, 4560]
+  guide_coordinates: [4560, 1744]
+  teleport_point:
+    name: 162 speedobby
+    position: [753.87, 26.19, -951.19]
+    yaw_deg: 151.5
+    map_xz: [1760, 4505]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [753.86, 25.24, -951.17]
+    yaw_deg: 151.5
+  - slot: 2
+    name: Birch
+    position: [752.54, 25.24, -951.89]
+    yaw_deg: 151.5
+  mechanisms:
+    SimPressController: 1
+    PeckEffectTimer: 5
+  switch_spread_m: 66
+  notes: Timed obstacle course with a SimPress door.
+- id: telescope_to_gourd_box
+  title: Cave telescope
+  verdict: skip
+  reasons: [far_apart]
+  guide_name: Cave & Telescope
+  guide_match: description
+  guide_group: drawbridge
+  post_game_variant: false
+  game_root: LandmarksPlayerCountAny/FixedTelescopeToGourd
+  gourd:
+    save_name: gourdTelescopeToBox
+    house_number: '116'
+    home: [-192.36, 19.23, -602.78]
+    map_xz: [1338, 3590]
+  guide_coordinates: [3590, 1338]
+  teleport_point:
+    name: 114 telescope to gourd box
+    position: [-342.39, 17.38, -650.05]
+    yaw_deg: 92.8
+    map_xz: [1198, 3517]
+  spawns:
+  - slot: 1
+    name: Ash
+    position: [-342.39, 17.59, -650.05]
+    yaw_deg: 92.8
+  - slot: 2
+    name: Birch
+    position: [-342.46, 17.59, -651.55]
+    yaw_deg: 92.8
+  mechanisms:
+    PeckEffectTelescope: 1
+  switch_spread_m: 157
+  notes: Button and box are 150 m apart. Already in the repo as puzzles/cave_telescope.yaml, which stays
+    as a harness smoke test.

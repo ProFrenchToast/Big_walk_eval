@@ -1,0 +1,28 @@
+# Blue Room pegboard (TellerWindow). Guide: Blue Room (peg / pin puzzle).
+# Candidate, not in the default dataset. Move it to puzzles/ once a scripted
+# solution scores C and reset restores it. Run it with -T puzzles_dir=puzzles/candidates.
+id: teller_window
+title: Blue Room pegboard
+area: drawbridge
+game: real
+needs_sound: false
+min_agents: 2
+snapshot: ''
+spawns:
+- slot: 1
+  name: Ash
+  position: [-175.91, 12.68, -681.28]
+  yaw_deg: 94.9
+- slot: 2
+  name: Birch
+  position: [-176.04, 12.68, -682.77]
+  yaw_deg: 94.9
+props:
+- item_type: GourdProp
+  position: [-177.55, 13.86, -683.9]
+  home: true
+reward_item_type: GourdProp
+max_turns: 60
+location_hint: You both start beside a small blue house with a pegboard of tiles outside it.
+notes: Candidate from docs/puzzle_catalogue.yaml. Spawns checked in the game; no scripted solution yet,
+  and reset is untested for this puzzle.

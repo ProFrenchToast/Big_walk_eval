@@ -1,0 +1,28 @@
+# Charades rooms (variant) (CharadesRooms 2Player). Guide: Double Green Barn (possibly).
+# Candidate, not in the default dataset. Move it to puzzles/ once a scripted
+# solution scores C and reset restores it. Run it with -T puzzles_dir=puzzles/candidates.
+id: charades_rooms
+title: Charades rooms (variant)
+area: post_game
+game: real
+needs_sound: false
+min_agents: 2
+snapshot: ''
+spawns:
+- slot: 1
+  name: Ash
+  position: [776.12, 55.43, -828.91]
+  yaw_deg: -16.6
+- slot: 2
+  name: Birch
+  position: [777.51, 55.46, -828.29]
+  yaw_deg: -16.6
+props:
+- item_type: GourdProp
+  position: [774.66, 55.7, -823.99]
+  home: true
+reward_item_type: GourdProp
+max_turns: 60
+location_hint: You both start in front of a dark green barn with several doors.
+notes: Candidate from docs/puzzle_catalogue.yaml. Spawns checked in the game; no scripted solution yet,
+  and reset is untested for this puzzle.

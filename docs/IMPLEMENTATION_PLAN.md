@@ -1,6 +1,6 @@
 # Big Walk Cooperation Eval: Harness Implementation Plan
 
-Status: 2026-10-01. M0 to M7 are built. The bridge mod runs in the real game (1.5.1 2608271531). A scripted three-body smoke test and a scripted solution of the first real puzzle (the cave telescope) score C through the full harness on it (M8, scripted part). Section 15 lists what changed from this plan and why; sections 15.4 and 15.5 have the real-game findings.
+Status: 2026-10-01. M0 to M7 are built. The bridge mod runs in the real game (1.5.1 2608271531). A scripted three-body smoke test and a scripted solution of the first real puzzle (the cave telescope) score C through the full harness on it (M8, scripted part). All puzzles in the game are catalogued, with spawns and a verdict for this eval (`docs/PUZZLE_CATALOGUE.md`, 15.6). Section 15 lists what changed from this plan and why; sections 15.4 to 15.6 have the real-game findings.
 
 This document is a handoff. It gives the background, the decisions, the architecture, the interfaces, and an ordered build plan. A developer with no access to the game can build and test most of the Python code against a fake game. The parts that need the real game are marked **[NEEDS GAME]**.
 
@@ -484,6 +484,8 @@ After M8: more puzzles, more agents, and ablations (see section 13).
 
 - `load_snapshot` is not written. `reset` places bodies and props (`props:` in the puzzle file), releases held world switches, and can pin a gourd back into its home (`home: true`). Other puzzle state (doors, counters, panels) keeps its value. Until `load_snapshot` is written, pick puzzles whose state these cover, as the cave telescope does.
 
+- The time of day is not reset. The game clock runs while the game is unpaused, so a long session reaches night and the agents' screenshots go nearly black. To do: a bridge command that sets the time of day to a fixed point, called by `reset` (see `bridge/README.md`, "Next").
+
 ### 15.4 First real-game session (2026-09-30)
 
 Setup: BepInEx 6.0.0-be.788 in the game folder, big-walk-practice 0.6.0, the bridge, and BigWalk.SkipIntro. The bridge talks only through interop signatures; we did not run Cpp2IL. `bridge/README.md` has the details and the class names.
@@ -523,3 +525,8 @@ Findings and changes:
 5. **New bridge commands for authoring:** `find_objects` (scene objects by name or component, for example every `RewardGourd`) and `peck_states` (button, door, and box states near a point). `get_state` reports `pose.held_switch`.
 6. **Scripted walks must start on level ground.** A body that spawns on a ledge and drops off it while walking ends up 0.3 to 0.5 m short, and the pickup fails. From the slope below the ledge, two runs ended within 1 cm of each other.
 
+### 15.6 Puzzle catalogue (2026-10-01)
+
+`docs/puzzle_catalogue.yaml` lists all 52 puzzles of a 2-player walk: 45 gourd puzzles and 7 black sphere rooms. Each entry has the game root, the gourd's home, the map coordinates, the designer teleport point, two checked spawns, the puzzle's mechanisms, and a verdict. The verdicts are 20 run, 5 maybe, and 27 skip: sound, simultaneous presses, or players far apart, and since 2026-10-02 also puzzles one agent can solve alone, very long ones, and the black sphere rooms. The 20 runnable puzzles have files in `puzzles/candidates/`, outside the default dataset until each has a scripted solution and a working reset. `docs/PUZZLE_CATALOGUE.md` explains the method and lists the problems to solve first: reset of puzzle state (sealed rooms, boards, vices), the time of day (a long session reaches night), `say` leaking through voice-blocked walls, and blindfolds under hot-swap.
+
+New bridge commands for this: `survey`, `puzzle_roots`, `children`, `map_coords`, `ground`, and a working `overview_shot` (free camera, pointer readback). `scripts/survey_puzzles.py` dumps the survey and checks the catalogue's spawns.

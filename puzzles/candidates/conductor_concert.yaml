@@ -1,0 +1,28 @@
+# Stage directions (ConductorConcert 2 Player). Guide: Stage Directions.
+# Candidate, not in the default dataset. Move it to puzzles/ once a scripted
+# solution scores C and reset restores it. Run it with -T puzzles_dir=puzzles/candidates.
+id: conductor_concert
+title: Stage directions
+area: yellow
+game: real
+needs_sound: false
+min_agents: 2
+snapshot: ''
+spawns:
+- slot: 1
+  name: Ash
+  position: [-137.68, 73.21, -304.7]
+  yaw_deg: -46.7
+- slot: 2
+  name: Birch
+  position: [-136.65, 73.21, -303.61]
+  yaw_deg: -46.7
+props:
+- item_type: GourdProp
+  position: [-150.53, 71.67, -292.02]
+  home: true
+reward_item_type: GourdProp
+max_turns: 60
+location_hint: You both start on a dark blue stage with seats and a booth.
+notes: Candidate from docs/puzzle_catalogue.yaml. Spawns checked in the game; no scripted solution yet,
+  and reset is untested for this puzzle.

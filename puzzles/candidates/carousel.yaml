@@ -1,0 +1,28 @@
+# Aerial seat (Carousel). Guide: Aerial Seat.
+# Candidate, not in the default dataset. Move it to puzzles/ once a scripted
+# solution scores C and reset restores it. Run it with -T puzzles_dir=puzzles/candidates.
+id: carousel
+title: Aerial seat
+area: yellow
+game: real
+needs_sound: false
+min_agents: 2
+snapshot: ''
+spawns:
+- slot: 1
+  name: Ash
+  position: [4.45, 111.86, -383.95]
+  yaw_deg: -116.2
+- slot: 2
+  name: Birch
+  position: [3.79, 111.85, -382.6]
+  yaw_deg: -116.2
+props:
+- item_type: GourdProp
+  position: [5.42, 111.0, -374.36]
+  home: true
+reward_item_type: GourdProp
+max_turns: 60
+location_hint: You both start on a platform with a crescent-moon chair on a track and a pegboard.
+notes: Candidate from docs/puzzle_catalogue.yaml. Spawns checked in the game; no scripted solution yet,
+  and reset is untested for this puzzle.

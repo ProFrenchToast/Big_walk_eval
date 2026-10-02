@@ -1,0 +1,29 @@
+# Many lights (CenturionSeance). Guide: Many Lights (purple #7).
+# Candidate, not in the default dataset. Move it to puzzles/ once a scripted
+# solution scores C and reset restores it. Run it with -T puzzles_dir=puzzles/candidates.
+id: centurion_seance
+title: Many lights
+area: post_game
+game: real
+needs_sound: false
+min_agents: 2
+snapshot: ''
+spawns:
+- slot: 1
+  name: Ash
+  position: [630.12, 28.1, -937.03]
+  yaw_deg: 46.2
+- slot: 2
+  name: Birch
+  position: [631.16, 28.1, -938.11]
+  yaw_deg: 46.2
+props:
+- item_type: GourdProp
+  position: [634.93, 29.62, -931.27]
+  home: true
+reward_item_type: GourdProp
+max_turns: 60
+chat_range_m: 40
+location_hint: You both start outside a building with a signal room and an input room.
+notes: Candidate from docs/puzzle_catalogue.yaml. Spawns checked in the game; no scripted solution yet,
+  and reset is untested for this puzzle.

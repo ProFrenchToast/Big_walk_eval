@@ -1,0 +1,28 @@
+# Blindfold catwalk (BlindfoldCatwalk). Guide: Blindfolded Obstacle Course.
+# Candidate, not in the default dataset. Move it to puzzles/ once a scripted
+# solution scores C and reset restores it. Run it with -T puzzles_dir=puzzles/candidates.
+id: blindfold_catwalk
+title: Blindfold catwalk
+area: blue
+game: real
+needs_sound: false
+min_agents: 2
+snapshot: ''
+spawns:
+- slot: 1
+  name: Ash
+  position: [84.55, 19.7, -36.37]
+  yaw_deg: -32.7
+- slot: 2
+  name: Birch
+  position: [85.71, 20.39, -34.91]
+  yaw_deg: -32.7
+props:
+- item_type: GourdProp
+  position: [61.76, 20.55, -0.81]
+  home: true
+reward_item_type: GourdProp
+max_turns: 60
+location_hint: You both start by a turnstile gate with a golden head on a pedestal.
+notes: Candidate from docs/puzzle_catalogue.yaml. Spawns checked in the game; no scripted solution yet,
+  and reset is untested for this puzzle.

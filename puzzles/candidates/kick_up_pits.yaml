@@ -1,0 +1,28 @@
+# Deep well (KickUpPits). Guide: Deep Well.
+# Candidate, not in the default dataset. Move it to puzzles/ once a scripted
+# solution scores C and reset restores it. Run it with -T puzzles_dir=puzzles/candidates.
+id: kick_up_pits
+title: Deep well
+area: black
+game: real
+needs_sound: false
+min_agents: 2
+snapshot: ''
+spawns:
+- slot: 1
+  name: Ash
+  position: [-22.9, 53.05, -445.6]
+  yaw_deg: 0
+- slot: 2
+  name: Birch
+  position: [-21.4, 53.05, -445.6]
+  yaw_deg: 0
+props:
+- item_type: GourdProp
+  position: [-25.83, 52.5, -449.86]
+  home: true
+reward_item_type: GourdProp
+max_turns: 60
+location_hint: You both start at the bottom level of a tall shaft with green walls.
+notes: Candidate from docs/puzzle_catalogue.yaml. Spawns checked in the game; no scripted solution yet,
+  and reset is untested for this puzzle.
