@@ -10,10 +10,12 @@ docstring below instead.
 from __future__ import annotations
 
 import base64
+import io
 from typing import Any
 
 from inspect_ai._util.content import ContentImage, ContentText
 from inspect_ai.tool import Tool, ToolError, ToolResult, tool
+from PIL import Image
 
 from big_walk_eval.episode import Episode
 from big_walk_eval.look import pixel_to_angles
@@ -33,11 +35,13 @@ from big_walk_eval.protocol import (
     parse_keys,
 )
 
-NOT_AVAILABLE = "`{action}` is not available in this game, use `say` to talk."
+NOT_AVAILABLE = (
+    '`{action}` is not available in this game. To talk, press `key` "Return", '
+    '`type` your message, and press "Return" again.'
+)
 
 UNSUPPORTED_ACTIONS = frozenset(
     {
-        "zoom",
         "cursor_position",
         "left_click_drag",
         "double_click",
@@ -53,6 +57,33 @@ UNSUPPORTED_ACTIONS = frozenset(
 
 def png_content(png: bytes) -> ContentImage:
     return ContentImage(image="data:image/png;base64," + base64.b64encode(png).decode())
+
+
+def zoom_box(
+    region: Any, width: int = SCREEN_WIDTH, height: int = SCREEN_HEIGHT
+) -> tuple[int, int, int, int]:
+    try:
+        x0, y0, x1, y1 = (round(float(v)) for v in region)
+    except (TypeError, ValueError) as e:
+        raise ToolError(f"`zoom` needs `region` [x0, y0, x1, y1], got {region!r}.") from e
+    if not (0 <= x0 < x1 <= width and 0 <= y0 < y1 <= height):
+        raise ToolError(
+            f"`region` {region!r} must be [x0, y0, x1, y1] with x0 < x1 and y0 < y1, "
+            f"inside the {width}x{height} screen."
+        )
+    return x0, y0, x1, y1
+
+
+def zoom_png(png: bytes, region: Any) -> bytes:
+    """The `region` [x0, y0, x1, y1] of a screenshot, enlarged to fit the screen size."""
+    with Image.open(io.BytesIO(png)) as img:
+        x0, y0, x1, y1 = zoom_box(region, *img.size)
+        crop = img.crop((x0, y0, x1, y1))
+    scale = min(SCREEN_WIDTH / (x1 - x0), SCREEN_HEIGHT / (y1 - y0))
+    size = (round((x1 - x0) * scale), round((y1 - y0) * scale))
+    buf = io.BytesIO()
+    crop.resize(size, Image.Resampling.LANCZOS).save(buf, format="PNG")
+    return buf.getvalue()
 
 
 def to_game_actions(
@@ -188,9 +219,10 @@ def computer_tool(episode: Episode, slot: int) -> Tool:
               - `scroll`: Turn the mouse wheel.
               - `type`: Type `text` into the in-game text chat. Open the chat with `key` "Return" first, then press "Return" again to send.
               - `screenshot`: See your current view. No game time passes.
+              - `zoom`: See the `region` of your current view enlarged, for example to read small text. No game time passes. In a list of `actions`, it must be the last one, and it zooms into the view after the other actions.
           coordinate: The [x, y] pixel on the screen, for `mouse_move` and clicks.
           duration: Seconds of game time, for `hold_key` and `wait`.
-          region: Not used in this game.
+          region: The [x0, y0, x1, y1] pixels of the screen to enlarge, for `zoom`.
           scroll_amount: Number of wheel steps, for `scroll`.
           scroll_direction: "up", "down", "left", or "right", for `scroll`.
           start_coordinate: Not used in this game.
@@ -213,10 +245,18 @@ def computer_tool(episode: Episode, slot: int) -> Tool:
                     "scroll_direction": scroll_direction,
                     "text": text,
                     "repeat": repeat,
+                    "region": region,
                 }
             ]
         else:
             raise ToolError("Give an `action`.")
+
+        zoom = None
+        if calls and calls[-1].get("action") == "zoom":
+            zoom = calls.pop().get("region")
+            zoom_box(zoom)  # Check the region before any action runs.
+        if any(c.get("action") == "zoom" for c in calls):
+            raise ToolError("`zoom` can only be the last action in a list.")
 
         game_actions: list[Action] = []
         for call in calls:
@@ -224,6 +264,11 @@ def computer_tool(episode: Episode, slot: int) -> Tool:
 
         if not game_actions:
             png = await episode.game.screenshot()
+            if zoom is not None:
+                return [
+                    ContentText(text=f"Your view, zoomed into {zoom}."),
+                    png_content(zoom_png(png, zoom)),
+                ]
             return [ContentText(text="Your current view."), png_content(png)]
 
         if turn.remaining_ms == 0:
@@ -236,6 +281,10 @@ def computer_tool(episode: Episode, slot: int) -> Tool:
         if result.truncated:
             summary += "The time limit for this turn cut the action short. "
         summary += f"{turn.remaining_ms} ms left this turn."
-        return [ContentText(text=summary), png_content(result.screenshot_png)]
+        png = result.screenshot_png
+        if zoom is not None:
+            png = zoom_png(png, zoom)
+            summary += f" Your view, zoomed into {zoom}."
+        return [ContentText(text=summary), png_content(png)]
 
     return execute

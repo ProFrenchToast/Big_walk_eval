@@ -1,17 +1,17 @@
 """Round-robin multi-agent solver.
 
 Each agent has its own message history and sees only its own body. Agents
-take turns. A turn starts with a header (chat heard since the last turn and
-a fresh screenshot), then runs up to `max_generates_per_turn` generate calls
-and their tool calls. The turn ends early when the model replies without a
-tool call, or when the turn's tool call or game time limit is used up.
+take turns. A turn starts with a header and a fresh screenshot, then runs
+up to `max_generates_per_turn` generate calls and their tool calls. The turn
+ends early when the model replies without a tool call, or when the turn's
+tool call or game time limit is used up.
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable
 from contextlib import AsyncExitStack
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 
 import anyio
 from inspect_ai.log import transcript
@@ -101,10 +101,7 @@ def round_robin(
         state.messages = []
         recorder = Recorder()
         game = RecordingGame(game_factory(), recorder)
-        episode_config = config
-        if config.chat_range_m is None and puzzle.chat_range_m is not None:
-            episode_config = replace(config, chat_range_m=puzzle.chat_range_m)
-        episode = Episode(game, episode_config, names, recorder=recorder)
+        episode = Episode(game, config, names, recorder=recorder)
         model = get_model()
         capturing = False
         try:
@@ -178,7 +175,6 @@ def round_robin(
         finally:
             log.n_turns = len(log.turns)
             log.votes = {names[s]: v for s, v in episode.votes.items()}
-            log.chat = [m.model_dump(mode="json") for m in episode.chat.log]
             log.events = [
                 {"turn": r.turn, **r.event.model_dump(mode="json")} for r in episode.events
             ]
@@ -208,10 +204,9 @@ async def _run_turn(
     turn = episode.start_turn(index, agent.slot)
     await game.switch(agent.slot)
     png = await game.screenshot()
-    inbox = episode.chat.deliver(agent.slot)
     header = ChatMessageUser(
         content=[
-            ContentText(text=turn_header(turn=index, name=agent.name, inbox=inbox)),
+            ContentText(text=turn_header(turn=index, name=agent.name)),
             png_content(png),
         ]
     )
@@ -242,7 +237,6 @@ async def _run_turn(
         "tool_calls": turn.tool_calls,
         "game_ms": turn.game_ms,
         "truncated": turn.truncated,
-        "heard": len(inbox),
     }
 
 

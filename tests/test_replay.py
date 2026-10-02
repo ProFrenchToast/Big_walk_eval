@@ -15,7 +15,6 @@ from big_walk_eval.replay import (
     Recording,
     RecordingGame,
     ResetStep,
-    SayStep,
     SwitchStep,
     TurnStep,
     VoteStep,
@@ -23,7 +22,7 @@ from big_walk_eval.replay import (
     play,
 )
 from tests.conftest import ASH_TO_PLATE_YAW, ROOT, reset_request
-from tests.test_solver import run, step
+from tests.test_solver import chat, run, step
 
 WALK_TO_PLATE = [LookAction(dyaw_deg=ASH_TO_PLATE_YAW), HoldKeyAction(keys=["w"], duration_ms=2500)]
 
@@ -32,16 +31,17 @@ SOLUTION = {
         step(
             ("computer", {"action": "mouse_move", "coordinate": [171, 384]}),
             ("computer", {"action": "hold_key", "text": "w", "duration": 2.5}),
-            ("say", {"message": "on the plate"}),
         ),
-        step(("end_episode", {}), wait_for="got it"),
+        step(chat("on the plate")),
+        step(("computer", {"action": "screenshot"})),
+        step(("end_episode", {})),
     ],
     "Birch": [
-        step(("computer", {"action": "hold_key", "text": "w", "duration": 3}), wait_for="plate"),
+        step(("computer", {"action": "hold_key", "text": "w", "duration": 3})),
         step(("computer", {"action": "hold_key", "text": "w", "duration": 3})),
         step(
             ("computer", {"action": "left_mouse_down"}),
-            ("say", {"message": "got it"}),
+            chat("got it"),
             ("end_episode", {}),
         ),
     ],
@@ -114,10 +114,14 @@ def test_episode_recording_replays_exactly(tmp_path, fake_puzzle):
     kinds = [s.kind for s in recording.steps]
     assert kinds[0] == "reset"
     assert kinds[-1] == "end"
-    assert kinds.count("act") == 5
-    assert [s.text for s in recording.steps if isinstance(s, SayStep)] == ["on the plate", "got it"]
-    say = next(s for s in recording.steps if isinstance(s, SayStep))
-    assert (say.slot, say.recipients, say.turn) == (1, [2], 0)
+    assert kinds.count("act") == 7
+    chats = [
+        (a.turn, e.slot, e.data["message"])
+        for a in recording.acts()
+        for e in a.events
+        if e.type == "text_chat"
+    ]
+    assert chats == [(2, 1, "on the plate"), (5, 2, "got it")]
     assert [(s.slot, s.vote) for s in recording.steps if isinstance(s, VoteStep)] == [
         (2, True),
         (1, True),
@@ -133,7 +137,7 @@ def test_episode_recording_replays_exactly(tmp_path, fake_puzzle):
 
     game = FakeGame(seed=0)
     frames = anyio.run(collect, recording, game)
-    assert len(frames) == 5
+    assert len(frames) == 7
     assert all(f.drift is not None and f.drift.within(0.0, 0.0) for f in frames)
     assert drift(end.bodies, anyio.run(game.state).bodies).within(0.0, 0.0)
     assert anyio.run(game.state).reward_holder().name == "Birch"
@@ -170,4 +174,4 @@ def test_replay_script(tmp_path, fake_puzzle):
     assert result.returncode == 0, result.stdout + result.stderr
     assert "reproduced" in result.stdout
     assert "gourd held by: Birch" in result.stdout
-    assert len(list(frames.glob("*.png"))) == 5
+    assert len(list(frames.glob("*.png"))) == 7

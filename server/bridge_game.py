@@ -197,10 +197,6 @@ class BridgeGame:
             camera_hfov_deg=vfov_to_hfov(raw.camera_vfov_deg) if raw.camera_vfov_deg else None,
         )
 
-    async def echo_chat(self, slot: int, text: str) -> None:
-        # NEEDS GAME: the mod's chat command is TODO(dump).
-        await self.bridge.chat(slot, text)
-
     async def overview_shot(
         self, position: Vec3 | None = None, look_at: Vec3 | None = None
     ) -> bytes | None:

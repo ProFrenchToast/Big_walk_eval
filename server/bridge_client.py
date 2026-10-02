@@ -177,9 +177,6 @@ class BridgeClient:
     async def look(self, dyaw_deg: float, dpitch_deg: float) -> None:
         await self.call("look", dyaw_deg=dyaw_deg, dpitch_deg=dpitch_deg)
 
-    async def chat(self, slot: int, text: str) -> None:
-        await self.call("chat", slot=slot, text=text)
-
     async def overview_shot(
         self, position: Vec3 | None, look_at: Vec3 | None, width: int, height: int
     ) -> bytes | None:

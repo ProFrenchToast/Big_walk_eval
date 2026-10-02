@@ -8,13 +8,18 @@ from PIL import Image
 
 from big_walk_eval.episode import EpisodeConfig
 from big_walk_eval.game.fake_game import FakeGame
-from big_walk_eval.protocol import CaptureInfo, CaptureRequest, HoldKeyAction, WaitAction
+from big_walk_eval.protocol import (
+    CaptureInfo,
+    CaptureRequest,
+    GameEvent,
+    HoldKeyAction,
+    WaitAction,
+)
 from big_walk_eval.replay import (
     ActStep,
     CaptureStep,
     Recording,
     ResetStep,
-    SayStep,
 )
 from big_walk_eval.video import ACTIVE, HEADER_H, IDLE, Composer, find_ffmpeg, write_mp4
 from tests.conftest import ROOT, reset_request
@@ -120,15 +125,22 @@ def synthetic(tmp_path) -> tuple[CaptureInfo, Recording]:
         steps=[
             reset,
             CaptureStep(episode_id="ep", game_ms=0),
-            ActStep(slot=1, actions=[], budget_ms=3000, used_ms=500, game_ms=0, turn=0),
-            SayStep(slot=1, text="only Birch hears this", recipients=[2], game_ms=500, turn=0),
+            ActStep(
+                slot=1,
+                actions=[],
+                budget_ms=3000,
+                used_ms=500,
+                game_ms=0,
+                turn=0,
+                events=[GameEvent(type="text_chat", slot=1, data={"message": "hello from Ash"})],
+            ),
             ActStep(slot=2, actions=[], budget_ms=3000, used_ms=400, game_ms=500, turn=1),
         ],
     )
     return info, recording
 
 
-def test_composer_highlights_the_acting_body_and_routes_captions(tmp_path):
+def test_composer_highlights_the_acting_body_and_captions_the_speaker(tmp_path):
     info, recording = synthetic(tmp_path)
     composer = Composer(info, recording=recording, hold_s=0.5)
     assert composer.cols == 2 and composer.rows == 2
@@ -140,10 +152,10 @@ def test_composer_highlights_the_acting_body_and_routes_captions(tmp_path):
     assert composer.act_at(100).slot == 1
     assert composer.act_at(600).slot == 2
     assert composer.act_at(950) is None
-    assert [c.text for c in composer.captions_at(2, 600)] == ["only Birch hears this"]
+    assert [c.text for c in composer.captions_at(1, 600)] == ["hello from Ash"]
     assert [c.speaker for c in composer.captions_at(1, 600)] == ["Ash"]
-    assert composer.captions_at(3, 600) == []
-    assert composer.captions_at(2, 400) == []
+    assert composer.captions_at(2, 600) == []
+    assert composer.captions_at(1, 400) == []
 
     image = composer.render(sequence[0])
     assert image.getpixel((1, HEADER_H + 1)) == ACTIVE

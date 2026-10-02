@@ -8,7 +8,11 @@ puzzle: footy_walkabout
 agents:
   Ash:
     - calls:
-        - say: {message: "Hi, I am Ash. I see a courtyard with a tree, and a football on the ledge."}
+        - computer:
+            actions:
+              - {action: key, text: Return}
+              - {action: type, text: "Hi, I am Ash. I see a tree and a football."}
+              - {action: key, text: Return}
         - computer: {action: screenshot}
         - computer: {action: mouse_move, coordinate: [400, 384]}
         - computer: {action: hold_key, text: w, duration: 1.0}
@@ -25,9 +29,7 @@ agents:
         - computer: {action: key, text: z}
         - computer: {action: scroll, scroll_direction: down, scroll_amount: 2}
         - computer: {action: mouse_move, coordinate: [683, 200]}
-    - wait_for: "I have the ball"
-      calls:
-        - say: {message: "Great. I vote to end."}
+    - calls:
         - end_episode: {}
   Birch:
     - calls:
@@ -35,16 +37,12 @@ agents:
         - computer: {action: hold_key, text: a, duration: 0.5}
         - computer: {action: hold_key, text: d, duration: 0.5}
         - computer: {action: hold_key, text: s, duration: 0.5}
-        - say: {message: "Birch here, I am walking around behind you."}
     - calls:
         - computer: {action: left_mouse_down}
         - computer: {action: wait, duration: 0.3}
-        - say: {message: "I am holding the use button down."}
     - calls:
         - computer: {action: left_mouse_up}
-        - say: {message: "Released it."}
-    - wait_for: "I have the ball"
-      calls:
+    - calls:
         - end_episode: {}
   Cedar:
     - calls:
@@ -53,12 +51,10 @@ agents:
     - calls:
         - computer: {action: left_click, coordinate: [714, 560]}
         - computer: {action: wait, duration: 0.5}
-        - say: {message: "I picked up the football."}
     - calls:
         - computer: {action: right_click}
         - computer: {action: wait, duration: 1.0}
         - computer: {action: left_click, coordinate: [683, 515]}
         - computer: {action: wait, duration: 0.5}
     - calls:
-        - say: {message: "I have the ball again after dropping it. Let's end."}
         - end_episode: {}

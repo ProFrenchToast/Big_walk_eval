@@ -147,7 +147,7 @@ class FakeBridge:
                 for r in released:
                     del self.held_switches[r["path"]]
                 return {"released": released}
-            case "load_snapshot" | "chat" | "input":
+            case "load_snapshot" | "input":
                 return {}
         raise RuntimeError(f"unknown command {cmd}")
 

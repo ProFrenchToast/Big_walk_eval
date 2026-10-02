@@ -1,22 +1,26 @@
 from __future__ import annotations
 
 import io
+import math
 
 import pytest
 from PIL import Image
 
+from big_walk_eval.game import fake_render
 from big_walk_eval.game.client import GameClient
-from big_walk_eval.game.fake_game import FakeGame, segments_cross
+from big_walk_eval.game.fake_game import CHAT_READ_M, CHAT_SHOW_MS, FakeGame, segments_cross
 from big_walk_eval.protocol import (
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
+    BodySpawn,
     HoldKeyAction,
     KeyAction,
     LookAction,
     MouseAction,
     TypeAction,
+    WaitAction,
 )
-from tests.conftest import ASH_TO_PLATE_YAW, reset_request
+from tests.conftest import ASH, ASH_TO_PLATE_YAW, reset_request
 
 
 async def ash_to_plate(game: FakeGame) -> None:
@@ -138,10 +142,8 @@ async def test_seed_changes_item_layout():
     assert a.items["stick"].x != b.items["stick"].x
 
 
-async def test_overview_and_echo(game: FakeGame):
+async def test_overview(game: FakeGame):
     assert (await game.overview_shot()) is not None
-    await game.echo_chat(1, "hello")
-    assert game.chat_echoes == [(1, "hello")]
 
 
 def test_segments_cross():
@@ -183,3 +185,30 @@ async def test_typing_without_open_chat_does_nothing(game: FakeGame):
 async def test_body_does_not_walk_while_chatting(game: FakeGame):
     await game.act(1, [ENTER, HoldKeyAction(keys=["w"], duration_ms=1000)], 3000)
     assert (await game.state()).body(1).position == (-5.0, 0.0, 0.0)
+
+
+def view(game: FakeGame, slot: int) -> Image.Image:
+    return fake_render.first_person_image(game, game.bodies[slot])
+
+
+async def test_chat_shows_over_the_speakers_head_for_a_while(game: FakeGame):
+    await game.act(2, [LookAction(dyaw_deg=-90)], 3000)  # Birch looks at Ash
+    before = view(game, 2)
+    await game.act(1, [ENTER, TypeAction(text="hello Birch"), ENTER], 3000)
+    assert game.shown_chat(game.bodies[1]) == "hello Birch"
+    assert view(game, 2).tobytes() != before.tobytes()
+
+    await game.act(1, [WaitAction(duration_ms=CHAT_SHOW_MS)], CHAT_SHOW_MS)
+    assert game.shown_chat(game.bodies[1]) == ""
+    assert view(game, 2).tobytes() == before.tobytes()
+
+
+async def test_chat_is_unreadable_far_away():
+    game = FakeGame(seed=0)
+    far = BodySpawn(slot=2, name="Birch", position=(10.0, 0.0, -14.0), yaw_deg=-46.97)
+    await game.reset(reset_request(ASH, far))
+    assert math.dist((-5.0, 0.0), (10.0, -14.0)) > CHAT_READ_M
+    before = view(game, 2)
+    await game.act(1, [ENTER, TypeAction(text="hello Birch"), ENTER], 3000)
+    assert game.shown_chat(game.bodies[1]) == "hello Birch"
+    assert view(game, 2).tobytes() == before.tobytes()

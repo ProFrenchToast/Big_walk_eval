@@ -8,12 +8,9 @@ from inspect_ai.tool import ToolError
 from inspect_ai.util import StoreModel
 from pydantic import Field
 
-from big_walk_eval.chat import ChatRouter
 from big_walk_eval.game.client import GameClient
 from big_walk_eval.protocol import PRACTICE_MOD_KEYS, SCREEN_HEIGHT, SCREEN_WIDTH, GameEvent
 from big_walk_eval.replay import Recorder
-
-DEFAULT_CHAT_RANGE_M = 20.0
 
 
 @dataclass(frozen=True)
@@ -21,11 +18,8 @@ class EpisodeConfig:
     max_game_ms_per_turn: int = 3000
     max_tool_calls_per_turn: int = 6
     max_generates_per_turn: int = 6
-    # None: the puzzle's chat_range_m, else DEFAULT_CHAT_RANGE_M.
-    chat_range_m: float | None = None
     hfov_deg: float = 90.0
     keep_images: int = 3
-    echo_chat: bool = False
     blocked_keys: frozenset[str] = PRACTICE_MOD_KEYS
     # 0 turns off the per-body video capture.
     capture_fps: int = 0
@@ -63,7 +57,6 @@ class Episode:
     game: GameClient
     config: EpisodeConfig
     names: dict[int, str]
-    chat: ChatRouter = field(init=False)
     hfov_deg: float = field(init=False)
     votes: dict[int, bool] = field(init=False)
     turn: TurnState | None = None
@@ -72,8 +65,6 @@ class Episode:
     recorder: Recorder = field(default_factory=Recorder)
 
     def __post_init__(self) -> None:
-        range_m = self.config.chat_range_m
-        self.chat = ChatRouter(DEFAULT_CHAT_RANGE_M if range_m is None else range_m, self.names)
         self.hfov_deg = self.config.hfov_deg
         self.votes = {slot: False for slot in self.names}
 
@@ -121,7 +112,6 @@ class EpisodeLog(StoreModel):
     puzzle_id: str = ""
     agents: dict[str, str] = Field(default_factory=dict)
     votes: dict[str, bool] = Field(default_factory=dict)
-    chat: list[dict] = Field(default_factory=list)
     turns: list[dict] = Field(default_factory=list)
     events: list[dict] = Field(default_factory=list)
     total_game_ms: int = 0

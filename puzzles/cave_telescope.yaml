@@ -25,8 +25,6 @@ props:
   - {item_type: GourdProp, position: [-192.358, 19.233, -602.778], home: true}
 reward_item_type: GourdProp
 max_turns: 30
-# The two players are 150 m apart. This range covers both.
-chat_range_m: 200
 location_hint: >-
   Ash is next to a yellow push button on a podium beside the blue telescope. Holding
   the button down opens the glass box in the rocks about 150 m away, which the telescope

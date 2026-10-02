@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import base64
+import io
 import math
 
 import pytest
 from inspect_ai._util.content import ContentImage, ContentText
 from inspect_ai.tool import ToolDef, ToolError, ToolInfo
 from inspect_ai.tool._tools._computer._computer import is_computer_tool_info
+from PIL import Image
 
 from big_walk_eval.episode import Episode, EpisodeConfig
 from big_walk_eval.game.fake_game import FakeGame
@@ -14,8 +17,7 @@ from big_walk_eval.protocol import TYPE_MAX_CHARS, KeyAction, LookAction, MouseA
 from big_walk_eval.tools import agent_tools
 from big_walk_eval.tools.computer import UNSUPPORTED_ACTIONS, computer_tool, to_game_actions
 from big_walk_eval.tools.end_episode import end_episode
-from big_walk_eval.tools.say import say
-from tests.conftest import ASH_TO_PLATE_YAW, reset_request
+from tests.conftest import ASH_TO_PLATE_YAW
 
 
 @pytest.fixture
@@ -42,7 +44,7 @@ def test_other_tools_are_not_computer(episode: Episode):
 @pytest.mark.parametrize("action", sorted(UNSUPPORTED_ACTIONS))
 async def test_unsupported_actions_return_error_text(episode: Episode, action: str):
     tool = computer_tool(episode, 1)
-    with pytest.raises(ToolError, match="not available in this game, use `say` to talk"):
+    with pytest.raises(ToolError, match="not available in this game. To talk, press"):
         await tool(action=action, text="hi", coordinate=[1, 1])
 
 
@@ -109,14 +111,14 @@ async def test_tool_call_limit(game: FakeGame):
     ep.start_turn(0, 1)
     tool = computer_tool(ep, 1)
     await tool(action="screenshot")
-    await say(ep, 1)(message="hi")
+    await end_episode(ep, 1)()
     with pytest.raises(ToolError, match="all 2 actions"):
         await tool(action="screenshot")
 
 
 async def test_not_your_turn(episode: Episode):
     with pytest.raises(ToolError, match="not your turn"):
-        await say(episode, 2)(message="hi")
+        await end_episode(episode, 2)()
 
 
 async def test_actions_list(episode: Episode):
@@ -131,21 +133,21 @@ async def test_actions_list(episode: Episode):
     assert state.info["gate_open"] is True
 
 
-async def test_say_routes_by_range():
-    game = FakeGame()
-    await game.reset(reset_request())
-    ep = Episode(game, EpisodeConfig(chat_range_m=4.0), {1: "Ash", 2: "Birch"})
-    ep.start_turn(0, 1)
-    assert await say(ep, 1)(message="  too far?  ") == "sent"
-    assert ep.chat.deliver(2) == []
-    assert ep.chat.log[0].text == "too far?"
+def test_agents_talk_only_through_the_game(episode: Episode):
+    assert [ToolDef(t).name for t in agent_tools(episode, 1)] == ["computer", "end_episode"]
 
-    ep = Episode(game, EpisodeConfig(chat_range_m=6.0, echo_chat=True), {1: "Ash", 2: "Birch"})
-    ep.start_turn(0, 1)
-    await say(ep, 1)(message="hello")
-    [msg] = ep.chat.deliver(2)
-    assert (msg.sender_name, msg.text, msg.recipients) == ("Ash", "hello", [2])
-    assert game.chat_echoes == [(1, "hello")]
+
+async def test_chat_through_the_computer_tool(episode: Episode):
+    tool = computer_tool(episode, 1)
+    await tool(
+        actions=[
+            {"action": "key", "text": "Return"},
+            {"action": "type", "text": "hello Birch"},
+            {"action": "key", "text": "Return"},
+        ]
+    )
+    [event] = [e for r in episode.events if (e := r.event).type == "text_chat"]
+    assert (event.slot, event.data) == (1, {"message": "hello Birch"})
 
 
 async def test_end_episode_votes(episode: Episode):
@@ -174,3 +176,43 @@ def test_type_maps_to_text_not_keys():
 def test_type_rejects_bad_text(text, error):
     with pytest.raises(ToolError, match=error):
         to_game_actions({"action": "type", "text": text}, 90, frozenset())
+
+
+def image_of(content: ContentImage) -> Image.Image:
+    return Image.open(io.BytesIO(base64.b64decode(content.image.split(",", 1)[1]))).convert("RGB")
+
+
+async def test_zoom_enlarges_a_region_without_game_time(episode: Episode):
+    tool = computer_tool(episode, 1)
+    view = image_of((await tool(action="screenshot"))[1])
+    whole = await tool(action="zoom", region=[0, 0, 1366, 768])
+    assert image_of(whole[1]).tobytes() == view.tobytes()
+
+    zoomed = image_of((await tool(action="zoom", region=[600, 300, 766, 384]))[1])
+    assert zoomed.size == (1366, 691)
+    corner = view.crop((600, 300, 766, 384)).resize(zoomed.size).getpixel((5, 5))
+    assert zoomed.getpixel((5, 5)) == corner
+    assert episode.total_game_ms == 0
+
+
+@pytest.mark.parametrize(
+    "region", [None, [1, 2, 3], [10, 10, 5, 20], [0, 0, 2000, 10], ["a", 0, 1, 1]]
+)
+async def test_zoom_needs_a_region_on_screen(episode: Episode, region):
+    with pytest.raises(ToolError, match="region"):
+        await computer_tool(episode, 1)(action="zoom", region=region)
+
+
+async def test_zoom_last_in_a_list_shows_the_view_after_the_actions(episode: Episode):
+    tool = computer_tool(episode, 1)
+    walk = {"action": "hold_key", "text": "w", "duration": 1}
+    result = await tool(actions=[walk, {"action": "zoom", "region": [0, 0, 683, 384]}])
+    assert "zoomed into [0, 0, 683, 384]" in result[0].text
+    assert image_of(result[1]).size == (1366, 768)
+    assert episode.total_game_ms == 1000
+
+    with pytest.raises(ToolError, match="last action"):
+        await tool(actions=[{"action": "zoom", "region": [0, 0, 10, 10]}, walk])
+    with pytest.raises(ToolError, match="region"):
+        await tool(actions=[walk, {"action": "zoom", "region": [0, 0, 0, 0]}])
+    assert episode.total_game_ms == 1000

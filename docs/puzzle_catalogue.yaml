@@ -189,7 +189,6 @@
     ProgressTracker: 1
     PeckEffectTimer: 100
   switch_spread_m: 39
-  chat_range_m: 40
   notes: 'Harder twin of the Button Room: a flashing-light question-and-answer code between two rooms
     25 m apart (ProgressTracker 5).'
 - id: centurion_song
@@ -227,10 +226,9 @@
     PeckEffectTimer: 100
     PeckLogicSimPressOld: 1
   switch_spread_m: 268
-  chat_range_m: 40
   notes: Two buildings 30 m apart, one with lights and one with buttons, a yellow cage between. The light
-    player describes which light is on; the button player presses it (ProgressTracker 5). chat_range_m
-    is 40 so the rooms can hear each other.
+    player describes which light is on; the button player presses it (ProgressTracker 5). The rooms
+    may be too far apart to read the in-game chat; check in the game.
 - id: charades_rooms
   title: Charades rooms (variant)
   verdict: run
@@ -264,7 +262,7 @@
     PegTileValidator: 1
   switch_spread_m: 19
   notes: 'Harder twin of the Charades Locked Room. If it is the Double Green Barn, voice is blocked and
-    `say` leaks. Reset: the game must reopen the sealed room and clear the board; reset only moves props
+    only gestures work. Reset: the game must reopen the sealed room and clear the board; reset only moves props
     and bodies (needs load_snapshot or a per-puzzle reset, untested).'
 - id: conductor_concert
   title: Stage directions
@@ -510,8 +508,8 @@
     PegTileValidator: 1
   switch_spread_m: 13
   notes: 'Green building with rooms and a tile validator (PegTileValidator). One player sees a pattern,
-    the other rebuilds it. If it is the Black Tower version, voice is blocked between the rooms and `say`
-    would leak; check in the game. Reset: the game must reopen the sealed room and clear the board; reset
+    the other rebuilds it. If it is the Black Tower version, voice is blocked between the rooms
+    (gestures only); check in the game. Reset: the game must reopen the sealed room and clear the board; reset
     only moves props and bodies (needs load_snapshot or a per-puzzle reset, untested).'
 - id: perspective_counting
   title: Signal counting
@@ -926,7 +924,7 @@
   notes: 'One player reads a symbol board, the other places the symbols. Black sphere room, reached only
     through the Black Key gate (teleport works). No gourd: success is the level''s ''Challenge Complete''
     gate, so the scorer needs a new goal type. The whole sphere is inside a SpeechlessZone (radius 120
-    m), so the faithful version needs `say` off. Between levels both players hold buttons (NHold) to open
+    m), so the players can only gesture there. Between levels both players hold buttons (NHold) to open
     the stairs.'
 - id: gauntlet_1_pointers
   title: 'Black sphere room 1: Blue Totems'
@@ -964,7 +962,7 @@
   notes: 'One player watches totems for glowing symbols, the other presses switches. Black sphere room,
     reached only through the Black Key gate (teleport works). No gourd: success is the level''s ''Challenge
     Complete'' gate, so the scorer needs a new goal type. The whole sphere is inside a SpeechlessZone
-    (radius 120 m), so the faithful version needs `say` off. Between levels both players hold buttons
+    (radius 120 m), so the players can only gesture there. Between levels both players hold buttons
     (NHold) to open the stairs.'
 - id: gauntlet_2_kick
   title: 'Black sphere room 2: Tomato Timer'
@@ -1002,7 +1000,7 @@
   notes: 'Kick a tomato timer back and forth through turnstiles before it runs out. Black sphere room,
     reached only through the Black Key gate (teleport works). No gourd: success is the level''s ''Challenge
     Complete'' gate, so the scorer needs a new goal type. The whole sphere is inside a SpeechlessZone
-    (radius 120 m), so the faithful version needs `say` off. Between levels both players hold buttons
+    (radius 120 m), so the players can only gesture there. Between levels both players hold buttons
     (NHold) to open the stairs.'
 - id: gauntlet_4_volleyball
   title: 'Black sphere room 4: Red Kettle & Switches'
@@ -1040,7 +1038,7 @@
   notes: 'Lit buttons on one side show which wall switch to press; a kettle thrown over the wall marks
     it. Black sphere room, reached only through the Black Key gate (teleport works). No gourd: success
     is the level''s ''Challenge Complete'' gate, so the scorer needs a new goal type. The whole sphere
-    is inside a SpeechlessZone (radius 120 m), so the faithful version needs `say` off. Between levels
+    is inside a SpeechlessZone (radius 120 m), so the players can only gesture there. Between levels
     both players hold buttons (NHold) to open the stairs.'
 - id: gauntlet_5_invisible
   title: 'Black sphere room 5: Hidden Symbols'
@@ -1078,7 +1076,7 @@
   notes: 'Symbol cards visible only through a viewfinder; placed through the window. Black sphere room,
     reached only through the Black Key gate (teleport works). No gourd: success is the level''s ''Challenge
     Complete'' gate, so the scorer needs a new goal type. The whole sphere is inside a SpeechlessZone
-    (radius 120 m), so the faithful version needs `say` off. Between levels both players hold buttons
+    (radius 120 m), so the players can only gesture there. Between levels both players hold buttons
     (NHold) to open the stairs.'
 - id: gauntlet_6_sculptures
   title: 'Black sphere room 6: Shapes & Switches'
@@ -1116,7 +1114,7 @@
   notes: 'Glowing shapes on one side, switches on the other; act the shapes out at the window. Black sphere
     room, reached only through the Black Key gate (teleport works). No gourd: success is the level''s
     ''Challenge Complete'' gate, so the scorer needs a new goal type. The whole sphere is inside a SpeechlessZone
-    (radius 120 m), so the faithful version needs `say` off. Between levels both players hold buttons
+    (radius 120 m), so the players can only gesture there. Between levels both players hold buttons
     (NHold) to open the stairs.'
 - id: memory_bombs
   title: Yellow stands meter
@@ -1188,7 +1186,7 @@
   switch_spread_m: 11
   notes: 'Green walled yard with a grid of lamps, a door and indicator lights (PressInOrder, ConductorPanel,
     ProgressTracker 8). Likely: lamps light inside, the outside player presses the matching switch, a
-    wrong press resets. If voice is blocked here, `say` leaks.'
+    wrong press resets. Check whether voice is blocked here.'
 - id: ring_room
   title: Ring room
   verdict: maybe
@@ -1327,8 +1325,8 @@
     PeckLogicSimPressOld: 1
   switch_spread_m: 12
   notes: 'Pressing the buttons at the two doorways seals one player in; a hidden switch shows a tile pattern
-    to be rebuilt outside. The guide says the barrier blocks voice and text chat, so the faithful version
-    needs `say` off (gestures only). Has hold buttons (NHold), which hot-swap supports. Reset: the game
+    to be rebuilt outside. The guide says the barrier blocks voice and text chat, so the players can
+    only gesture there. Has hold buttons (NHold), which hot-swap supports. Reset: the game
     must reopen the sealed room and clear the board; reset only moves props and bodies (needs load_snapshot
     or a per-puzzle reset, untested).'
 - id: breadcrumb_loop
@@ -1500,8 +1498,8 @@
     PlayerZone: 2
   notes: 'Two switches pressed at the same moment. Black sphere room, reached only through the Black Key
     gate (teleport works). No gourd: success is the level''s ''Challenge Complete'' gate, so the scorer
-    needs a new goal type. The whole sphere is inside a SpeechlessZone (radius 120 m), so the faithful
-    version needs `say` off. Between levels both players hold buttons (NHold) to open the stairs.'
+    needs a new goal type. The whole sphere is inside a SpeechlessZone (radius 120 m), so the players
+    can only gesture there. Between levels both players hold buttons (NHold) to open the stairs.'
 - id: medium_sim_press
   title: Medium sim press
   verdict: skip

@@ -89,7 +89,7 @@ def _common_metadata(log: EpisodeLog) -> dict:
         "votes": log.votes,
         "turns": log.n_turns,
         "total_game_ms": log.total_game_ms,
-        "n_messages": len(log.chat),
+        "n_messages": sum(1 for e in log.events if e["type"] == "text_chat"),
         "ended_by_vote": log.ended_by_vote,
         "ended_by_limit": not log.ended_by_vote,
     }

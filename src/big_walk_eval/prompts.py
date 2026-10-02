@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from big_walk_eval.chat import ChatRecord
-
 # Read from the game's Rewired keyboard and mouse maps with the bridge `controls`
 # command (game 1.5.1 2608271531). The game has no separate hands: you carry one thing.
 BIG_WALK_CONTROLS = """\
@@ -48,8 +46,12 @@ At least one player must hold the gourd at the end.
 You see only your own first-person view. The other players see different views. \
 Tell them what you see, and ask them what they see.
 
-You can talk only with the `say` tool. Players far away from you do not hear you, \
-and you are not told who heard you.
+To talk, use the in-game text chat: press Enter (`key` "Return"), write your message \
+with `type`, and press Enter again to send it. While the chat is open, your keys go into \
+the message and you do not move. Your message shows above your head. The other players \
+read it in their own view, so only players near you who can see you read it, and you are \
+not told who did. Read what the other players say in your view. To read small text, \
+`zoom` into that part of your view.
 
 The game pauses while you think. Time moves only while your actions run. \
 The players take turns. In your turn you can use up to {max_tool_calls} tool calls and \
@@ -64,12 +66,5 @@ The episode ends only when all players have called it. You can withdraw your vot
 `end_episode(withdraw=true)`."""
 
 
-def turn_header(*, turn: int, name: str, inbox: list[ChatRecord]) -> str:
-    lines = [f"Turn {turn + 1}. It is your turn, {name}."]
-    if inbox:
-        lines.append("Since your last turn you heard:")
-        lines += [f'- {m.sender_name}: "{m.text}"' for m in inbox]
-    else:
-        lines.append("You heard nothing since your last turn.")
-    lines.append("Your current view:")
-    return "\n".join(lines)
+def turn_header(*, turn: int, name: str) -> str:
+    return f"Turn {turn + 1}. It is your turn, {name}.\nYour current view:"

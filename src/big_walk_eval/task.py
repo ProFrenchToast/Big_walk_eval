@@ -24,10 +24,8 @@ def big_walk_coop(
     max_game_ms_per_turn: int = 3000,
     max_tool_calls_per_turn: int = 6,
     max_generates_per_turn: int = 6,
-    chat_range_m: float | None = None,
     hfov_deg: float = 90.0,
     keep_images: int = 3,
-    echo_chat: bool = False,
     capture: bool = False,
     capture_fps: int = 30,
     capture_width: int = 683,
@@ -48,11 +46,8 @@ def big_walk_coop(
       max_game_ms_per_turn: Unpaused game time per turn.
       max_tool_calls_per_turn: Tool calls per turn.
       max_generates_per_turn: Generate calls per turn. 1 gives one reply per turn.
-      chat_range_m: Distance within which `say` is heard. Default: the puzzle's
-        `chat_range_m`, else 20 m.
       hfov_deg: Horizontal field of view for `mouse_move`, if the game does not report it.
       keep_images: Screenshots kept in each agent's history.
-      echo_chat: Also show `say` messages in game, for replays.
       capture: Record video frames from every body's own view while game time runs.
         Make a video with `scripts/make_video.py`.
       capture_fps: Frames per second of game time.
@@ -72,10 +67,8 @@ def big_walk_coop(
         max_game_ms_per_turn=max_game_ms_per_turn,
         max_tool_calls_per_turn=max_tool_calls_per_turn,
         max_generates_per_turn=max_generates_per_turn,
-        chat_range_m=chat_range_m,
         hfov_deg=hfov_deg,
         keep_images=keep_images,
-        echo_chat=echo_chat,
         capture_fps=capture_fps if capture else 0,
         capture_width=capture_width,
         capture_height=capture_height,

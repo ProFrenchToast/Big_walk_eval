@@ -2,8 +2,7 @@
 
 `RecordingGame` wraps any `GameClient` and writes each call that changes the
 game (reset, switch, act) to a `Recorder`, in order and with the game time at
-which it ran. The tools add `say` and vote markers, so a video of the replay
-can show the chat. The solver stores the recording in `EpisodeLog.replay`, so
+which it ran. The tools add vote markers. The solver stores the recording in `EpisodeLog.replay`, so
 it lives in the Inspect log next to each agent's messages.
 
 Screenshots are not recorded. The Inspect log already has each agent's view,
@@ -26,7 +25,6 @@ from typing import Annotated, Literal
 
 from pydantic import Field
 
-from big_walk_eval.chat import ChatRecord
 from big_walk_eval.game.client import GameClient
 from big_walk_eval.protocol import (
     Action,
@@ -42,7 +40,8 @@ from big_walk_eval.protocol import (
     _Wire,
 )
 
-RECORDING_VERSION = 1
+# 2: the `say` step is gone. Agents chat in game, so the act steps hold their messages.
+RECORDING_VERSION = 2
 
 
 class _Step(_Wire):
@@ -91,13 +90,6 @@ class CaptureStep(_Step):
     episode_id: str
 
 
-class SayStep(_Step):
-    kind: Literal["say"] = "say"
-    slot: int
-    text: str
-    recipients: list[int]
-
-
 class VoteStep(_Step):
     kind: Literal["vote"] = "vote"
     slot: int
@@ -111,7 +103,7 @@ class EndStep(_Step):
 
 
 ReplayStep = Annotated[
-    ResetStep | TurnStep | SwitchStep | ActStep | CaptureStep | SayStep | VoteStep | EndStep,
+    ResetStep | TurnStep | SwitchStep | ActStep | CaptureStep | VoteStep | EndStep,
     Field(discriminator="kind"),
 ]
 
@@ -185,9 +177,6 @@ class Recorder:
     def capture(self, episode_id: str) -> None:
         self._add(CaptureStep(episode_id=episode_id))
 
-    def say(self, record: ChatRecord) -> None:
-        self._add(SayStep(slot=record.sender, text=record.text, recipients=record.recipients))
-
     def vote(self, slot: int, vote: bool) -> None:
         self._add(VoteStep(slot=slot, vote=vote))
 
@@ -248,9 +237,6 @@ class RecordingGame:
     async def state(self) -> GameState:
         state = await self.inner.state()
         return state.model_copy(update={"events": self._with_held(state.events)})
-
-    async def echo_chat(self, slot: int, text: str) -> None:
-        await self.inner.echo_chat(slot, text)
 
     async def overview_shot(
         self, position: Vec3 | None = None, look_at: Vec3 | None = None
@@ -323,12 +309,11 @@ class PlaybackFrame:
 async def play(
     recording: Recording,
     game: GameClient,
-    echo_chat: bool = False,
 ) -> AsyncIterator[PlaybackFrame]:
     """Send the recorded inputs to `game` again. Yield one frame after each act.
 
     Each frame has the game's screenshot and, if the act has a checkpoint,
-    the drift from it. Say steps go to the in-game chat when `echo_chat`.
+    the drift from it.
     """
     if recording.version != RECORDING_VERSION:
         raise ValueError(f"recording version {recording.version}, expected {RECORDING_VERSION}")
@@ -344,5 +329,3 @@ async def play(
                 if step.bodies is not None:
                     d = drift(step.bodies, (await game.state()).bodies)
                 yield PlaybackFrame(step, result, d)
-            case SayStep(slot=slot, text=text) if echo_chat:
-                await game.echo_chat(slot, text)
