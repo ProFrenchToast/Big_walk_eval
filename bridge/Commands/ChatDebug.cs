@@ -77,6 +77,8 @@ internal static class ChatDebug
         if (instance != null)
         {
             input["input_is_open"] = instance.inputIsOpen;
+            Try(input, "char_limit", () => TextChatInput.CHARLIMIT);
+            Try(input, "field_char_limit", () => instance.inputField != null ? instance.inputField.characterLimit : -1);
             Try(input, "output_text", () => instance.output != null ? instance.output.text : null);
             Try(input, "output_active", () => instance.output != null && instance.output.gameObject.activeInHierarchy);
             Try(input, "field_text", () => instance.inputField != null ? instance.inputField.text : null);
