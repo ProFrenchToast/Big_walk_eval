@@ -261,6 +261,9 @@ class BridgeGame:
             for button in sorted(self.held.get(slot, ())):
                 await self.input.button_down(button)
         self.active = slot
+        # The chat HUD adds the screen-edge blips for the new body a few frames after the
+        # switch. Frames still run while the game is paused, so this uses no game time.
+        await self.sleep(self.config.switch_settle_s)
 
     async def _switch_slot(self, slot: int) -> None:
         if not self.config.switch_via_keys:

@@ -92,7 +92,58 @@ internal static class ChatDebug
             ["sources"] = sources,
             ["active_sources"] = active,
             ["input"] = input,
+            ["hud"] = Hud(),
         };
+    }
+
+    /// <summary>The screen-edge blips (TextChatHud) that point at speakers out of view.</summary>
+    private static JsonArray Hud()
+    {
+        var huds = new JsonArray();
+        foreach (var obj in Resources.FindObjectsOfTypeAll(Il2CppType.Of<TextChatHud>()))
+        {
+            var hud = obj.TryCast<TextChatHud>();
+            if (hud == null || !hud.gameObject.scene.IsValid()) continue;
+            var o = new JsonObject
+            {
+                ["path"] = SceneFind.PathOf(hud.transform),
+                ["active"] = hud.gameObject.activeInHierarchy,
+                ["enabled"] = hud.enabled,
+            };
+            var tracked = new JsonArray();
+            Try(o, "n_hud_sources", () =>
+            {
+                if (hud._hudSources == null) return -1;
+                foreach (var h in hud._hudSources)
+                    tracked.Add(new JsonObject { ["source"] = Id(h.textChatSource), ["direction"] = h.blipDirectionType.ToString() });
+                return hud._hudSources.Count;
+            });
+            o["hud_sources"] = tracked;
+            o["left"] = Group(hud.blipGroupLeft);
+            o["right"] = Group(hud.blipGroupRight);
+            o["up"] = Group(hud.blipGroupUp);
+            o["down"] = Group(hud.blipGroupDown);
+            huds.Add(o);
+        }
+        return huds;
+    }
+
+    private static JsonObject Group(TextChatHud.BlipGroup g)
+    {
+        var o = new JsonObject();
+        if (g == null) return o;
+        Try(o, "n_sources", () => g._sources != null ? g._sources.Count : -1);
+        var blips = new JsonArray();
+        Try(o, "n_blips", () =>
+        {
+            if (g.blips == null) return -1;
+            foreach (var b in g.blips)
+                if (b != null)
+                    blips.Add(new JsonObject { ["active"] = b.gameObject.activeInHierarchy, ["icon"] = b._blipIcon.ToString() });
+            return g.blips.Length;
+        });
+        o["blips"] = blips;
+        return o;
     }
 
     private static JsonObject Describe(TextChatSource s, Vector3? eye)
