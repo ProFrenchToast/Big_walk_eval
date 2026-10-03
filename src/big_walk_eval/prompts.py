@@ -46,6 +46,9 @@ At least one player must hold the gourd at the end.
 You see only your own first-person view. The other players see different views. \
 Tell them what you see, and ask them what they see.
 
+Start by getting to know your surroundings: look around you, in every direction, and \
+find the other players. Then face them so you can read what they say.
+
 To talk, use the in-game text chat: press Enter (`key` "Return"), write your message \
 with `type`, and press Enter again to send it. While the chat is open, your keys go into \
 the message and you do not move. The chat box holds about 35 characters, and the game \
