@@ -18,6 +18,9 @@ class EpisodeConfig:
     max_game_ms_per_turn: int = 3000
     max_tool_calls_per_turn: int = 6
     max_generates_per_turn: int = 6
+    # One generate call per turn. Actions return text only, and the next turn's
+    # screenshot is the only view the agent gets. Ignores max_generates_per_turn.
+    one_response_per_turn: bool = True
     hfov_deg: float = 90.0
     keep_images: int = 3
     blocked_keys: frozenset[str] = PRACTICE_MOD_KEYS
@@ -62,6 +65,8 @@ class Episode:
     turn: TurnState | None = None
     total_game_ms: int = 0
     events: list[EventRecord] = field(default_factory=list)
+    pending_zoom: dict[int, list[int]] = field(default_factory=dict)
+    """Per slot: the region to enlarge in that agent's next turn-start view."""
     recorder: Recorder = field(default_factory=Recorder)
 
     def __post_init__(self) -> None:

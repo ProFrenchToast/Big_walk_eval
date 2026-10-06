@@ -1,10 +1,12 @@
 """Round-robin multi-agent solver.
 
 Each agent has its own message history and sees only its own body. Agents
-take turns. A turn starts with a header and a fresh screenshot, then runs
-up to `max_generates_per_turn` generate calls and their tool calls. The turn
-ends early when the model replies without a tool call, or when the turn's
-tool call or game time limit is used up.
+take turns. A turn starts with a header and a fresh screenshot. With
+`one_response_per_turn` (the default), the agent gives one reply, its tool
+calls run in order with text-only results, and the turn ends. Otherwise the
+turn runs up to `max_generates_per_turn` generate calls, each tool call
+returns a screenshot, and the turn ends early when the model replies without
+a tool call, or when the turn's tool call or game time limit is used up.
 """
 
 from __future__ import annotations
@@ -19,6 +21,7 @@ from inspect_ai.model import (
     ChatMessage,
     ChatMessageSystem,
     ChatMessageUser,
+    Content,
     ContentImage,
     ContentText,
     Model,
@@ -36,7 +39,7 @@ from big_walk_eval.prompts import system_prompt, turn_header
 from big_walk_eval.protocol import CaptureRequest, PuzzleConfig
 from big_walk_eval.replay import Recorder, RecordingGame
 from big_walk_eval.tools import agent_tools, computer_tool_name
-from big_walk_eval.tools.computer import png_content
+from big_walk_eval.tools.computer import png_content, zoom_png
 
 OLD_SCREENSHOT = "[old screenshot removed]"
 
@@ -132,6 +135,7 @@ def round_robin(
                                 controls=controls,
                                 max_game_ms=config.max_game_ms_per_turn,
                                 max_tool_calls=config.max_tool_calls_per_turn,
+                                one_response=config.one_response_per_turn,
                             )
                         )
                     ],
@@ -204,17 +208,23 @@ async def _run_turn(
     turn = episode.start_turn(index, agent.slot)
     await game.switch(agent.slot)
     png = await game.screenshot()
-    header = ChatMessageUser(
-        content=[
-            ContentText(text=turn_header(turn=index, name=agent.name)),
-            png_content(png),
+    content: list[Content] = [
+        ContentText(text=turn_header(turn=index, name=agent.name)),
+        png_content(png),
+    ]
+    zoom = episode.pending_zoom.pop(agent.slot, None)
+    if zoom is not None:
+        content += [
+            ContentText(text=f"Your view, zoomed into {zoom}:"),
+            png_content(zoom_png(png, zoom)),
         ]
-    )
+    header = ChatMessageUser(content=content)
     agent.messages.append(header)
     _mirror(state, agent, [header], index)
 
     generates = 0
-    for _ in range(config.max_generates_per_turn):
+    max_generates = 1 if config.one_response_per_turn else config.max_generates_per_turn
+    for _ in range(max_generates):
         output = await model.generate(
             trim_images(agent.messages, config.keep_images), tools=agent.tools
         )

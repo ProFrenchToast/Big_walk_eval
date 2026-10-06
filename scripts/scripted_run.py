@@ -77,6 +77,11 @@ def main() -> int:
     parser.add_argument("--puzzles-dir", help="puzzle folder, e.g. puzzles/candidates")
     parser.add_argument("--max-turns", type=int)
     parser.add_argument("--max-game-ms-per-turn", type=int, default=3000)
+    parser.add_argument(
+        "--screenshot-per-action",
+        action="store_true",
+        help="each action returns a screenshot (one_response_per_turn off), to check each step",
+    )
     parser.add_argument("--log-dir", default="logs/scripted")
     parser.add_argument("--save-images", type=Path, help="write each turn's view as PNG here")
     parser.add_argument(
@@ -97,6 +102,7 @@ def main() -> int:
         n_agents=len(script.agents),
         max_turns=args.max_turns,
         max_game_ms_per_turn=args.max_game_ms_per_turn,
+        one_response_per_turn=not args.screenshot_per_action,
         capture=args.capture,
         capture_fps=args.capture_fps,
         capture_dir=args.capture_dir,

@@ -34,8 +34,25 @@ def system_prompt(
     controls: str,
     max_game_ms: int,
     max_tool_calls: int,
+    one_response: bool = True,
 ) -> str:
     n = len(others) + 1
+    if one_response:
+        turns = f"""\
+The game pauses while you think. Time moves only while your actions run. \
+The players take turns. Each turn starts with a screenshot of your current view, and you \
+give one reply. Put everything you want to do this turn in that reply: several tool \
+calls, or one call with a list of `actions`. They run in order, and each returns only a \
+short text result, not a screenshot. Then your turn ends and the other players take \
+their turns. You see the result in the screenshot at the start of your next turn. \
+In one turn you can use up to {max_tool_calls} tool calls and up to \
+{max_game_ms / 1000:g} seconds of game time."""
+    else:
+        turns = f"""\
+The game pauses while you think. Time moves only while your actions run. \
+The players take turns. In your turn you can use up to {max_tool_calls} tool calls and \
+up to {max_game_ms / 1000:g} seconds of game time. Your turn ends when you reply without \
+a tool call, or when you reach a limit. Then the other players take their turns."""
     return f"""\
 You are one of {n} players in the game {game_name}. Your name is {name}. \
 The other players are {", ".join(others)}.
@@ -62,10 +79,7 @@ says only above their head, in your view. When a player out of your view talks, 
 bubble appears at the edge of your view on the side where they are: turn that way to \
 read it. To read small text, `zoom` into that part of your view.
 
-The game pauses while you think. Time moves only while your actions run. \
-The players take turns. In your turn you can use up to {max_tool_calls} tool calls and \
-up to {max_game_ms / 1000:g} seconds of game time. Your turn ends when you reply without \
-a tool call, or when you reach a limit. Then the other players take their turns.
+{turns}
 
 Controls:
 {controls}

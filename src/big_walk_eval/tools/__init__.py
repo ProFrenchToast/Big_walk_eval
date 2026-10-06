@@ -2,7 +2,11 @@ from inspect_ai.model import Model
 from inspect_ai.tool import Tool, ToolDef
 
 from big_walk_eval.episode import Episode
-from big_walk_eval.tools.computer import computer_tool
+from big_walk_eval.tools.computer import (
+    ONE_RESPONSE_ACTION,
+    ONE_RESPONSE_DESCRIPTION,
+    computer_tool,
+)
 from big_walk_eval.tools.end_episode import end_episode
 
 # Inspect's Google provider sends every past call of a tool named "computer" back to
@@ -23,7 +27,14 @@ def computer_tool_name(model: Model | str | None) -> str:
 
 def agent_tools(episode: Episode, slot: int, computer_name: str = "computer") -> list[Tool]:
     computer = computer_tool(episode, slot)
-    if computer_name != "computer":
+    if episode.config.one_response_per_turn:
+        computer = ToolDef(
+            computer,
+            name=computer_name,
+            description=ONE_RESPONSE_DESCRIPTION,
+            parameters={"action": ONE_RESPONSE_ACTION},
+        ).as_tool()
+    elif computer_name != "computer":
         computer = ToolDef(computer, name=computer_name).as_tool()
     return [computer, end_episode(episode, slot)]
 
