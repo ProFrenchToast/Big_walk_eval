@@ -74,6 +74,7 @@ def main() -> int:
     parser.add_argument(
         "--puzzle-game", choices=["real", "fake"], help="puzzle kind; default follows --backend"
     )
+    parser.add_argument("--puzzles-dir", help="puzzle folder, e.g. puzzles/candidates")
     parser.add_argument("--max-turns", type=int)
     parser.add_argument("--max-game-ms-per-turn", type=int, default=3000)
     parser.add_argument("--log-dir", default="logs/scripted")
@@ -92,6 +93,7 @@ def main() -> int:
         game_url=args.game_url,
         puzzle_game=args.puzzle_game,
         puzzles=script.puzzle,
+        puzzles_dir=args.puzzles_dir,
         n_agents=len(script.agents),
         max_turns=args.max_turns,
         max_game_ms_per_turn=args.max_game_ms_per_turn,

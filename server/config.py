@@ -30,6 +30,8 @@ class ServerConfig(BaseModel):
     # Press the practice mod's slot key instead of the bridge switch_slot command.
     switch_via_keys: bool = False
     switch_timeout_s: float = 5.0
+    # Paused wait after a switch, so the chat HUD shows its blips in the next screenshot.
+    switch_settle_s: float = 0.3
     # Unpaused time after each spawn teleport in reset, so the teleport survives later switches.
     teleport_settle_s: float = 1.5
     # The mouse button of the game's "drop" action. Reset uses it to empty the hands.

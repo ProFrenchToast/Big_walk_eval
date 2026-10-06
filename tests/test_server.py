@@ -210,7 +210,8 @@ async def test_bridge_game_reset(bridge_env):
         )
     )
     # Each body is teleported while it is the local body, then the game runs briefly.
-    assert [c for c in bridge.cmds() if c not in ("get_state", "menu")][:15] == [
+    ignored = ("get_state", "menu", "chat_input")
+    assert [c for c in bridge.cmds() if c not in ignored][:15] == [
         "pause",
         "load_snapshot",
         "spawn_bodies",
@@ -243,13 +244,37 @@ async def test_bridge_game_act_plays_timeline_while_resumed(bridge_env):
 
     result = await game.act(2, [HoldKeyAction(keys=["w"], duration_ms=1000)], 3000)
 
-    assert bridge.cmds() == ["switch_slot", "resume", "pause", "screenshot", "events"]
+    assert bridge.cmds() == [
+        "chat_input",
+        "switch_slot",
+        "resume",
+        "pause",
+        "screenshot",
+        "events",
+    ]
     t0 = next(t for t, name, _ in backend.calls if name == "key_down")
     t1 = next(t for t, name, _ in backend.calls if name == "key_up")
     assert t1 - t0 == pytest.approx(1.0)
     assert result.game_ms == 1000
     assert result.screenshot_png == b"png:2:1366x768"
     assert not result.truncated
+
+
+async def test_switch_sends_an_open_chat_box_first(bridge_env):
+    clock, bridge, client = bridge_env
+    game, backend = make_game(clock, client)
+    await game.reset(ResetRequest(puzzle_id="p", bodies=[ASH, BIRCH]))
+    backend.calls.clear()
+    bridge.chat_open = True
+
+    await game.switch(2)
+    names = backend.names()
+    assert names.index(("key_down", ("enter",))) < names.index(("select_slot", (2,)))
+    assert ("key_up", ("enter",)) in names
+
+    backend.calls.clear()
+    await game.switch(1)
+    assert ("key_down", ("enter",)) not in backend.names()
 
 
 async def test_held_buttons_move_with_their_body(bridge_env):

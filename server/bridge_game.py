@@ -249,6 +249,8 @@ class BridgeGame:
             raise ValueError(f"no body in slot {slot}")
         if slot == self.active:
             return
+        if self.active is not None:
+            await self._close_chat()
         if not self.input.per_body:
             # Backend A: OS input reaches only the active body. Release the old
             # body's buttons before the swap and press the new body's buttons
@@ -261,6 +263,28 @@ class BridgeGame:
             for button in sorted(self.held.get(slot, ())):
                 await self.input.button_down(button)
         self.active = slot
+        # The chat HUD adds the screen-edge blips for the new body a few frames after the
+        # switch. Frames still run while the game is paused, so this uses no game time.
+        await self.sleep(self.config.switch_settle_s)
+
+    async def _close_chat(self) -> None:
+        """Send what the active body left in its open chat box, or close the empty box.
+
+        The chat box is one field for the local player, and the open state also lives in
+        the body's texter. A body that leaves it open hands the box and its text to the
+        next body, and the old body takes the next body's Enter (seen in an agent run,
+        2026-10-03). Enter here acts as the agent would have: it sends the draft.
+        """
+        is_open, _ = await self.bridge.chat_input()
+        if not is_open:
+            return
+        await self.input.focus()
+        await self.input.key_down("enter")
+        await self.sleep(0.05)
+        await self.input.key_up("enter")
+        deadline = self.clock() + 1.0
+        while (await self.bridge.chat_input())[0] and self.clock() < deadline:
+            await self.sleep(0.05)
 
     async def _switch_slot(self, slot: int) -> None:
         if not self.config.switch_via_keys:

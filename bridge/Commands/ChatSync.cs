@@ -64,6 +64,20 @@ internal static class ChatSync
         return new JsonObject { ["cleared_sources"] = cleared };
     }
 
+    /// <summary>
+    /// The local player's chat box. The box is one field for the local player, and its
+    /// open state also lives in the body's texter, so the server closes it before a switch.
+    /// </summary>
+    public static JsonNode Input()
+    {
+        var input = TextChatInput.instance;
+        return new JsonObject
+        {
+            ["open"] = input != null && input.inputIsOpen,
+            ["text"] = input != null && input.inputField != null ? input.inputField.text : "",
+        };
+    }
+
     public static void AfterSwitch()
     {
         PlayerCharacter local = null;

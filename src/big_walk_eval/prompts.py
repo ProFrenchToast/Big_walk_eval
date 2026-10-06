@@ -46,12 +46,21 @@ At least one player must hold the gourd at the end.
 You see only your own first-person view. The other players see different views. \
 Tell them what you see, and ask them what they see.
 
+Start by getting to know your surroundings: look around you, in every direction, and \
+find the other players. Then face them so you can read what they say.
+
 To talk, use the in-game text chat: press Enter (`key` "Return"), write your message \
 with `type`, and press Enter again to send it. While the chat is open, your keys go into \
-the message and you do not move. Your message shows above your head. The other players \
-read it in their own view, so only players near you who can see you read it, and you are \
-not told who did. Read what the other players say in your view. To read small text, \
-`zoom` into that part of your view.
+the message and you do not move. The chat box holds about 35 characters, and the game \
+drops anything longer, so send several short messages. Close the chat with Enter before \
+you move. Your message shows above your head, not in a chat log. \
+The other players read it in their own view, so a player reads it only while they look \
+at you and are near enough. Chat carries like sound: walls, closed rooms, and distance \
+fade it or block it, and radios, intercoms, and speakers can show it somewhere else. \
+You are not told who read your message. In the same way, you read what another player \
+says only above their head, in your view. When a player out of your view talks, a speech \
+bubble appears at the edge of your view on the side where they are: turn that way to \
+read it. To read small text, `zoom` into that part of your view.
 
 The game pauses while you think. Time moves only while your actions run. \
 The players take turns. In your turn you can use up to {max_tool_calls} tool calls and \

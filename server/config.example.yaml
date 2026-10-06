@@ -12,6 +12,7 @@ counts_per_degree: 25.0     # from: python -m server.calibrate. 25 at the game's
 invert_mouse_y: false
 look_step_ms: 10
 switch_via_keys: false      # true: press the practice mod's slot keys instead of switch_slot
+switch_settle_s: 0.3        # paused wait after a switch, so the chat blips show in the next screenshot
 
 # Reset: seconds of game time after each spawn teleport, so the teleport survives
 # later switches (0.3 is too short). The drop button empties the hands first, and

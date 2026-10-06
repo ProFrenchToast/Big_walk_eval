@@ -14,7 +14,7 @@ from big_walk_eval.episode import Episode, EpisodeConfig
 from big_walk_eval.game.fake_game import FakeGame
 from big_walk_eval.look import angles_to_pixel, pixel_to_angles, vfov_to_hfov
 from big_walk_eval.protocol import TYPE_MAX_CHARS, KeyAction, LookAction, MouseAction, TypeAction
-from big_walk_eval.tools import agent_tools
+from big_walk_eval.tools import agent_tools, computer_tool_name
 from big_walk_eval.tools.computer import UNSUPPORTED_ACTIONS, computer_tool, to_game_actions
 from big_walk_eval.tools.end_episode import end_episode
 from tests.conftest import ASH_TO_PLATE_YAW
@@ -32,6 +32,14 @@ def test_computer_tool_gets_native_binding(episode: Episode):
     info = ToolInfo(name=td.name, description=td.description, parameters=td.parameters)
     assert is_computer_tool_info(info)
     assert td.parallel is False
+
+
+def test_google_models_without_native_computer_use_get_a_renamed_tool(episode: Episode):
+    assert computer_tool_name("google/gemini-3.7-flash") == "game"
+    assert computer_tool_name("google/gemini-3-flash-preview") == "computer"
+    assert computer_tool_name("anthropic/claude-sonnet-5-5") == "computer"
+    names = [ToolDef(t).name for t in agent_tools(episode, 1, "game")]
+    assert names == ["game", "end_episode"]
 
 
 def test_other_tools_are_not_computer(episode: Episode):

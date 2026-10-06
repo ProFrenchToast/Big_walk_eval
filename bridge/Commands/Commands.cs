@@ -38,6 +38,7 @@ internal static class Commands
         "debug_body" => BodyDebug.Run(args),
         "debug_chat" => ChatDebug.Run(args),
         "clear_chat" => ChatSync.Clear(),
+        "chat_input" => ChatSync.Input(),
         "capture_start" => BodyCapture.Start(args),
         "capture_stop" => BodyCapture.Stop(),
         "look" => Unfinished.Look(args),

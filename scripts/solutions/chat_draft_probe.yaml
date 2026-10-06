@@ -1,0 +1,26 @@
+# Probe for a chat box left open, and for the chat length limit. Not a solution: it scores I.
+# Ash opens the chat and types a long message but does not send it. The server sends it
+# before it switches to Birch, so Ash's draft must arrive as Ash's message, and Birch's
+# own message must arrive as typed. The long draft shows where the game cuts a message
+# (about 37 characters: the box holds three short lines).
+#   uv run python scripts/scripted_run.py scripts/solutions/chat_draft_probe.yaml --backend http \
+#     --puzzles-dir puzzles/candidates
+puzzle: teller_window
+agents:
+  Ash:
+    - calls:
+        - computer:
+            actions:
+              - {action: key, text: Return}
+              - {action: type, text: "0123456789 abcdefghij 0123456789 abcdefghij 0123456789 abcdefghij"}
+    - calls:
+        - end_episode: {}
+  Birch:
+    - calls:
+        - computer:
+            actions:
+              - {action: key, text: Return}
+              - {action: type, text: "Birch here"}
+              - {action: key, text: Return}
+    - calls:
+        - end_episode: {}

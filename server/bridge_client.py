@@ -167,6 +167,11 @@ class BridgeClient:
         """Remove every text chat message from the heads and the HUD."""
         await self.call("clear_chat")
 
+    async def chat_input(self) -> tuple[bool, str]:
+        """Whether the local player's chat box is open, and its unsent text."""
+        r = await self.call("chat_input")
+        return bool(r["open"]), str(r["text"])
+
     async def load_snapshot(self, name: str) -> None:
         await self.call("load_snapshot", name=name)
 

@@ -35,7 +35,7 @@ from big_walk_eval.game.client import GameClient
 from big_walk_eval.prompts import system_prompt, turn_header
 from big_walk_eval.protocol import CaptureRequest, PuzzleConfig
 from big_walk_eval.replay import Recorder, RecordingGame
-from big_walk_eval.tools import agent_tools
+from big_walk_eval.tools import agent_tools, computer_tool_name
 from big_walk_eval.tools.computer import png_content
 
 OLD_SCREENSHOT = "[old screenshot removed]"
@@ -135,7 +135,7 @@ def round_robin(
                             )
                         )
                     ],
-                    tools=agent_tools(episode, slot),
+                    tools=agent_tools(episode, slot, computer_tool_name(model)),
                 )
                 for slot, name in names.items()
             ]

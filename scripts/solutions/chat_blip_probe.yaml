@@ -1,0 +1,26 @@
+# Probe for the screen-edge chat blip (TextChatHud). Not a solution: it scores I.
+# Ash and Birch stand side by side facing the pegboard, so Ash is out of Birch's view.
+# Ash says something. Birch's turn-start view is taken right after the switch, with the
+# game paused; then Birch waits in short steps. A blip at the left edge should point at Ash.
+#   uv run python scripts/scripted_run.py scripts/solutions/chat_blip_probe.yaml --backend http \
+#     --puzzles-dir puzzles/candidates --save-images runs/blip
+puzzle: teller_window
+agents:
+  Ash:
+    - calls:
+        - computer:
+            actions:
+              - {action: key, text: Return}
+              - {action: type, text: "Birch, can you see this?"}
+              - {action: key, text: Return}
+    - calls:
+        - end_episode: {}
+  Birch:
+    - calls:
+        - computer: {action: wait, duration: 0.05}
+        - computer: {action: wait, duration: 0.05}
+        - computer: {action: wait, duration: 0.1}
+        - computer: {action: wait, duration: 0.3}
+        - computer: {action: wait, duration: 0.5}
+    - calls:
+        - end_episode: {}
