@@ -69,7 +69,7 @@ uv run python scripts/make_video.py logs/scripted/<log>.eval      # writes <fram
 uv run inspect eval big_walk_eval/big_walk_coop -T capture=true --model ...
 ```
 
-The frames have no pauses between actions, because no game time passes then. Each chat message stops the video for 2 s (`--hold-s`) so that viewers can read it. On the real game, the bridge renders one extra camera per body. This is **NEEDS GAME** (see `bridge/README.md`).
+The frames have no pauses between actions, because no game time passes then. So the video lasts as long as the game time. Each chat message shows as a caption for 5 s of game time (`--caption-s`). `--hold-s 2` also freezes the video for 2 s at each message, so that viewers can read it. On the real game, the bridge renders one extra camera per body. This is **NEEDS GAME** (see `bridge/README.md`).
 
 ## Layout
 

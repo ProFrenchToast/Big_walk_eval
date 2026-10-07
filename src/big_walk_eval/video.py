@@ -8,8 +8,10 @@ from the episode recording (`EpisodeLog.replay`), matched to the frames by
 game time. A message gets the game time at the end of the act that sent it.
 
 Frames exist only while game time runs, so the video skips the pauses
-between actions. A chat message freezes the video for `hold_s` seconds so
-that viewers can read it.
+between actions. With `hold_s` above 0, each chat message freezes the video
+for that many seconds so that viewers can read it. The default is 0: the
+video then lasts as long as the game time, and each caption stays on screen
+for `caption_s` seconds of game time.
 """
 
 from __future__ import annotations
@@ -65,7 +67,7 @@ class Composer:
         recording: Recording | None = None,
         slots: list[int] | None = None,
         caption_s: float = 5.0,
-        hold_s: float = 2.0,
+        hold_s: float = 0.0,
         max_captions: int = 3,
     ) -> None:
         self.info = info
