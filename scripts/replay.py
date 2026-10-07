@@ -31,7 +31,7 @@ from big_walk_eval.game.client import GameClient
 from big_walk_eval.game.fake_game import FakeGame
 from big_walk_eval.game.http_game import DEFAULT_URL, HttpGame
 from big_walk_eval.protocol import CaptureInfo, CaptureRequest
-from big_walk_eval.replay import Recording, play
+from big_walk_eval.replay import ActStep, Recording, ResetStep, play, turned_deg
 from big_walk_eval.video import Composer, save
 
 
@@ -70,6 +70,14 @@ async def run(
     held_ok = True
     n = 0
     info = None
+    recorded_before = {}
+    last = None
+    for s in recording.steps:
+        if isinstance(s, ResetStep):
+            last = s.bodies
+        elif isinstance(s, ActStep):
+            recorded_before[s.seq] = last
+            last = s.bodies
     try:
         async for frame in play(recording, game, capture):
             n += 1
@@ -85,6 +93,13 @@ async def run(
                 line += (
                     f"  drift {frame.drift.max_position_m:.3f} m {frame.drift.max_yaw_deg:.1f} deg"
                 )
+                worst = max(frame.drift.yaw_deg, key=frame.drift.yaw_deg.get, default=None)
+                if worst is not None:
+                    line += f" (worst: {recording.agents.get(worst, worst)})"
+                want = turned_deg(recorded_before.get(step.seq), step.bodies, step.slot)
+                got = turned_deg(frame.before, frame.after, step.slot)
+                if want is not None and got is not None:
+                    line += f"  turned {got:+.1f} deg, recorded {want:+.1f}"
                 if frame.drift.held_differs:
                     line += f"  held differs: slots {frame.drift.held_differs}"
             if args.verbose:

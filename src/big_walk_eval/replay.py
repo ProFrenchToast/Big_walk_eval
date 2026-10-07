@@ -282,6 +282,17 @@ class Drift:
         )
 
 
+def turned_deg(before: list[BodyState] | None, after: list[BodyState] | None, slot: int):
+    """How far `slot` turned between two snapshots, in degrees (-180 to 180). None if unknown."""
+    if before is None or after is None:
+        return None
+    a = next((b for b in before if b.slot == slot), None)
+    b = next((b for b in after if b.slot == slot), None)
+    if a is None or b is None:
+        return None
+    return (b.yaw_deg - a.yaw_deg + 180.0) % 360.0 - 180.0
+
+
 def drift(recorded: list[BodyState], actual: list[BodyState]) -> Drift:
     out = Drift()
     now = {b.slot: b for b in actual}
@@ -305,6 +316,10 @@ class PlaybackFrame:
     step: ActStep
     result: ActResult
     drift: Drift | None
+    before: list[BodyState] | None = None
+    """Every body before the act, in the playback."""
+    after: list[BodyState] | None = None
+    """Every body after the act, in the playback. None if the act has no checkpoint."""
 
 
 async def play(
@@ -324,10 +339,11 @@ async def play(
     if recording.version != RECORDING_VERSION:
         raise ValueError(f"recording version {recording.version}, expected {RECORDING_VERSION}")
     capture_at_reset = not any(isinstance(s, CaptureStep) for s in recording.steps)
+    last: list[BodyState] | None = None
     for step in recording.steps:
         match step:
             case ResetStep(request=request):
-                await game.reset(request)
+                last = (await game.reset(request)).bodies
                 if capture is not None and capture_at_reset:
                     await game.start_capture(capture)
             case CaptureStep():
@@ -337,7 +353,9 @@ async def play(
                 await game.switch(slot)
             case ActStep():
                 result = await game.act(step.slot, step.actions, step.budget_ms)
-                d = None
+                d = after = None
                 if step.bodies is not None:
-                    d = drift(step.bodies, (await game.state()).bodies)
-                yield PlaybackFrame(step, result, d)
+                    after = (await game.state()).bodies
+                    d = drift(step.bodies, after)
+                yield PlaybackFrame(step, result, d, last, after)
+                last = after
