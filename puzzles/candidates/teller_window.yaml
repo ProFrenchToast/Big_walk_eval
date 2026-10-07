@@ -12,11 +12,11 @@ spawns:
 - slot: 1
   name: Ash
   position: [-175.91, 12.68, -681.28]
-  yaw_deg: 94.9
+  yaw_deg: 185.0
 - slot: 2
   name: Birch
   position: [-176.04, 12.68, -682.77]
-  yaw_deg: 94.9
+  yaw_deg: 5.0
 props:
 - item_type: GourdProp
   position: [-177.55, 13.86, -683.9]

@@ -81,6 +81,7 @@ def round_robin(
     config: EpisodeConfig,
     controls: str,
     game_name: str = "Big Walk",
+    reward_description: str = "",
     max_turns: int | None = None,
     game_lock: anyio.Lock | None = None,
 ) -> Solver:
@@ -133,6 +134,7 @@ def round_robin(
                                 others=[o for o in names.values() if o != name],
                                 game_name=game_name,
                                 controls=controls,
+                                reward_description=reward_description,
                                 max_game_ms=config.max_game_ms_per_turn,
                                 max_tool_calls=config.max_tool_calls_per_turn,
                                 one_response=config.one_response_per_turn,

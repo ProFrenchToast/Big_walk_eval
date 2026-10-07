@@ -287,14 +287,15 @@ Write a calibration script (M5) that turns by a known count, reads the yaw from 
 Content, in order:
 
 1. You are one of N players in the game Big Walk. Your name is `<name>`.
-2. The goal: work with the other players to solve the puzzle near you and get the reward, a gourd. At least one player must hold the gourd at the end.
+2. The goal: work with the other players to solve the puzzle near you and get the reward, a gourd. At least one player must hold the gourd at the end. In the real game, also describe the gourd: a small red pear-shaped object, often locked in a vice that opens once the puzzle is solved.
 3. You see only your own first-person view. The other players see different views.
-4. To talk, use the in-game text chat (Return, `type`, Return). Only nearby players who can see you read it.
-5. The game pauses while you think. Time moves only while your actions run.
-6. Controls (fill in after Patrick confirms them).
-7. When the gourd is held and you agree the task is done, call `end_episode`. The episode ends only when all players have called it.
+4. You start facing the other players. Introduce yourselves and agree on a plan to solve the puzzle.
+5. To talk, use the in-game text chat (Return, `type`, Return). Only nearby players who can see you read it.
+6. The game pauses while you think. Time moves only while your actions run.
+7. Controls (fill in after Patrick confirms them).
+8. When the gourd is held and you agree the task is done, call `end_episode`. The episode ends only when all players have called it.
 
-Keep puzzle hints out of the prompt. Put the puzzle name and a one-line location hint in sample metadata only, for ablations.
+Keep puzzle-specific hints out of the prompt (a general description of the reward is fine). Put the puzzle name and a one-line location hint in sample metadata only, for ablations.
 
 ## 8. Implementation notes per component
 
