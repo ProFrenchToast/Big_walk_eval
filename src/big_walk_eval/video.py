@@ -264,3 +264,21 @@ def write_jpegs(composer: Composer, out: Path) -> int:
     for n, image in enumerate(composer.frames(), 1):
         image.save(out / f"{n - 1:06d}.jpg", quality=90)
     return n
+
+
+def save(composer: Composer, out: Path | None = None, jpegs: Path | None = None) -> str:
+    """Write the video as mp4 (default: `<frame folder>/episode.mp4`), or as JPEGs to `jpegs`.
+
+    Returns a line for the user. Raises `RuntimeError` if there is no ffmpeg for an mp4.
+    """
+    if jpegs is not None:
+        n = write_jpegs(composer, jpegs)
+        return f"wrote {n} frames to {jpegs}"
+    ffmpeg = find_ffmpeg()
+    if ffmpeg is None:
+        raise RuntimeError(
+            "ffmpeg not found. Install it, run `uv sync --extra video`, or use --jpegs."
+        )
+    out = out or composer.directory / "episode.mp4"
+    n = write_mp4(composer, out, ffmpeg)
+    return f"wrote {out} ({n} frames, {n / composer.info.fps:.1f} s)"

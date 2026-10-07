@@ -165,7 +165,7 @@ def test_replay_script(tmp_path, fake_puzzle):
     [log_file] = tmp_path.glob("*.eval")
     frames = tmp_path / "frames"
     result = subprocess.run(
-        [sys.executable, "scripts/replay.py", str(log_file), "--frames", str(frames)],
+        [sys.executable, "scripts/replay.py", str(log_file), "--frames", str(frames), "--no-video"],
         cwd=ROOT,
         capture_output=True,
         text=True,

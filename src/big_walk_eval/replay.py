@@ -6,7 +6,8 @@ which it ran. The tools add vote markers. The solver stores the recording in `Ep
 it lives in the Inspect log next to each agent's messages.
 
 Screenshots are not recorded. The Inspect log already has each agent's view,
-and a playback renders its own frames.
+and a playback renders its own frames. A playback can also capture every
+body's view, so a run without capture can still make a video.
 
 After each act, `RecordingGame` also reads every body's position (a
 checkpoint). A playback compares against these to measure drift. The real
@@ -309,18 +310,29 @@ class PlaybackFrame:
 async def play(
     recording: Recording,
     game: GameClient,
+    capture: CaptureRequest | None = None,
 ) -> AsyncIterator[PlaybackFrame]:
     """Send the recorded inputs to `game` again. Yield one frame after each act.
 
     Each frame has the game's screenshot and, if the act has a checkpoint,
     the drift from it.
+
+    With `capture`, the game records every body's view, as in a live run with
+    capture on. The capture starts where the recording's capture started, or
+    after the reset if the episode ran without capture. The caller stops it.
     """
     if recording.version != RECORDING_VERSION:
         raise ValueError(f"recording version {recording.version}, expected {RECORDING_VERSION}")
+    capture_at_reset = not any(isinstance(s, CaptureStep) for s in recording.steps)
     for step in recording.steps:
         match step:
             case ResetStep(request=request):
                 await game.reset(request)
+                if capture is not None and capture_at_reset:
+                    await game.start_capture(capture)
+            case CaptureStep():
+                if capture is not None:
+                    await game.start_capture(capture)
             case SwitchStep(slot=slot):
                 await game.switch(slot)
             case ActStep():

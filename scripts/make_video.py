@@ -18,7 +18,7 @@ from pathlib import Path
 from big_walk_eval.episode import read_episode_log
 from big_walk_eval.protocol import CaptureInfo
 from big_walk_eval.replay import Recording
-from big_walk_eval.video import Composer, find_ffmpeg, write_jpegs, write_mp4
+from big_walk_eval.video import Composer, save
 
 
 def main() -> int:
@@ -56,17 +56,11 @@ def main() -> int:
         print(f"no frames at {composer.directory}. Copy them here or give --capture-dir.")
         return 1
 
-    if args.jpegs:
-        n = write_jpegs(composer, args.jpegs)
-        print(f"wrote {n} frames to {args.jpegs}")
-        return 0
-    ffmpeg = find_ffmpeg()
-    if ffmpeg is None:
-        print("ffmpeg not found. Install it, run `uv sync --extra video`, or use --jpegs.")
+    try:
+        print(save(composer, args.out, args.jpegs))
+    except RuntimeError as e:
+        print(e)
         return 1
-    out = args.out or composer.directory / "episode.mp4"
-    n = write_mp4(composer, out, ffmpeg)
-    print(f"wrote {out} ({n} frames, {n / info.fps:.1f} s)")
     return 0
 
 

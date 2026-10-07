@@ -3,6 +3,7 @@ from __future__ import annotations
 import subprocess
 import sys
 
+import anyio
 import pytest
 from PIL import Image
 
@@ -20,6 +21,7 @@ from big_walk_eval.replay import (
     CaptureStep,
     Recording,
     ResetStep,
+    play,
 )
 from big_walk_eval.video import ACTIVE, HEADER_H, IDLE, Composer, find_ffmpeg, write_mp4
 from tests.conftest import ROOT, reset_request
@@ -196,3 +198,66 @@ def test_make_video_script(tmp_path, fake_puzzle):
     )
     assert result.returncode == 0, result.stdout + result.stderr
     assert len(list(jpegs.glob("*.jpg"))) > 0
+
+
+async def replay_with_capture(recording: Recording, capture_dir) -> CaptureInfo:
+    game = FakeGame(seed=0, capture_dir=capture_dir)
+    request = CaptureRequest(episode_id="replay", fps=5, width=64, height=36)
+    async for _ in play(recording, game, request):
+        pass
+    info = await game.stop_capture()
+    await game.close()
+    return info
+
+
+def test_replay_capture_matches_live_capture(tmp_path, fake_puzzle):
+    log = captured_episode(tmp_path, fake_puzzle)
+    live = CaptureInfo.model_validate(log.capture)
+    recording = Recording.model_validate(log.replay)
+
+    replayed = anyio.run(replay_with_capture, recording, tmp_path / "replays")
+    assert replayed.frames == live.frames
+    assert replayed.slots == live.slots
+    for slot in live.slots:
+        for k in range(live.frames):
+            assert frame(tmp_path / "replays", "replay", slot, k) == frame(
+                tmp_path / "captures", live.episode_id, slot, k
+            )
+
+
+def test_replay_captures_an_episode_that_ran_without_capture(tmp_path, fake_puzzle):
+    _, log = run(tmp_path, fake_puzzle, SOLUTION)
+    assert log.capture is None
+    recording = Recording.model_validate(log.replay)
+    assert not any(isinstance(s, CaptureStep) for s in recording.steps)
+
+    info = anyio.run(replay_with_capture, recording, tmp_path / "replays")
+    assert info.frames == log.total_game_ms * 5 // 1000 + 1
+    composer = Composer(info, recording=recording)
+    assert composer.act_at(100).slot == recording.acts()[0].slot
+
+
+def test_replay_script_makes_video(tmp_path, fake_puzzle):
+    run(tmp_path, fake_puzzle, SOLUTION)
+    [log_file] = tmp_path.glob("*.eval")
+    captures = tmp_path / "captures"
+    jpegs = tmp_path / "composed"
+    cmd = [sys.executable, "scripts/replay.py", str(log_file), "--capture-dir", str(captures)]
+    cmd += ["--capture-fps", "5", "--capture-width", "64", "--capture-height", "36"]
+    result = subprocess.run(
+        [*cmd, "--jpegs", str(jpegs)], cwd=ROOT, capture_output=True, text=True, timeout=120
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "reproduced" in result.stdout
+    assert len(list(jpegs.glob("*.jpg"))) > 0
+    [episode] = captures.iterdir()
+    assert episode.name.startswith("replay_fake_plate_gate_")
+
+    if find_ffmpeg() is None:
+        pytest.skip("no ffmpeg")
+    out = tmp_path / "replay.mp4"
+    result = subprocess.run(
+        [*cmd, "--video", str(out)], cwd=ROOT, capture_output=True, text=True, timeout=120
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert out.stat().st_size > 1000

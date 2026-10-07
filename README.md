@@ -48,13 +48,15 @@ The server binds to `127.0.0.1:47801`. From another machine, use an SSH tunnel: 
 Each episode records every input that the agents send to the game. The solver puts the recording in the sample store (`EpisodeLog.replay`), so the Inspect log holds it. The recording also has the votes, the game events of each action (chat messages are `text_chat` events), and the position of each body after each action.
 
 ```bash
-# Send the recorded inputs to a fresh game and compare each body with the recording.
+# Send the recorded inputs to a fresh game, compare each body with the recording, and make a video.
 uv run python scripts/replay.py logs/scripted/<log>.eval -v
 # Real game: also save the view after each action.
 uv run python scripts/replay.py <log>.eval --backend http --frames runs/replay
 ```
 
 FakeGame replays exactly. On the real game, the drift shows how deterministic the game is under replayed input.
+
+The playback also captures every body's view and writes the same grid video as `scripts/make_video.py` (see Video), to `<frames>/replay.mp4` or `--video PATH`. So an episode that ran without capture can still get a video. The capture uses the task's `capture_fps`/`capture_width`/`capture_height` if the log has them, else 30 fps at 683x384; the `--capture-*` flags change them. Use `--no-video` to skip the capture. On the real game, run the script on the game's machine, because the game writes the frames there. The video shows the replayed run, so where the real game drifts under replayed input, the video drifts too.
 
 ## Video
 
