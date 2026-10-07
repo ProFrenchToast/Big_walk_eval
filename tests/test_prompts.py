@@ -15,7 +15,7 @@ def _prompt(**kwargs) -> str:
 
 def test_reward_description_only_when_given():
     assert BIG_WALK_GOURD in _prompt(reward_description=BIG_WALK_GOURD)
-    assert "vise" not in _prompt()
+    assert "vice" not in _prompt()
 
 
 def test_prompt_asks_for_introductions_not_search():

@@ -20,7 +20,7 @@ also while other players act. You can carry one thing at a time.
 Wave: hold "q" (left arm) or "e" (right arm), for example hold_key with text "q" and duration 1."""
 
 BIG_WALK_GOURD = """\
-The gourd is a small red object shaped like a pear. It is often locked in a vise \
+The gourd is a small red object shaped like a pear. It is often locked in a vice \
 that opens when the puzzle is solved."""
 
 FAKE_GAME_CONTROLS = """\
