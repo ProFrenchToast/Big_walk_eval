@@ -26,7 +26,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from big_walk_eval.episode import read_episode_log
+from big_walk_eval.episode import list_samples, read_episode_log
 from big_walk_eval.game.client import GameClient
 from big_walk_eval.game.fake_game import FakeGame
 from big_walk_eval.game.http_game import DEFAULT_URL, HttpGame
@@ -35,10 +35,13 @@ from big_walk_eval.replay import Recording, play
 from big_walk_eval.video import Composer, save
 
 
-def load(log_path: str, sample_id: str | None, epoch: int) -> tuple[Recording, dict]:
-    log, task_args = read_episode_log(log_path, sample_id, epoch)
+def load(log_path: str, sample_id: str | None, epoch: int | None) -> tuple[Recording, dict]:
+    try:
+        log, task_args = read_episode_log(log_path, sample_id, epoch)
+    except ValueError as e:
+        raise SystemExit(str(e)) from None
     if log.replay is None:
-        raise SystemExit(f"sample {sample_id or 'first'} epoch {epoch} has no recording")
+        raise SystemExit("the sample has no recording")
     return Recording.model_validate(log.replay), task_args
 
 
@@ -124,8 +127,9 @@ def main() -> int:
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter
     )
     parser.add_argument("log", help="Inspect log (.eval or .json)")
-    parser.add_argument("--sample-id", help="default: the first sample")
-    parser.add_argument("--epoch", type=int, default=1)
+    parser.add_argument("--sample-id", help="needed if the log has several samples")
+    parser.add_argument("--epoch", type=int, help="needed if the sample ran several epochs")
+    parser.add_argument("--list", action="store_true", help="list the samples in the log and stop")
     parser.add_argument("--backend", choices=["fake", "http"], default="fake")
     parser.add_argument("--game-url", default=DEFAULT_URL)
     parser.add_argument("--seed", type=int, help="FakeGame seed; default: the task's seed")
@@ -141,6 +145,10 @@ def main() -> int:
     parser.add_argument("--capture-dir", default="captures", help="FakeGame frame folder")
     parser.add_argument("-v", "--verbose", action="store_true", help="print one line per act")
     args = parser.parse_args()
+    if args.list:
+        for sample_id, epoch, score in list_samples(args.log):
+            print(f"{sample_id}  epoch {epoch}  score {score}")
+        return 0
 
     recording, task_args = load(args.log, args.sample_id, args.epoch)
     if args.backend == "fake":

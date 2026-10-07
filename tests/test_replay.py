@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import subprocess
 import sys
+from pathlib import Path
 
 import anyio
 import pytest
 
+from big_walk_eval.episode import list_samples, read_episode_log
 from big_walk_eval.game.fake_game import FakeGame
 from big_walk_eval.protocol import HoldKeyAction, LookAction, MouseAction
 from big_walk_eval.replay import (
@@ -175,3 +177,45 @@ def test_replay_script(tmp_path, fake_puzzle):
     assert "reproduced" in result.stdout
     assert "gourd held by: Birch" in result.stdout
     assert len(list(frames.glob("*.png"))) == 7
+
+
+def two_sample_log(tmp_path, fake_puzzle) -> Path:
+    from inspect_ai.log import read_eval_log, write_eval_log
+
+    run(tmp_path, fake_puzzle, SOLUTION)
+    [log_file] = tmp_path.glob("*.eval")
+    log = read_eval_log(str(log_file))
+    [sample] = log.samples
+    second = sample.model_copy(update={"id": "second", "epoch": 2}, deep=True)
+    second.store["EpisodeLog:puzzle_id"] = "second_puzzle"
+    log.samples = [sample, second]
+    out = tmp_path / "two.eval"
+    write_eval_log(log, str(out))
+    return out
+
+
+def test_read_episode_log_selects_a_sample(tmp_path, fake_puzzle):
+    log_file = str(two_sample_log(tmp_path, fake_puzzle))
+    assert [(i, e) for i, e, _ in list_samples(log_file)][1] == ("second", 2)
+    assert read_episode_log(log_file, "second")[0].puzzle_id == "second_puzzle"
+    assert read_episode_log(log_file, epoch=2)[0].puzzle_id == "second_puzzle"
+    assert read_episode_log(log_file, epoch=1)[0].puzzle_id == "fake_plate_gate"
+    with pytest.raises(ValueError, match="several samples"):
+        read_episode_log(log_file)
+    with pytest.raises(ValueError, match="no sample matches"):
+        read_episode_log(log_file, "missing")
+
+
+def test_replay_script_selects_a_sample(tmp_path, fake_puzzle):
+    log_file = str(two_sample_log(tmp_path, fake_puzzle))
+    cmd = [sys.executable, "scripts/replay.py", log_file, "--no-video"]
+
+    listed = subprocess.run([*cmd, "--list"], cwd=ROOT, capture_output=True, text=True)
+    assert listed.returncode == 0 and "second  epoch 2" in listed.stdout
+    ambiguous = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
+    assert ambiguous.returncode != 0 and "several samples" in ambiguous.stderr
+    chosen = subprocess.run(
+        [*cmd, "--sample-id", "second"], cwd=ROOT, capture_output=True, text=True
+    )
+    assert chosen.returncode == 0, chosen.stdout + chosen.stderr
+    assert "reproduced" in chosen.stdout

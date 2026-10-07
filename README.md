@@ -56,7 +56,7 @@ uv run python scripts/replay.py <log>.eval --backend http --frames runs/replay
 
 FakeGame replays exactly. On the real game, the drift shows how deterministic the game is under replayed input.
 
-The playback also captures every body's view and writes the same grid video as `scripts/make_video.py` (see Video), to `<frames>/replay.mp4` or `--video PATH`. So an episode that ran without capture can still get a video. The capture uses the task's `capture_fps`/`capture_width`/`capture_height` if the log has them, else 30 fps at 683x384; the `--capture-*` flags change them. Use `--no-video` to skip the capture. On the real game, run the script on the game's machine, because the game writes the frames there. The video shows the replayed run, so where the real game drifts under replayed input, the video drifts too.
+The playback also captures every body's view and writes the same grid video as `scripts/make_video.py` (see Video), to `<frames>/replay.mp4` or `--video PATH`. So an episode that ran without capture can still get a video. The capture uses the task's `capture_fps`/`capture_width`/`capture_height` if the log has them, else 30 fps at 683x384; the `--capture-*` flags change them. Use `--no-video` to skip the capture. If the log has several samples or epochs, choose one with `--sample-id` and `--epoch` (`--list` shows them). `scripts/make_video.py` takes the same flags. On the real game, run the script on the game's machine, because the game writes the frames there. The video shows the replayed run, so where the real game drifts under replayed input, the video drifts too.
 
 ## Video
 

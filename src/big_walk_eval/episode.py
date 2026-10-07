@@ -130,20 +130,43 @@ class EpisodeLog(StoreModel):
     capture_error: str | None = None
 
 
+def list_samples(log_path: str) -> list[tuple[str, int, str]]:
+    """(sample id, epoch, score) of every sample in an Inspect log."""
+    from inspect_ai.log import read_eval_log_sample_summaries
+
+    out = []
+    for s in read_eval_log_sample_summaries(log_path):
+        score = ", ".join(str(v.value) for v in (s.scores or {}).values()) or "-"
+        out.append((str(s.id), s.epoch, score))
+    return out
+
+
 def read_episode_log(
-    log_path: str, sample_id: str | None = None, epoch: int = 1
+    log_path: str, sample_id: str | None = None, epoch: int | None = None
 ) -> tuple[EpisodeLog, dict]:
     """The `EpisodeLog` of one sample in an Inspect log, and the task args.
 
-    Default: the first sample.
+    `sample_id` and `epoch` select the sample. Either can be left out if only
+    one sample matches. Raises `ValueError` with the samples if none or several match.
     """
     from inspect_ai.log import read_eval_log, read_eval_log_sample, read_eval_log_sample_summaries
 
-    if sample_id is None:
-        summaries = read_eval_log_sample_summaries(log_path)
-        if not summaries:
-            raise ValueError(f"{log_path} has no samples")
-        sample_id = str(summaries[0].id)
-    sample = read_eval_log_sample(log_path, id=sample_id, epoch=epoch)
+    summaries = read_eval_log_sample_summaries(log_path)
+    if not summaries:
+        raise ValueError(f"{log_path} has no samples")
+    matches = [
+        s
+        for s in summaries
+        if (sample_id is None or str(s.id) == str(sample_id))
+        and (epoch is None or s.epoch == epoch)
+    ]
+    if len(matches) != 1:
+        problem = "no sample matches" if not matches else "the log has several samples"
+        listed = "\n".join(
+            f"  {sid}  epoch {ep}  score {sc}" for sid, ep, sc in list_samples(log_path)
+        )
+        raise ValueError(f"{problem}. Give --sample-id and --epoch. Samples:\n{listed}")
+    [summary] = matches
+    sample = read_eval_log_sample(log_path, id=summary.id, epoch=summary.epoch)
     task_args = read_eval_log(log_path, header_only=True).eval.task_args
     return sample.store_as(EpisodeLog), task_args
