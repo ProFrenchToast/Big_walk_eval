@@ -57,6 +57,15 @@ public class BridgeBehaviour : MonoBehaviour
     {
         try
         {
+            CaptureDiagnostics.Frame();
+        }
+        catch (Exception e)
+        {
+            Plugin.Trace.LogDebug($"Capture diagnostics failed: {e.Message}");
+        }
+
+        try
+        {
             ChatSync.Tick();
         }
         catch (Exception e)

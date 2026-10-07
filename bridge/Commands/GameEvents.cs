@@ -88,6 +88,7 @@ internal static class GameEvents
         try
         {
             Push("item_picked_up", SlotOf(__instance.playerCharacter), HeldItems.Describe(prop));
+            CaptureDiagnostics.Pickup(SlotOf(__instance.playerCharacter), prop != null ? prop.name : "null");
         }
         catch (Exception e)
         {

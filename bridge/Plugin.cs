@@ -31,6 +31,10 @@ public class Plugin : BasePlugin
     internal static ConfigEntry<int> CaptureQueueFrames;
     internal static ConfigEntry<bool> CapturePerBodyView;
     internal static ConfigEntry<bool> CaptureActiveFromScreen;
+    internal static ConfigEntry<bool> CaptureViewLooks;
+    internal static ConfigEntry<bool> CaptureViewOwnText;
+    internal static ConfigEntry<bool> CaptureViewOtherText;
+    internal static ConfigEntry<bool> CaptureDiagnostics;
 
     private static BridgeServer _server;
     private Harmony _harmony;
@@ -58,6 +62,14 @@ public class Plugin : BasePlugin
         CaptureActiveFromScreen = Config.Bind("Capture", "ActiveFromScreen", true,
             "Take the active body's frames from the screen, so they have the HUD the agent sees " +
             "(crosshair, chat input). Off: its own camera, like the idle bodies.");
+        CaptureViewLooks = Config.Bind("Capture", "PerBodyViewLooks", true,
+            "With PerBodyView: show the active body in the remote look (head and body, no first-person arms).");
+        CaptureViewOwnText = Config.Bind("Capture", "PerBodyViewOwnText", true,
+            "With PerBodyView: hide the viewer's own head text (SetActive false, then true after the render).");
+        CaptureViewOtherText = Config.Bind("Capture", "PerBodyViewOtherText", true,
+            "With PerBodyView: turn the other bodies' head text to the viewer and set its alpha from raycasts.");
+        CaptureDiagnostics = Config.Bind("Capture", "Diagnostics", false,
+            "Log frame times, capture step times and the active body's use button (CaptureDiagnostics.cs).");
 
         HideConnectionWarning = Config.Bind("Hud", "HideConnectionWarning", true,
             "Hide the bad-connection HUD warning. Long pauses trigger it, and it would appear in agent screenshots.");

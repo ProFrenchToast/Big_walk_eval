@@ -41,6 +41,7 @@ internal static class Commands
         "chat_input" => ChatSync.Input(),
         "capture_start" => BodyCapture.Start(args),
         "capture_stop" => BodyCapture.Stop(),
+        "capture_config" => CaptureDiagnostics.Configure(args),
         "look" => Unfinished.Look(args),
         "load_snapshot" => Unfinished.LoadSnapshot(args),
         "save_snapshot" => Unfinished.SaveSnapshot(args),

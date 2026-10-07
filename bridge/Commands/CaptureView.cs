@@ -51,7 +51,7 @@ internal static class CaptureView
 
         try
         {
-            ShowAsRemote(active.looks, undo);
+            if (Plugin.CaptureViewLooks.Value) ShowAsRemote(active.looks, undo);
             foreach (var pc in PlayerCharacter.allPlayerCharacters)
             {
                 if (pc == null) continue;
@@ -60,9 +60,9 @@ internal static class CaptureView
                 if (pc == viewer)
                 {
                     // A player never sees its own head text.
-                    SetActive(source.textField.gameObject, false, undo);
+                    if (Plugin.CaptureViewOwnText.Value) SetActive(source.textField.gameObject, false, undo);
                 }
-                else
+                else if (Plugin.CaptureViewOtherText.Value)
                 {
                     ShowText(source, cameraPosition, cameraRotation, undo);
                 }

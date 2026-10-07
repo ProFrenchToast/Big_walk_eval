@@ -132,6 +132,7 @@ internal static class BodyCapture
     public static void Tick()
     {
         if (!Active) return;
+        CaptureDiagnostics.CaptureTicked();
         var active = Plugin.CaptureActiveFromScreen.Value ? ActiveSlot() : 0;
         // The end of an earlier frame never came, or another body became active since:
         // render the waiting frame with the camera instead.
@@ -196,7 +197,9 @@ internal static class BodyCapture
 
     private static void Send(BodyStream stream, byte[] bytes, int count)
     {
+        var t = CaptureDiagnostics.Start();
         for (var i = 0; i < count; i++) stream.Queue.Add(bytes);
+        CaptureDiagnostics.Stop(CaptureDiagnostics.Step.QueueWait, t);
     }
 
     private static int ActiveSlot()
@@ -218,10 +221,12 @@ internal static class BodyCapture
             _screen = new RenderTexture(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32);
         }
 
+        var t = CaptureDiagnostics.Start();
         ScreenCapture.CaptureScreenshotIntoRenderTexture(_screen);
         // The screen copy is upside down compared with a camera's render texture (D3D12),
         // and ffmpeg flips every frame.
         Graphics.Blit(_screen, stream.Target, new Vector2(1, -1), new Vector2(0, 1));
+        CaptureDiagnostics.Stop(CaptureDiagnostics.Step.Screen, t);
         return ReadTarget(stream);
     }
 
@@ -271,16 +276,22 @@ internal static class BodyCapture
             stream.Camera.transform.SetPositionAndRotation(look.position, look.rotation);
         }
 
+        var t = CaptureDiagnostics.Start();
         var undo = Plugin.CapturePerBodyView.Value && look != null
             ? CaptureView.Apply(body, look.position, look.rotation)
             : null;
+        CaptureDiagnostics.Stop(CaptureDiagnostics.Step.View, t);
         try
         {
+            t = CaptureDiagnostics.Start();
             stream.Camera.Render();
+            CaptureDiagnostics.Stop(CaptureDiagnostics.Step.Render, t);
         }
         finally
         {
+            t = CaptureDiagnostics.Start();
             if (undo != null) CaptureView.Undo(undo);
+            CaptureDiagnostics.Stop(CaptureDiagnostics.Step.View, t);
         }
 
         return ReadTarget(stream);
@@ -288,6 +299,7 @@ internal static class BodyCapture
 
     private static byte[] ReadTarget(BodyStream stream)
     {
+        var t = CaptureDiagnostics.Start();
         var previous = RenderTexture.active;
         try
         {
@@ -298,6 +310,7 @@ internal static class BodyCapture
         finally
         {
             RenderTexture.active = previous;
+            CaptureDiagnostics.Stop(CaptureDiagnostics.Step.Read, t);
         }
     }
 
