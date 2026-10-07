@@ -34,7 +34,9 @@ def main() -> int:
     parser.add_argument("--out", type=Path, help="default: <frame folder>/episode.mp4")
     parser.add_argument("--jpegs", type=Path, help="write composed frames here instead of mp4")
     parser.add_argument("--caption-s", type=float, default=5.0, help="game seconds per message")
-    parser.add_argument("--hold-s", type=float, default=2.0, help="video pause per message")
+    parser.add_argument(
+        "--hold-s", type=float, default=0.0, help="freeze the video this long per message"
+    )
     args = parser.parse_args()
     if args.list:
         for sample_id, epoch, score in list_samples(args.log):

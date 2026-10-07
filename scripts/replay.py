@@ -124,7 +124,7 @@ async def run(
 
 
 def make_video(info: CaptureInfo, recording: Recording, args: argparse.Namespace) -> bool:
-    composer = Composer(info, recording=recording)
+    composer = Composer(info, recording=recording, caption_s=args.caption_s, hold_s=args.hold_s)
     if not composer.directory.is_dir():
         print(f"no video: no frames at {composer.directory}. Run this on the game's machine.")
         return False
@@ -158,6 +158,10 @@ def main() -> int:
     parser.add_argument("--capture-width", type=int, help="default: the task's, else 683")
     parser.add_argument("--capture-height", type=int, help="default: the task's, else 384")
     parser.add_argument("--capture-dir", default="captures", help="FakeGame frame folder")
+    parser.add_argument("--caption-s", type=float, default=5.0, help="game seconds per message")
+    parser.add_argument(
+        "--hold-s", type=float, default=0.0, help="freeze the video this long per message"
+    )
     parser.add_argument("-v", "--verbose", action="store_true", help="print one line per act")
     args = parser.parse_args()
     if args.list:

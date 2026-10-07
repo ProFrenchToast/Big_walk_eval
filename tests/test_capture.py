@@ -88,6 +88,8 @@ def test_episode_capture(tmp_path, fake_puzzle):
     capture = next(s for s in recording.steps if isinstance(s, CaptureStep))
     assert capture.episode_id == info.episode_id
 
+    assert len(list(Composer(info, recording=recording).sequence())) == info.frames
+
     composer = Composer(info, recording=recording, hold_s=1.0)
     sequence = list(composer.sequence())
     assert len(sequence) == info.frames + 2 * 5
