@@ -9,7 +9,7 @@ from big_walk_eval.dataset import puzzle_dataset
 from big_walk_eval.episode import EpisodeConfig
 from big_walk_eval.game.fake_game import FakeGame
 from big_walk_eval.game.http_game import DEFAULT_URL, HttpGame
-from big_walk_eval.prompts import BIG_WALK_CONTROLS, FAKE_GAME_CONTROLS
+from big_walk_eval.prompts import BIG_WALK_CONTROLS, BIG_WALK_GOURD, FAKE_GAME_CONTROLS
 from big_walk_eval.scorer import puzzle_solved
 from big_walk_eval.solver import round_robin
 
@@ -92,6 +92,7 @@ def big_walk_coop(
             config,
             controls=FAKE_GAME_CONTROLS if puzzle_kind == "fake" else BIG_WALK_CONTROLS,
             game_name="a simple test game" if puzzle_kind == "fake" else "Big Walk",
+            reward_description="" if puzzle_kind == "fake" else BIG_WALK_GOURD,
             max_turns=max_turns,
             # One game instance runs one episode at a time.
             game_lock=None if fake else anyio.Lock(),

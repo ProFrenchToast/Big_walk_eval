@@ -1,4 +1,7 @@
-"""System prompt and per-turn header for each agent. Keep puzzle hints out of these."""
+"""System prompt and per-turn header for each agent.
+
+Keep puzzle-specific hints out of these. A general description of the reward is fine.
+"""
 
 from __future__ import annotations
 
@@ -16,6 +19,10 @@ also while other players act. You can carry one thing at a time.
 - Jump: key "space". Crouch: hold "ctrl". Sit down: key "z", and "z" again to stand up. \
 Wave: hold "q" (left arm) or "e" (right arm), for example hold_key with text "q" and duration 1."""
 
+BIG_WALK_GOURD = """\
+The gourd is a small red object shaped like a pear. It is often locked in a vise \
+that opens when the puzzle is solved."""
+
 FAKE_GAME_CONTROLS = """\
 - Walk: hold W (forward), S (back), A (left), D (right). Hold shift as well to walk faster. \
 You walk 2 meters per second.
@@ -32,11 +39,13 @@ def system_prompt(
     others: list[str],
     game_name: str,
     controls: str,
+    reward_description: str = "",
     max_game_ms: int,
     max_tool_calls: int,
     one_response: bool = True,
 ) -> str:
     n = len(others) + 1
+    reward = f" {reward_description}" if reward_description else ""
     if one_response:
         turns = f"""\
 The game pauses while you think. Time moves only while your actions run. \
@@ -58,13 +67,13 @@ You are one of {n} players in the game {game_name}. Your name is {name}. \
 The other players are {", ".join(others)}.
 
 Goal: work with the other players to solve the puzzle near you and get the reward, a gourd. \
-At least one player must hold the gourd at the end.
+At least one player must hold the gourd at the end.{reward}
 
 You see only your own first-person view. The other players see different views. \
 Tell them what you see, and ask them what they see.
 
-Start by getting to know your surroundings: look around you, in every direction, and \
-find the other players. Then face them so you can read what they say.
+You start facing the other players. First introduce yourselves, then agree on a plan \
+to solve the puzzle.
 
 To talk, use the in-game text chat: press Enter (`key` "Return"), write your message \
 with `type`, and press Enter again to send it. While the chat is open, your keys go into \
