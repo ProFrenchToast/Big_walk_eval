@@ -2,7 +2,17 @@
 
 On the work laptop (3 Oct 2026), with capture on and `Capture.PerBodyView = true`, every
 pickup failed: `footy_walkabout` and `cave_telescope` scored I. With `PerBodyView = false`
-they scored C. On 1 Oct, on another PC, both scored C with it on. The cause is not known.
+they scored C. On 1 Oct, on another PC, both scored C with it on.
+
+**Result (7 Oct, same laptop): not reproduced.** With the diagnostics below and the server
+started with `--config server.yaml`, PerBodyView on scored C on every run (`footy_walkabout`,
+`footy_hold_use`, `cave_telescope`). The one I was with PerBodyView off: the game saw "use"
+but Cedar had stopped short of the ball (the known re-pickup flake). Each click registered
+for 1 to 3 frames at 12 to 97 ms per frame, with the pickup on the same frame. With capture,
+frames took 14 to 27 ms on average (max 79 ms) either way; `ReadPixels` costs 210 to 350 ms
+per second, PerBodyView only 10 to 16 ms. Likely cause on 3 Oct (not proven): a run with the
+default `counts_per_degree` (server started without the laptop config), or the flake.
+PerBodyView can go back on. H1 stays a risk if frames get slower: a click is often 1 frame.
 
 ## What PerBodyView does
 
