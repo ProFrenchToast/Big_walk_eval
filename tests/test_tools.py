@@ -27,6 +27,14 @@ async def episode(game: FakeGame) -> Episode:
     return ep
 
 
+@pytest.fixture
+async def shot_episode(game: FakeGame) -> Episode:
+    """Each action returns a screenshot."""
+    ep = Episode(game, EpisodeConfig(one_response_per_turn=False), {1: "Ash", 2: "Birch"})
+    ep.start_turn(0, 1)
+    return ep
+
+
 def test_computer_tool_gets_native_binding(episode: Episode):
     td = ToolDef(computer_tool(episode, 1))
     info = ToolInfo(name=td.name, description=td.description, parameters=td.parameters)
@@ -93,19 +101,19 @@ async def test_practice_mod_keys_are_blocked(episode: Episode, key: str):
         await tool(action="key", text=key)
 
 
-async def test_hold_key_moves_and_returns_screenshot(episode: Episode):
-    tool = computer_tool(episode, 1)
+async def test_hold_key_moves_and_returns_screenshot(shot_episode: Episode):
+    tool = computer_tool(shot_episode, 1)
     result = await tool(action="hold_key", text="w", duration=1)
     assert isinstance(result, list)
     assert isinstance(result[0], ContentText) and "1000 ms" in result[0].text
     assert isinstance(result[1], ContentImage)
-    state = await episode.game.state()
+    state = await shot_episode.game.state()
     assert state.body(1).position[2] == pytest.approx(2.0)
-    assert episode.turn is not None and episode.turn.game_ms == 1000
+    assert shot_episode.turn is not None and shot_episode.turn.game_ms == 1000
 
 
-async def test_turn_time_budget(episode: Episode):
-    tool = computer_tool(episode, 1)
+async def test_turn_time_budget(shot_episode: Episode):
+    tool = computer_tool(shot_episode, 1)
     result = await tool(action="hold_key", text="w", duration=10)
     assert "cut the action short" in result[0].text
     with pytest.raises(ToolError, match="no game time left"):
@@ -190,8 +198,8 @@ def image_of(content: ContentImage) -> Image.Image:
     return Image.open(io.BytesIO(base64.b64decode(content.image.split(",", 1)[1]))).convert("RGB")
 
 
-async def test_zoom_enlarges_a_region_without_game_time(episode: Episode):
-    tool = computer_tool(episode, 1)
+async def test_zoom_enlarges_a_region_without_game_time(shot_episode: Episode):
+    tool = computer_tool(shot_episode, 1)
     view = image_of((await tool(action="screenshot"))[1])
     whole = await tool(action="zoom", region=[0, 0, 1366, 768])
     assert image_of(whole[1]).tobytes() == view.tobytes()
@@ -200,7 +208,7 @@ async def test_zoom_enlarges_a_region_without_game_time(episode: Episode):
     assert zoomed.size == (1366, 691)
     corner = view.crop((600, 300, 766, 384)).resize(zoomed.size).getpixel((5, 5))
     assert zoomed.getpixel((5, 5)) == corner
-    assert episode.total_game_ms == 0
+    assert shot_episode.total_game_ms == 0
 
 
 @pytest.mark.parametrize(
@@ -211,16 +219,43 @@ async def test_zoom_needs_a_region_on_screen(episode: Episode, region):
         await computer_tool(episode, 1)(action="zoom", region=region)
 
 
-async def test_zoom_last_in_a_list_shows_the_view_after_the_actions(episode: Episode):
-    tool = computer_tool(episode, 1)
+async def test_zoom_last_in_a_list_shows_the_view_after_the_actions(shot_episode: Episode):
+    tool = computer_tool(shot_episode, 1)
     walk = {"action": "hold_key", "text": "w", "duration": 1}
     result = await tool(actions=[walk, {"action": "zoom", "region": [0, 0, 683, 384]}])
     assert "zoomed into [0, 0, 683, 384]" in result[0].text
     assert image_of(result[1]).size == (1366, 768)
-    assert episode.total_game_ms == 1000
+    assert shot_episode.total_game_ms == 1000
 
     with pytest.raises(ToolError, match="last action"):
         await tool(actions=[{"action": "zoom", "region": [0, 0, 10, 10]}, walk])
     with pytest.raises(ToolError, match="region"):
         await tool(actions=[walk, {"action": "zoom", "region": [0, 0, 0, 0]}])
+    assert shot_episode.total_game_ms == 1000
+
+
+async def test_actions_return_text_only(episode: Episode):
+    tool = computer_tool(episode, 1)
+    result = await tool(action="hold_key", text="w", duration=1)
+    assert result == "Done. 1000 ms of game time passed. 2000 ms left this turn."
+    assert "next turn" in await tool(action="screenshot")
     assert episode.total_game_ms == 1000
+
+
+async def test_zoom_waits_for_the_next_turn(episode: Episode):
+    tool = computer_tool(episode, 1)
+    walk = {"action": "hold_key", "text": "w", "duration": 1}
+    result = await tool(actions=[walk, {"action": "zoom", "region": [0, 0, 683, 384]}])
+    assert "next turn starts with your view zoomed into [0, 0, 683, 384]" in result
+    assert episode.pending_zoom == {1: [0, 0, 683, 384]}
+    with pytest.raises(ToolError, match="region"):
+        await tool(action="zoom", region=[0, 0, 0, 0])
+    assert episode.pending_zoom == {1: [0, 0, 683, 384]}
+
+
+def test_one_response_tool_description(episode: Episode, shot_episode: Episode):
+    [one, _] = agent_tools(episode, 1, "game")
+    assert "not a screenshot" in ToolDef(one).description
+    assert "next turn" in ToolDef(one).parameters.properties["action"].description
+    [shot, _] = agent_tools(shot_episode, 1, "game")
+    assert "returns a new screenshot" in ToolDef(shot).description

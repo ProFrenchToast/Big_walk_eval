@@ -15,6 +15,7 @@ from inspect_ai.model import (
     ContentImage,
     ContentText,
     GenerateConfig,
+    ModelOutput,
     get_model,
 )
 
@@ -227,3 +228,57 @@ def test_scripted_policy_runs_one_step_per_turn():
     second = policy(history, [], "auto", GenerateConfig())
     assert second.message.tool_calls[0].arguments == {"withdraw": True}
     assert isinstance(second.message, ChatMessageAssistant)
+
+
+class AlwaysActPolicy(ScriptedPolicy):
+    """Asks for another action every time it is called, so only the loop ends a turn."""
+
+    def __init__(self):
+        super().__init__({})
+        self.calls = 0
+
+    def __call__(self, input, tools, tool_choice, config):
+        self.calls += 1
+        return ModelOutput.for_tool_call(
+            model="mockllm/model",
+            tool_name="computer",
+            tool_arguments={"action": "key", "text": "w"},
+        )
+
+
+def test_one_response_per_turn(tmp_path, fake_puzzle):
+    policy = AlwaysActPolicy()
+    sample, log = run(tmp_path, fake_puzzle, {}, max_turns=4, policy=policy)
+    assert policy.calls == 4
+    assert [t["generates"] for t in log.turns] == [1, 1, 1, 1]
+    tool_results = [m for m in sample.messages if isinstance(m, ChatMessageTool)]
+    assert len(tool_results) == 4
+    assert all(isinstance(m.content, str) for m in tool_results)
+    images = [
+        c
+        for m in sample.messages
+        if not isinstance(m.content, str)
+        for c in m.content
+        if isinstance(c, ContentImage)
+    ]
+    assert len(images) == 4
+
+
+def test_screenshot_per_action_mode_keeps_generating(tmp_path, fake_puzzle):
+    policy = AlwaysActPolicy()
+    config = EpisodeConfig(one_response_per_turn=False, max_generates_per_turn=3)
+    _, log = run(tmp_path, fake_puzzle, {}, config=config, max_turns=2, policy=policy)
+    assert [t["generates"] for t in log.turns] == [3, 3]
+
+
+def test_zoom_shows_in_the_next_turn_header(tmp_path, fake_puzzle):
+    zoom = ("computer", {"action": "zoom", "region": [0, 0, 683, 384]})
+    sample, _ = run(tmp_path, fake_puzzle, {"Ash": [step(zoom)]}, max_turns=3)
+    ash_headers = [
+        m
+        for m in sample.messages
+        if isinstance(m, ChatMessageUser) and (m.metadata or {}).get("agent") == "Ash"
+    ]
+    n_images = [sum(isinstance(c, ContentImage) for c in m.content) for m in ash_headers]
+    assert n_images == [1, 2]
+    assert "zoomed into [0, 0, 683, 384]" in ash_headers[1].text

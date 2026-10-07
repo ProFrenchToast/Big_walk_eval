@@ -187,6 +187,28 @@ def to_game_actions(
     raise ToolError(f"Unknown action {action!r}.")
 
 
+ONE_RESPONSE_DESCRIPTION = """\
+Control your body in the game with the keyboard and mouse.
+
+You see the game in first person. Game time passes only while an action runs.
+Actions return a short text result, not a screenshot. You see your view again
+at the start of your next turn."""
+
+ONE_RESPONSE_ACTION = """\
+The action to perform.
+- `key`: Tap a key or key combination, for example "w" or "shift+w". Use `repeat` to tap several times.
+- `hold_key`: Hold a key or combination for `duration` seconds. Use this to walk, for example text="w", duration=1.
+- `mouse_move`: Turn your head so that the point at `coordinate` moves to the center of the screen.
+- `left_click`, `right_click`: Click a mouse button. With `coordinate`, first turn to look at that point.
+- `left_mouse_down`, `left_mouse_up`: Press or release the left mouse button. A pressed button stays pressed until you release it, also across turns. Set text="right" to use the right button.
+- `right_mouse_down`, `right_mouse_up`: Press or release the right mouse button.
+- `wait`: Let `duration` seconds of game time pass.
+- `scroll`: Turn the mouse wheel.
+- `type`: Type `text` into the in-game text chat. Open the chat with `key` "Return" first, then press "Return" again to send.
+- `zoom`: Your next turn also shows the `region` of your view enlarged, for example to read small text. In a list of `actions`, it must be the last one.
+All coordinates refer to the screenshot at the start of this turn. After you turn your head, the pixels no longer match."""
+
+
 @tool(name="computer", parallel=False)
 def computer_tool(episode: Episode, slot: int) -> Tool:
     async def execute(
@@ -262,6 +284,15 @@ def computer_tool(episode: Episode, slot: int) -> Tool:
         for call in calls:
             game_actions += to_game_actions(call, episode.hfov_deg, episode.config.blocked_keys)
 
+        text_only = episode.config.one_response_per_turn
+        if text_only and zoom is not None:
+            episode.pending_zoom[slot] = list(zoom_box(zoom))
+
+        if not game_actions and text_only:
+            if zoom is not None:
+                return f"Your next turn starts with your view zoomed into {zoom} as well."
+            return "Your next turn starts with a new screenshot of your view."
+
         if not game_actions:
             png = await episode.game.screenshot()
             if zoom is not None:
@@ -281,6 +312,10 @@ def computer_tool(episode: Episode, slot: int) -> Tool:
         if result.truncated:
             summary += "The time limit for this turn cut the action short. "
         summary += f"{turn.remaining_ms} ms left this turn."
+        if text_only:
+            if zoom is not None:
+                summary += f" Your next turn starts with your view zoomed into {zoom} as well."
+            return summary
         png = result.screenshot_png
         if zoom is not None:
             png = zoom_png(png, zoom)

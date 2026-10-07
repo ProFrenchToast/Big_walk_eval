@@ -24,6 +24,7 @@ def big_walk_coop(
     max_game_ms_per_turn: int = 3000,
     max_tool_calls_per_turn: int = 6,
     max_generates_per_turn: int = 6,
+    one_response_per_turn: bool = True,
     hfov_deg: float = 90.0,
     keep_images: int = 3,
     capture: bool = False,
@@ -45,7 +46,10 @@ def big_walk_coop(
       max_turns: Turn limit for all puzzles. Default: each puzzle's `max_turns`.
       max_game_ms_per_turn: Unpaused game time per turn.
       max_tool_calls_per_turn: Tool calls per turn.
-      max_generates_per_turn: Generate calls per turn. 1 gives one reply per turn.
+      max_generates_per_turn: Generate calls per turn, when `one_response_per_turn` is off.
+      one_response_per_turn: One reply per turn. Its actions return text only, and the
+        agent sees its view only at the start of each turn. Off: each action returns a
+        screenshot, and the agent can reply up to `max_generates_per_turn` times.
       hfov_deg: Horizontal field of view for `mouse_move`, if the game does not report it.
       keep_images: Screenshots kept in each agent's history.
       capture: Record video frames from every body's own view while game time runs.
@@ -67,6 +71,7 @@ def big_walk_coop(
         max_game_ms_per_turn=max_game_ms_per_turn,
         max_tool_calls_per_turn=max_tool_calls_per_turn,
         max_generates_per_turn=max_generates_per_turn,
+        one_response_per_turn=one_response_per_turn,
         hfov_deg=hfov_deg,
         keep_images=keep_images,
         capture_fps=capture_fps if capture else 0,

@@ -26,6 +26,6 @@ def test_scripted_run_solves_fake_puzzle(tmp_path):
     assert result.returncode == 0, result.stdout + result.stderr
     assert "score: C" in result.stdout
     names = sorted(p.name for p in images.iterdir())
-    # The turn's first view, then one view per computer tool result.
-    assert names[:2] == ["turn001_Ash.png", "turn001_Ash_00.png"]
-    assert "turn002_Birch.png" in names
+    # Only each turn's first view: tool results are text.
+    assert names[:2] == ["turn001_Ash.png", "turn002_Birch.png"]
+    assert not [n for n in names if "_00" in n]
