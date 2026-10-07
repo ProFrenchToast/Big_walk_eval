@@ -15,10 +15,10 @@ import argparse
 import sys
 from pathlib import Path
 
-from big_walk_eval.episode import read_episode_log
+from big_walk_eval.episode import list_samples, read_episode_log
 from big_walk_eval.protocol import CaptureInfo
 from big_walk_eval.replay import Recording
-from big_walk_eval.video import Composer, find_ffmpeg, write_jpegs, write_mp4
+from big_walk_eval.video import Composer, save
 
 
 def main() -> int:
@@ -26,8 +26,9 @@ def main() -> int:
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter
     )
     parser.add_argument("log", help="Inspect log (.eval or .json)")
-    parser.add_argument("--sample-id", help="default: the first sample")
-    parser.add_argument("--epoch", type=int, default=1)
+    parser.add_argument("--sample-id", help="needed if the log has several samples")
+    parser.add_argument("--epoch", type=int, help="needed if the sample ran several epochs")
+    parser.add_argument("--list", action="store_true", help="list the samples in the log and stop")
     parser.add_argument("--capture-dir", type=Path, help="episode frame folder, if moved")
     parser.add_argument("--slots", help="comma-separated slots to show; default: all")
     parser.add_argument("--out", type=Path, help="default: <frame folder>/episode.mp4")
@@ -35,8 +36,16 @@ def main() -> int:
     parser.add_argument("--caption-s", type=float, default=5.0, help="game seconds per message")
     parser.add_argument("--hold-s", type=float, default=2.0, help="video pause per message")
     args = parser.parse_args()
+    if args.list:
+        for sample_id, epoch, score in list_samples(args.log):
+            print(f"{sample_id}  epoch {epoch}  score {score}")
+        return 0
 
-    log, _ = read_episode_log(args.log, args.sample_id, args.epoch)
+    try:
+        log, _ = read_episode_log(args.log, args.sample_id, args.epoch)
+    except ValueError as e:
+        print(e)
+        return 1
     if log.capture is None:
         detail = f": {log.capture_error}" if log.capture_error else ""
         print(f"the episode has no capture{detail}. Run it with -T capture=true.")
@@ -56,17 +65,11 @@ def main() -> int:
         print(f"no frames at {composer.directory}. Copy them here or give --capture-dir.")
         return 1
 
-    if args.jpegs:
-        n = write_jpegs(composer, args.jpegs)
-        print(f"wrote {n} frames to {args.jpegs}")
-        return 0
-    ffmpeg = find_ffmpeg()
-    if ffmpeg is None:
-        print("ffmpeg not found. Install it, run `uv sync --extra video`, or use --jpegs.")
+    try:
+        print(save(composer, args.out, args.jpegs))
+    except RuntimeError as e:
+        print(e)
         return 1
-    out = args.out or composer.directory / "episode.mp4"
-    n = write_mp4(composer, out, ffmpeg)
-    print(f"wrote {out} ({n} frames, {n / info.fps:.1f} s)")
     return 0
 
 
