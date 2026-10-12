@@ -52,6 +52,7 @@
     <Reference Include="Mirror"><HintPath>$(Interop)\Mirror.dll</HintPath></Reference>
     <Reference Include="Rewired_Core"><HintPath>$(Interop)\Rewired_Core.dll</HintPath></Reference>
     <Reference Include="AudioSystem"><HintPath>$(Interop)\AudioSystem.dll</HintPath></Reference>
+    <Reference Include="Enviro3.Runtime"><HintPath>$(Interop)\Enviro3.Runtime.dll</HintPath></Reference>
   </ItemGroup>
 
   <ItemGroup>

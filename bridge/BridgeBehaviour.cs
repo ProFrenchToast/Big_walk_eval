@@ -64,6 +64,15 @@ public class BridgeBehaviour : MonoBehaviour
             Plugin.Trace.LogDebug($"Chat sync failed: {e.Message}");
         }
 
+        try
+        {
+            TimeOfDay.Tick();
+        }
+        catch (Exception e)
+        {
+            Plugin.Trace.LogDebug($"Time of day lock failed: {e.Message}");
+        }
+
         if (Time.frameCount % 120 == 0)
         {
             try
