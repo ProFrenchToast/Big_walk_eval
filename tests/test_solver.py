@@ -282,3 +282,30 @@ def test_zoom_shows_in_the_next_turn_header(tmp_path, fake_puzzle):
     n_images = [sum(isinstance(c, ContentImage) for c in m.content) for m in ash_headers]
     assert n_images == [1, 2]
     assert "zoomed into [0, 0, 683, 384]" in ash_headers[1].text
+
+
+def test_recent_keeps_system_prompt_and_last_turns():
+    from inspect_ai.model import ChatMessageSystem, ChatMessageUser
+
+    from big_walk_eval.solver import Agent, recent
+
+    msgs = [ChatMessageSystem(content="sys")]
+    agent = Agent(slot=1, name="Ash", messages=msgs, tools=[])
+    for t in range(4):
+        agent.turn_starts.append(len(agent.messages))
+        agent.messages += [ChatMessageUser(content=f"turn {t}"), ChatMessageUser(content="x")]
+    assert recent(agent, 0) is agent.messages
+    kept = recent(agent, 2)
+    assert [m.text for m in kept] == ["sys", "turn 2", "x", "turn 3", "x"]
+
+
+async def test_note_tool_shows_in_header():
+    from big_walk_eval.episode import Episode, EpisodeConfig
+    from big_walk_eval.game.fake_game import FakeGame
+    from big_walk_eval.prompts import turn_header
+    from big_walk_eval.tools.note import note
+
+    ep = Episode(FakeGame(seed=0), EpisodeConfig(memory_turns=2), {1: "Ash", 2: "Birch"})
+    ep.start_turn(0, 1)
+    await note(ep, 1)(text="vice on the north wall")
+    assert "vice on the north wall" in turn_header(turn=1, name="Ash", note=ep.notes[1])

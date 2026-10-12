@@ -9,7 +9,13 @@ from big_walk_eval.dataset import puzzle_dataset
 from big_walk_eval.episode import EpisodeConfig
 from big_walk_eval.game.fake_game import FakeGame
 from big_walk_eval.game.http_game import DEFAULT_URL, HttpGame
-from big_walk_eval.prompts import BIG_WALK_CONTROLS, BIG_WALK_GOURD, FAKE_GAME_CONTROLS
+from big_walk_eval.prompts import (
+    BIG_WALK_CONTROLS,
+    BIG_WALK_GOURD,
+    FAKE_GAME_CONTROLS,
+    with_look_around,
+    with_turn_tool,
+)
 from big_walk_eval.scorer import puzzle_solved
 from big_walk_eval.solver import round_robin
 
@@ -27,6 +33,9 @@ def big_walk_coop(
     one_response_per_turn: bool = True,
     hfov_deg: float = 90.0,
     keep_images: int = 3,
+    turn_tool: bool = False,
+    memory_turns: int = 0,
+    look_around: bool = False,
     capture: bool = False,
     capture_fps: int = 30,
     capture_width: int = 683,
@@ -52,6 +61,10 @@ def big_walk_coop(
         screenshot, and the agent can reply up to `max_generates_per_turn` times.
       hfov_deg: Horizontal field of view for `mouse_move`, if the game does not report it.
       keep_images: Screenshots kept in each agent's history.
+      turn_tool: Give agents a `turn` tool that turns the head by degrees.
+      memory_turns: Above 0, each agent sees only its last `memory_turns` turns and
+        keeps a note with the `note` tool instead.
+      look_around: Allow the `look_around` action (four views in one picture).
       capture: Record video frames from every body's own view while game time runs.
         Make a video with `scripts/make_video.py`.
       capture_fps: Frames per second of game time.
@@ -74,10 +87,19 @@ def big_walk_coop(
         one_response_per_turn=one_response_per_turn,
         hfov_deg=hfov_deg,
         keep_images=keep_images,
+        turn_tool=turn_tool,
+        memory_turns=memory_turns,
+        look_around=look_around,
         capture_fps=capture_fps if capture else 0,
         capture_width=capture_width,
         capture_height=capture_height,
     )
+    controls = FAKE_GAME_CONTROLS if puzzle_kind == "fake" else BIG_WALK_CONTROLS
+    # Look-around adds a line after the mouse-look line, which the turn tool then replaces.
+    if look_around:
+        controls = with_look_around(controls)
+    if turn_tool:
+        controls = with_turn_tool(controls)
     return Task(
         dataset=puzzle_dataset(
             puzzle_kind,
@@ -90,7 +112,7 @@ def big_walk_coop(
             if fake
             else (lambda: HttpGame(game_url)),
             config,
-            controls=FAKE_GAME_CONTROLS if puzzle_kind == "fake" else BIG_WALK_CONTROLS,
+            controls=controls,
             game_name="a simple test game" if puzzle_kind == "fake" else "Big Walk",
             reward_description="" if puzzle_kind == "fake" else BIG_WALK_GOURD,
             max_turns=max_turns,

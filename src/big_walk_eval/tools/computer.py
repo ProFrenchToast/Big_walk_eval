@@ -15,7 +15,7 @@ from typing import Any
 
 from inspect_ai._util.content import ContentImage, ContentText
 from inspect_ai.tool import Tool, ToolError, ToolResult, tool
-from PIL import Image
+from PIL import Image, ImageDraw
 
 from big_walk_eval.episode import Episode
 from big_walk_eval.look import pixel_to_angles
@@ -84,6 +84,42 @@ def zoom_png(png: bytes, region: Any) -> bytes:
     buf = io.BytesIO()
     crop.resize(size, Image.Resampling.LANCZOS).save(buf, format="PNG")
     return buf.getvalue()
+
+
+PANORAMA_LABELS = ("front", "right", "behind", "left")
+
+
+def panorama_png(views: list[bytes]) -> bytes:
+    """Four views (front, right, behind, left) tiled 2x2 at half size, each labelled."""
+    half = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
+    out = Image.new("RGB", (half[0] * 2, half[1] * 2))
+    draw = ImageDraw.Draw(out)
+    for i, (png, label) in enumerate(zip(views, PANORAMA_LABELS, strict=True)):
+        with Image.open(io.BytesIO(png)) as img:
+            tile = img.convert("RGB").resize(half, Image.Resampling.LANCZOS)
+        x, y = (i % 2) * half[0], (i // 2) * half[1]
+        out.paste(tile, (x, y))
+        draw.rectangle((x, y, x + 110, y + 34), fill=(0, 0, 0))
+        draw.text((x + 8, y + 6), label, fill=(255, 255, 255), font_size=22)
+    buf = io.BytesIO()
+    out.save(buf, format="PNG")
+    return buf.getvalue()
+
+
+async def look_around(episode: Episode, slot: int, budget_ms: int) -> tuple[bytes, int]:
+    """Turn 90 degrees right four times, with a screenshot before each turn.
+
+    Returns the picture and the game time used. The body ends facing the same way.
+    """
+    views, used = [], 0
+    for _ in PANORAMA_LABELS:
+        views.append(await episode.game.screenshot())
+        result = await episode.game.act(
+            slot, [LookAction(dyaw_deg=90.0, dpitch_deg=0.0)], max(0, budget_ms - used)
+        )
+        used += result.game_ms
+        episode.record_events(result.events)
+    return panorama_png(views), used
 
 
 def to_game_actions(
@@ -206,6 +242,7 @@ The action to perform.
 - `scroll`: Turn the mouse wheel.
 - `type`: Type `text` into the in-game text chat. Open the chat with `key` "Return" first, then press "Return" again to send.
 - `zoom`: Your next turn also shows the `region` of your view enlarged, for example to read small text. In a list of `actions`, it must be the last one.
+- `look_around`: Your next turn also shows four views around you in one picture: front, right, behind, and left. You end facing the same way. It uses a little game time. In a list of `actions`, it must be the last one.
 All coordinates refer to the screenshot at the start of this turn. After you turn your head, the pixels no longer match."""
 
 
@@ -273,6 +310,15 @@ def computer_tool(episode: Episode, slot: int) -> Tool:
         else:
             raise ToolError("Give an `action`.")
 
+        panorama = False
+        if calls and calls[-1].get("action") == "look_around":
+            if not (episode.config.look_around and episode.config.one_response_per_turn):
+                raise ToolError(NOT_AVAILABLE.format(action="look_around"))
+            calls.pop()
+            panorama = True
+        if any(c.get("action") == "look_around" for c in calls):
+            raise ToolError("`look_around` can only be the last action in a list.")
+
         zoom = None
         if calls and calls[-1].get("action") == "zoom":
             zoom = calls.pop().get("region")
@@ -287,6 +333,22 @@ def computer_tool(episode: Episode, slot: int) -> Tool:
         text_only = episode.config.one_response_per_turn
         if text_only and zoom is not None:
             episode.pending_zoom[slot] = list(zoom_box(zoom))
+
+        if panorama:
+            summary = ""
+            if game_actions:
+                if turn.remaining_ms == 0:
+                    raise ToolError("You have no game time left this turn. The action did not run.")
+                result = await episode.game.act(slot, game_actions, turn.remaining_ms)
+                episode.add_game_time(result.game_ms, result.truncated)
+                episode.record_events(result.events)
+                summary = f"Done. {result.game_ms} ms of game time passed. "
+            png, used = await look_around(episode, slot, turn.remaining_ms)
+            episode.add_game_time(used, False)
+            episode.pending_panorama[slot] = png
+            return summary + (
+                "You looked all around. Your next turn starts with the four views as well."
+            )
 
         if not game_actions and text_only:
             if zoom is not None:

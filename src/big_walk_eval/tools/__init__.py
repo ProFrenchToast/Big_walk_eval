@@ -8,6 +8,8 @@ from big_walk_eval.tools.computer import (
     computer_tool,
 )
 from big_walk_eval.tools.end_episode import end_episode
+from big_walk_eval.tools.note import note
+from big_walk_eval.tools.turn import turn
 
 # Inspect's Google provider sends every past call of a tool named "computer" back to
 # Gemini as a native computer-use action (named from the call id, e.g. "call", with no
@@ -36,7 +38,12 @@ def agent_tools(episode: Episode, slot: int, computer_name: str = "computer") ->
         ).as_tool()
     elif computer_name != "computer":
         computer = ToolDef(computer, name=computer_name).as_tool()
-    return [computer, end_episode(episode, slot)]
+    tools = [computer, end_episode(episode, slot)]
+    if episode.config.turn_tool:
+        tools.append(turn(episode, slot))
+    if episode.config.memory_turns:
+        tools.append(note(episode, slot))
+    return tools
 
 
-__all__ = ["agent_tools", "computer_tool", "computer_tool_name", "end_episode"]
+__all__ = ["agent_tools", "computer_tool", "computer_tool_name", "end_episode", "note", "turn"]

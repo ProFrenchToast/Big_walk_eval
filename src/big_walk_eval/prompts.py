@@ -19,6 +19,34 @@ also while other players act. You can carry one thing at a time.
 - Jump: key "space". Crouch: hold "ctrl". Sit down: key "z", and "z" again to stand up. \
 Wave: hold "q" (left arm) or "e" (right arm), for example hold_key with text "q" and duration 1."""
 
+MOUSE_LOOK_LINE = (
+    "- Look around: mouse_move to the point you want to look at. "
+    "That point moves to the center of your view."
+)
+TURN_LOOK_LINE = (
+    "- Look around: the `turn` tool turns your head by degrees, for example right_deg=90 "
+    "(a quarter turn right), right_deg=-90 (left), right_deg=180 (turn around), or "
+    "up_deg=-30 (look down). Your view is about 120 degrees wide. mouse_move also turns "
+    "your head to a point on the screen."
+)
+
+
+def with_turn_tool(controls: str) -> str:
+    """Controls text for agents that have the `turn` tool."""
+    return controls.replace(MOUSE_LOOK_LINE, TURN_LOOK_LINE)
+
+
+LOOK_AROUND_LINE = (
+    "- See all around you: the `look_around` action shows four views (front, right, "
+    "behind, left) at the start of your next turn. You end facing the same way."
+)
+
+
+def with_look_around(controls: str) -> str:
+    """Controls text for agents that can use `look_around`."""
+    return controls.replace(MOUSE_LOOK_LINE, MOUSE_LOOK_LINE + "\n" + LOOK_AROUND_LINE)
+
+
 BIG_WALK_GOURD = """\
 The gourd is a small red object shaped like a pear. It is often locked in a vice \
 that opens when the puzzle is solved."""
@@ -43,6 +71,7 @@ def system_prompt(
     max_game_ms: int,
     max_tool_calls: int,
     one_response: bool = True,
+    memory_turns: int = 0,
 ) -> str:
     n = len(others) + 1
     reward = f" {reward_description}" if reward_description else ""
@@ -62,6 +91,12 @@ The game pauses while you think. Time moves only while your actions run. \
 The players take turns. In your turn you can use up to {max_tool_calls} tool calls and \
 up to {max_game_ms / 1000:g} seconds of game time. Your turn ends when you reply without \
 a tool call, or when you reach a limit. Then the other players take their turns."""
+    if memory_turns:
+        turns += f"""
+
+You remember only your last {memory_turns} turns. Keep what you need later (what you \
+have seen and where, what the other players said, and your plan) with the `note` tool. \
+Each call replaces your note, and your note is shown at the start of every turn."""
     return f"""\
 You are one of {n} players in the game {game_name}. Your name is {name}. \
 The other players are {", ".join(others)}.
@@ -98,5 +133,8 @@ The episode ends only when all players have called it. You can withdraw your vot
 `end_episode(withdraw=true)`."""
 
 
-def turn_header(*, turn: int, name: str) -> str:
-    return f"Turn {turn + 1}. It is your turn, {name}.\nYour current view:"
+def turn_header(*, turn: int, name: str, note: str | None = None) -> str:
+    head = f"Turn {turn + 1}. It is your turn, {name}.\n"
+    if note is not None:
+        head += f"Your note:\n{note or '(empty)'}\n"
+    return head + "Your current view:"
