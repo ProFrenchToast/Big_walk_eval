@@ -210,8 +210,9 @@ async def test_bridge_game_reset(bridge_env):
         )
     )
     # Each body is teleported while it is the local body, then the game runs briefly.
+    # Then every body is turned to face where its camera faces.
     ignored = ("get_state", "menu", "chat_input")
-    assert [c for c in bridge.cmds() if c not in ignored][:15] == [
+    assert [c for c in bridge.cmds() if c not in ignored][:16] == [
         "pause",
         "load_snapshot",
         "spawn_bodies",
@@ -225,6 +226,7 @@ async def test_bridge_game_reset(bridge_env):
         "teleport",
         "resume",
         "pause",
+        "align_bodies",
         "switch_slot",
         "events",
     ]
@@ -249,6 +251,7 @@ async def test_bridge_game_act_plays_timeline_while_resumed(bridge_env):
         "switch_slot",
         "resume",
         "pause",
+        "align_bodies",
         "screenshot",
         "events",
     ]

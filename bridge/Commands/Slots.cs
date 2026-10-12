@@ -131,6 +131,61 @@ internal static class Teleport
             pc.rb.angularVelocity = Vector3.zero;
         }
 
+        BodyAlign.Fold(pc);
         return new JsonObject();
+    }
+}
+
+/// <summary>
+/// Turns each body to face where its camera faces. A mouse look turns the body's
+/// "kernal" child (between the body and the camera) first, and the body follows only
+/// part of the way, so the kernal keeps a yaw offset. Walking follows the body, so with
+/// an offset W walks sideways while the view looks straight ahead (found 2026-10-12:
+/// offsets up to 150 degrees, and they survive reset). Folding the offset into the
+/// body keeps the camera where it is.
+/// </summary>
+internal static class BodyAlign
+{
+    public static JsonNode Run(JsonObject args)
+    {
+        var folded = new JsonArray();
+        var slots = Practice.Slots;
+        for (var i = 0; i < slots.Count; i++)
+        {
+            if (!Practice.TryGetIdentity(slots[i], out var identity)) continue;
+            var pc = identity.GetComponent<PlayerCharacter>();
+            if (pc == null) continue;
+            folded.Add(new JsonObject { ["slot"] = i + 1, ["yaw_deg"] = Fold(pc) });
+        }
+
+        return new JsonObject { ["folded"] = folded };
+    }
+
+    /// <summary>Moves the kernal's yaw into the body. Returns the yaw moved, in degrees.</summary>
+    public static float Fold(PlayerCharacter pc)
+    {
+        var kernal = Kernal(pc);
+        if (kernal == null) return 0f;
+        var local = kernal.localEulerAngles;
+        var offset = Mathf.DeltaAngle(0f, local.y);
+        if (Mathf.Abs(offset) < 0.01f) return 0f;
+
+        var rotation = Quaternion.Euler(0f, pc.transform.eulerAngles.y + offset, 0f);
+        pc.transform.rotation = rotation;
+        if (pc.rb != null) pc.rb.rotation = rotation;
+        kernal.localEulerAngles = new Vector3(local.x, 0f, local.z);
+        return offset;
+    }
+
+    public static Transform Kernal(PlayerCharacter pc)
+    {
+        var t = pc.transform;
+        for (var i = 0; i < t.childCount; i++)
+        {
+            var child = t.GetChild(i);
+            if (child.name.EndsWith(" kernal")) return child;
+        }
+
+        return null;
     }
 }

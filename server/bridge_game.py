@@ -118,6 +118,9 @@ class BridgeGame:
                 await self._look_to(body.slot, body.yaw_deg, 0.0)
             finally:
                 await self.bridge.pause()
+        # Walking follows the body, and a look leaves part of the turn in the camera
+        # only. Without this, W can walk sideways (see bridge/README.md, "Body yaw").
+        await self.bridge.align_bodies()
         await self._switch(request.bodies[0].slot)
         await self.bridge.events()
         return await self.state()
@@ -150,6 +153,7 @@ class BridgeGame:
         finally:
             t1 = await self.bridge.pause()
             wall1 = self.clock()
+        await self.bridge.align_bodies()
         self.held[slot] = set(timeline.held_buttons)
         if t0 is not None and t1 is not None:
             game_ms = round((t1 - t0) * 1000)

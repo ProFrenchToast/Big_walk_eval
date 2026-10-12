@@ -140,6 +140,10 @@ class BridgeClient:
     async def teleport(self, slot: int, position: Vec3, yaw_deg: float) -> None:
         await self.call("teleport", slot=slot, position=list(position), yaw_deg=yaw_deg)
 
+    async def align_bodies(self) -> list[dict[str, Any]]:
+        """Turn each body to face where its camera faces. Returns the yaw folded per slot."""
+        return (await self.call("align_bodies")).get("folded", [])
+
     async def place_prop(
         self, item_type: str, position: Vec3, near: Vec3 | None = None, home: bool = False
     ) -> str:

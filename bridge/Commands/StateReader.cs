@@ -34,6 +34,12 @@ internal static class StateReader
         var position = pc.rb != null ? pc.rb.position : pc.transform.position;
         var look = pc.cameraTransform != null ? pc.cameraTransform : pc.transform;
         var euler = look.eulerAngles;
+        var pose = Pose(pc);
+        // Walking follows the body, not the camera, so a gap between the two makes W walk sideways.
+        var bodyRotation = pc.rb != null ? pc.rb.rotation : pc.transform.rotation;
+        pose["body_yaw_deg"] = System.Math.Round(Json.Angle(bodyRotation.eulerAngles.y), 1);
+        var kernal = BodyAlign.Kernal(pc);
+        if (kernal != null) pose["kernal_yaw_deg"] = System.Math.Round(Json.Angle(kernal.localEulerAngles.y), 1);
         return new JsonObject
         {
             ["slot"] = slot,
@@ -41,7 +47,7 @@ internal static class StateReader
             ["yaw_deg"] = Json.Angle(euler.y),
             ["pitch_deg"] = Json.Angle(euler.x),
             ["held"] = HeldItems.Read(pc),
-            ["pose"] = Pose(pc),
+            ["pose"] = pose,
         };
     }
 
