@@ -98,6 +98,8 @@ class FakeBridge:
                 body["position"] = args["position"]
                 body["yaw_deg"] = args["yaw_deg"]
                 return {}
+            case "align_bodies":
+                return {"folded": [{"slot": s, "yaw_deg": 0.0} for s in self.bodies]}
             case "screenshot":
                 if self.screen is not None:
                     png, width, height = self.screen

@@ -19,6 +19,7 @@ internal static class Commands
         "switch_slot" => new SwitchSlot(Json.Int(args, "slot")),
         "spawn_bodies" => new SpawnBodies(Json.Int(args, "n")),
         "teleport" => Teleport.Run(args),
+        "align_bodies" => BodyAlign.Run(args),
         "place_prop" => PlaceProp.Run(args),
         "screenshot" => new Screenshot(),
         "overview_shot" => OverviewShot.Run(args),
