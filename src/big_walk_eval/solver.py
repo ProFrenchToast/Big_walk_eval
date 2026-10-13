@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from contextlib import AsyncExitStack
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import anyio
 from inspect_ai.log import transcript
@@ -50,6 +50,7 @@ class Agent:
     name: str
     messages: list[ChatMessage]
     tools: list[Tool]
+    turn_starts: list[int] = field(default_factory=list)
 
 
 def trim_images(messages: list[ChatMessage], keep: int) -> list[ChatMessage]:
@@ -73,6 +74,14 @@ def trim_images(messages: list[ChatMessage], keep: int) -> list[ChatMessage]:
             new_content.reverse()
             out[i] = out[i].model_copy(update={"content": new_content})
     return out
+
+
+def recent(agent: Agent, turns: int) -> list[ChatMessage]:
+    """The system prompt and the agent's last `turns` turns. All of them for 0."""
+    if turns <= 0 or len(agent.turn_starts) <= turns:
+        return agent.messages
+    start = agent.turn_starts[-turns]
+    return [agent.messages[0], *agent.messages[start:]]
 
 
 @solver
@@ -138,6 +147,7 @@ def round_robin(
                                 max_game_ms=config.max_game_ms_per_turn,
                                 max_tool_calls=config.max_tool_calls_per_turn,
                                 one_response=config.one_response_per_turn,
+                                memory_turns=config.memory_turns,
                             )
                         )
                     ],
@@ -211,7 +221,13 @@ async def _run_turn(
     await game.switch(agent.slot)
     png = await game.screenshot()
     content: list[Content] = [
-        ContentText(text=turn_header(turn=index, name=agent.name)),
+        ContentText(
+            text=turn_header(
+                turn=index,
+                name=agent.name,
+                note=episode.notes.get(agent.slot, "") if config.memory_turns else None,
+            )
+        ),
         png_content(png),
     ]
     zoom = episode.pending_zoom.pop(agent.slot, None)
@@ -220,7 +236,14 @@ async def _run_turn(
             ContentText(text=f"Your view, zoomed into {zoom}:"),
             png_content(zoom_png(png, zoom)),
         ]
+    panorama = episode.pending_panorama.pop(agent.slot, None)
+    if panorama is not None:
+        content += [
+            ContentText(text="All around you (front, right, behind, left):"),
+            png_content(panorama),
+        ]
     header = ChatMessageUser(content=content)
+    agent.turn_starts.append(len(agent.messages))
     agent.messages.append(header)
     _mirror(state, agent, [header], index)
 
@@ -228,7 +251,8 @@ async def _run_turn(
     max_generates = 1 if config.one_response_per_turn else config.max_generates_per_turn
     for _ in range(max_generates):
         output = await model.generate(
-            trim_images(agent.messages, config.keep_images), tools=agent.tools
+            trim_images(recent(agent, config.memory_turns), config.keep_images),
+            tools=agent.tools,
         )
         generates += 1
         agent.messages.append(output.message)

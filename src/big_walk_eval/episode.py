@@ -23,6 +23,13 @@ class EpisodeConfig:
     one_response_per_turn: bool = True
     hfov_deg: float = 90.0
     keep_images: int = 3
+    # Give agents a `turn` tool that turns the head by degrees.
+    turn_tool: bool = True
+    # Above 0: each agent sees only its last `memory_turns` turns, and gets a `note`
+    # tool whose text shows at the start of every turn.
+    memory_turns: int = 6
+    # Allow the `look_around` action: four views around the body in one picture.
+    look_around: bool = True
     blocked_keys: frozenset[str] = PRACTICE_MOD_KEYS
     # 0 turns off the per-body video capture.
     capture_fps: int = 0
@@ -67,6 +74,10 @@ class Episode:
     events: list[EventRecord] = field(default_factory=list)
     pending_zoom: dict[int, list[int]] = field(default_factory=dict)
     """Per slot: the region to enlarge in that agent's next turn-start view."""
+    notes: dict[int, str] = field(default_factory=dict)
+    """Per slot: the agent's note, shown at the start of each of its turns."""
+    pending_panorama: dict[int, bytes] = field(default_factory=dict)
+    """Per slot: a `look_around` picture to show at the start of that agent's next turn."""
     recorder: Recorder = field(default_factory=Recorder)
 
     def __post_init__(self) -> None:

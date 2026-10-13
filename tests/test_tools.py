@@ -17,12 +17,17 @@ from big_walk_eval.protocol import TYPE_MAX_CHARS, KeyAction, LookAction, MouseA
 from big_walk_eval.tools import agent_tools, computer_tool_name
 from big_walk_eval.tools.computer import UNSUPPORTED_ACTIONS, computer_tool, to_game_actions
 from big_walk_eval.tools.end_episode import end_episode
+from big_walk_eval.tools.turn import turn
 from tests.conftest import ASH_TO_PLATE_YAW
+
+# The optional tools (turn, note, look_around) are on by default. Turn them off to test
+# the core tools on their own.
+CORE_ONLY = {"turn_tool": False, "memory_turns": 0, "look_around": False}
 
 
 @pytest.fixture
 async def episode(game: FakeGame) -> Episode:
-    ep = Episode(game, EpisodeConfig(), {1: "Ash", 2: "Birch"})
+    ep = Episode(game, EpisodeConfig(**CORE_ONLY), {1: "Ash", 2: "Birch"})
     ep.start_turn(0, 1)
     return ep
 
@@ -30,7 +35,9 @@ async def episode(game: FakeGame) -> Episode:
 @pytest.fixture
 async def shot_episode(game: FakeGame) -> Episode:
     """Each action returns a screenshot."""
-    ep = Episode(game, EpisodeConfig(one_response_per_turn=False), {1: "Ash", 2: "Birch"})
+    ep = Episode(
+        game, EpisodeConfig(one_response_per_turn=False, **CORE_ONLY), {1: "Ash", 2: "Birch"}
+    )
     ep.start_turn(0, 1)
     return ep
 
@@ -259,3 +266,53 @@ def test_one_response_tool_description(episode: Episode, shot_episode: Episode):
     assert "next turn" in ToolDef(one).parameters.properties["action"].description
     [shot, _] = agent_tools(shot_episode, 1, "game")
     assert "returns a new screenshot" in ToolDef(shot).description
+
+
+async def test_turn_tool_turns_by_degrees(game: FakeGame):
+    ep = Episode(game, EpisodeConfig(), {1: "Ash", 2: "Birch"})
+    ep.start_turn(0, 1)
+    names = [ToolDef(t).name for t in agent_tools(ep, 1, "game")]
+    assert names == ["game", "end_episode", "turn", "note"]
+    before = next(b for b in (await game.state()).bodies if b.slot == 1)
+    await turn(ep, 1)(right_deg=90, up_deg=10)
+    after = next(b for b in (await game.state()).bodies if b.slot == 1)
+    assert (after.yaw_deg - before.yaw_deg) % 360 == pytest.approx(90, abs=0.5)
+    with pytest.raises(ToolError, match="right_deg"):
+        await turn(ep, 1)(right_deg=270)
+
+
+def test_turn_tool_replaces_the_look_line():
+    from big_walk_eval.prompts import BIG_WALK_CONTROLS, TURN_LOOK_LINE, with_turn_tool
+
+    assert TURN_LOOK_LINE in with_turn_tool(BIG_WALK_CONTROLS)
+
+
+async def test_look_around_shows_four_views_next_turn(game: FakeGame):
+    ep = Episode(game, EpisodeConfig(), {1: "Ash", 2: "Birch"})
+    ep.start_turn(0, 1)
+    before = next(b for b in (await game.state()).bodies if b.slot == 1)
+    out = await computer_tool(ep, 1)(actions=[{"action": "look_around"}])
+    assert "four views" in out
+    after = next(b for b in (await game.state()).bodies if b.slot == 1)
+    assert (after.yaw_deg - before.yaw_deg) % 360 == pytest.approx(0, abs=0.5)
+    with Image.open(io.BytesIO(ep.pending_panorama[1])) as img:
+        assert img.size == (1366, 768)
+
+
+async def test_look_around_can_be_turned_off(episode: Episode):
+    with pytest.raises(ToolError, match="not available"):
+        await computer_tool(episode, 1)(action="look_around")
+
+
+def test_turn_tool_and_look_around_lines_combine():
+    from big_walk_eval.prompts import (
+        BIG_WALK_CONTROLS,
+        LOOK_AROUND_LINE,
+        TURN_LOOK_LINE,
+        with_look_around,
+        with_turn_tool,
+    )
+
+    controls = with_turn_tool(with_look_around(BIG_WALK_CONTROLS))
+    assert TURN_LOOK_LINE in controls
+    assert LOOK_AROUND_LINE in controls
