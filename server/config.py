@@ -39,6 +39,9 @@ class ServerConfig(BaseModel):
     # The key of the game's "sit" toggle. Reset uses it to stand a sitting body up.
     sit_key: str = "z"
     # On reset, get from the title screen into a hosted walk if needed (server/host_walk.py).
+    # Hour of day (0 to 24) that reset locks the sky at. The game clock does not reset
+    # between episodes, so long sessions reach night. None leaves the clock running.
+    time_of_day_hours: float | None = Field(default=12.0, ge=0.0, le=24.0)
     auto_host: bool = True
     save_name: str = "evalwalk"
     player_count: Literal[2, 3, 4] = 2

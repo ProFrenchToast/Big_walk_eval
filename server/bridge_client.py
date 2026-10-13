@@ -167,6 +167,10 @@ class BridgeClient:
         args: dict[str, Any] = {} if slots is None else {"slots": slots}
         return list((await self.call("release_switches", **args)).get("released", []))
 
+    async def set_time(self, hours: float | None) -> dict[str, Any]:
+        """Lock the time of day at `hours` (0 to 24), or let the game clock run again (None)."""
+        return await self.call("set_time", hours=hours)
+
     async def clear_chat(self) -> None:
         """Remove every text chat message from the heads and the HUD."""
         await self.call("clear_chat")

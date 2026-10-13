@@ -35,6 +35,7 @@ class FakeBridge:
         self.homed_props: set[str] = set()
         self.held_switches: dict[str, int] = {}  # switch path -> slot
         self.chat_cleared = 0
+        self.locked_hours: float | None = None
         self.chat_open = False  # the next chat_input reports it open once, as if Enter closed it
         self.saves: set[str] = set()
         self.menu = "ready"  # title, host_select, host_confirm, player_count, or ready
@@ -140,6 +141,9 @@ class FakeBridge:
             case "clear_chat":
                 self.chat_cleared += 1
                 return {"cleared_sources": 0}
+            case "set_time":
+                self.locked_hours = args["hours"]
+                return {"locked_hours": self.locked_hours, "enviro_found": True}
             case "chat_input":
                 is_open, self.chat_open = self.chat_open, False
                 return {"open": is_open, "text": "draft" if is_open else ""}

@@ -212,12 +212,13 @@ async def test_bridge_game_reset(bridge_env):
     # Each body is teleported while it is the local body, then the game runs briefly.
     # Then every body is turned to face where its camera faces.
     ignored = ("get_state", "menu", "chat_input")
-    assert [c for c in bridge.cmds() if c not in ignored][:16] == [
+    assert [c for c in bridge.cmds() if c not in ignored][:17] == [
         "pause",
         "load_snapshot",
         "spawn_bodies",
         "release_switches",
         "clear_chat",
+        "set_time",
         "switch_slot",
         "teleport",
         "resume",
@@ -235,6 +236,16 @@ async def test_bridge_game_reset(bridge_env):
     assert state.body(1).position == (-5.0, 0.0, 0.0)
     assert state.camera_hfov_deg == pytest.approx(91.52, abs=0.01)
     assert state.events == []
+    assert bridge.locked_hours == 12.0
+
+
+async def test_bridge_game_reset_can_leave_the_clock_running(bridge_env):
+    clock, bridge, client = bridge_env
+    game, _ = make_game(clock, client, time_of_day_hours=None)
+    bridge.locked_hours = 9.0
+    await game.reset(ResetRequest(puzzle_id="p", bodies=[ASH, BIRCH], reward_item_type="Gourd"))
+    assert ("set_time", {"hours": None}) in bridge.commands
+    assert bridge.locked_hours is None
 
 
 async def test_bridge_game_act_plays_timeline_while_resumed(bridge_env):

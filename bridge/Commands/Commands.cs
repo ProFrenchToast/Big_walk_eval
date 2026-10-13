@@ -15,6 +15,7 @@ internal static class Commands
         "hello" => Hello(),
         "pause" => TimeControl.Pause(),
         "resume" => TimeControl.Resume(),
+        "set_time" => TimeOfDay.Set(args),
         "get_state" => StateReader.Read(),
         "switch_slot" => new SwitchSlot(Json.Int(args, "slot")),
         "spawn_bodies" => new SpawnBodies(Json.Int(args, "n")),

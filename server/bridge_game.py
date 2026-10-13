@@ -94,6 +94,8 @@ class BridgeGame:
         await self.bridge.release_switches()
         # Messages from the last episode would still show over the heads.
         await self.bridge.clear_chat()
+        # The game clock never resets, so long sessions would reach night.
+        await self.bridge.set_time(self.config.time_of_day_hours)
         self.names = {b.slot: b.name for b in request.bodies}
         self.held = {b.slot: set() for b in request.bodies}
         self._reward_type = request.reward_item_type
