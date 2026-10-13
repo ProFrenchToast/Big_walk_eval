@@ -24,12 +24,12 @@ class EpisodeConfig:
     hfov_deg: float = 90.0
     keep_images: int = 3
     # Give agents a `turn` tool that turns the head by degrees.
-    turn_tool: bool = False
+    turn_tool: bool = True
     # Above 0: each agent sees only its last `memory_turns` turns, and gets a `note`
     # tool whose text shows at the start of every turn.
-    memory_turns: int = 0
+    memory_turns: int = 6
     # Allow the `look_around` action: four views around the body in one picture.
-    look_around: bool = False
+    look_around: bool = True
     blocked_keys: frozenset[str] = PRACTICE_MOD_KEYS
     # 0 turns off the per-body video capture.
     capture_fps: int = 0
