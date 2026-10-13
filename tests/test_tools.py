@@ -20,10 +20,14 @@ from big_walk_eval.tools.end_episode import end_episode
 from big_walk_eval.tools.turn import turn
 from tests.conftest import ASH_TO_PLATE_YAW
 
+# The optional tools (turn, note, look_around) are on by default. Turn them off to test
+# the core tools on their own.
+CORE_ONLY = {"turn_tool": False, "memory_turns": 0, "look_around": False}
+
 
 @pytest.fixture
 async def episode(game: FakeGame) -> Episode:
-    ep = Episode(game, EpisodeConfig(), {1: "Ash", 2: "Birch"})
+    ep = Episode(game, EpisodeConfig(**CORE_ONLY), {1: "Ash", 2: "Birch"})
     ep.start_turn(0, 1)
     return ep
 
@@ -31,7 +35,9 @@ async def episode(game: FakeGame) -> Episode:
 @pytest.fixture
 async def shot_episode(game: FakeGame) -> Episode:
     """Each action returns a screenshot."""
-    ep = Episode(game, EpisodeConfig(one_response_per_turn=False), {1: "Ash", 2: "Birch"})
+    ep = Episode(
+        game, EpisodeConfig(one_response_per_turn=False, **CORE_ONLY), {1: "Ash", 2: "Birch"}
+    )
     ep.start_turn(0, 1)
     return ep
 
@@ -263,10 +269,10 @@ def test_one_response_tool_description(episode: Episode, shot_episode: Episode):
 
 
 async def test_turn_tool_turns_by_degrees(game: FakeGame):
-    ep = Episode(game, EpisodeConfig(turn_tool=True), {1: "Ash", 2: "Birch"})
+    ep = Episode(game, EpisodeConfig(), {1: "Ash", 2: "Birch"})
     ep.start_turn(0, 1)
     names = [ToolDef(t).name for t in agent_tools(ep, 1, "game")]
-    assert names == ["game", "end_episode", "turn"]
+    assert names == ["game", "end_episode", "turn", "note"]
     before = next(b for b in (await game.state()).bodies if b.slot == 1)
     await turn(ep, 1)(right_deg=90, up_deg=10)
     after = next(b for b in (await game.state()).bodies if b.slot == 1)
@@ -282,7 +288,7 @@ def test_turn_tool_replaces_the_look_line():
 
 
 async def test_look_around_shows_four_views_next_turn(game: FakeGame):
-    ep = Episode(game, EpisodeConfig(look_around=True), {1: "Ash", 2: "Birch"})
+    ep = Episode(game, EpisodeConfig(), {1: "Ash", 2: "Birch"})
     ep.start_turn(0, 1)
     before = next(b for b in (await game.state()).bodies if b.slot == 1)
     out = await computer_tool(ep, 1)(actions=[{"action": "look_around"}])
@@ -293,7 +299,7 @@ async def test_look_around_shows_four_views_next_turn(game: FakeGame):
         assert img.size == (1366, 768)
 
 
-async def test_look_around_is_off_by_default(episode: Episode):
+async def test_look_around_can_be_turned_off(episode: Episode):
     with pytest.raises(ToolError, match="not available"):
         await computer_tool(episode, 1)(action="look_around")
 

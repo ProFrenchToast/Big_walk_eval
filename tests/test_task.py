@@ -116,3 +116,15 @@ def test_text_chat_needs_every_agent(tmp_path, fake_chat_puzzles):
     score = log.samples[0].scores["puzzle_solved"]
     assert score.value == "I"
     assert score.metadata["silent"] == ["Cedar"]
+
+
+def test_task_defaults_match_episode_defaults():
+    import inspect as pyinspect
+
+    from big_walk_eval.episode import EpisodeConfig
+    from big_walk_eval.task import big_walk_coop
+
+    params = pyinspect.signature(big_walk_coop).parameters
+    config = EpisodeConfig()
+    for name in ("turn_tool", "memory_turns", "look_around", "keep_images", "hfov_deg"):
+        assert params[name].default == getattr(config, name), name

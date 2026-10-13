@@ -84,7 +84,9 @@ def test_agents_chat_in_game(tmp_path, fake_puzzle):
         if isinstance(m, ChatMessageUser) and (m.metadata or {}).get("agent") == "Birch"
     ]
     # Birch reads the chat in its view, not in the header.
-    assert birch_headers[0].text == "Turn 2. It is your turn, Birch.\nYour current view:"
+    assert birch_headers[0].text == (
+        "Turn 2. It is your turn, Birch.\nYour note:\n(empty)\nYour current view:"
+    )
     assert log.ended_by_vote
     assert log.n_turns == 3
     assert log.votes == {"Ash": True, "Birch": True}
