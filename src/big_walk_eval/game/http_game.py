@@ -39,7 +39,14 @@ class HttpGame:
         timeout_s: float = 120.0,
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
-        self._client = httpx.AsyncClient(base_url=base_url, timeout=timeout_s, transport=transport)
+        # No kept-alive connections: the server drops an idle one after 5 s, and a model call
+        # often takes longer, so a reused connection can fail mid-request (ReadError).
+        self._client = httpx.AsyncClient(
+            base_url=base_url,
+            timeout=timeout_s,
+            transport=transport,
+            limits=httpx.Limits(max_keepalive_connections=0),
+        )
 
     async def _call(
         self, method: str, path: str, response: type[M], body: BaseModel | None = None
