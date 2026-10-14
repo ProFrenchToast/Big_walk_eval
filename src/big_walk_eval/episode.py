@@ -28,6 +28,13 @@ class EpisodeConfig:
     # Above 0: each agent sees only its last `memory_turns` turns, and gets a `note`
     # tool whose text shows at the start of every turn.
     memory_turns: int = 6
+    # Above 0, with memory_turns: the note has fixed sections, each call replaces one
+    # section, and the turn header asks for an update after `note_every` turns without one.
+    note_every: int = 0
+    # Above 0, with memory_turns: after every `summary_every` turns of an agent, the same
+    # model rewrites a summary of that agent's past turns, shown at the start of each turn.
+    # Keep it below memory_turns, so turns are summarised before the agent forgets them.
+    summary_every: int = 0
     # Allow the `look_around` action: four views around the body in one picture.
     look_around: bool = True
     blocked_keys: frozenset[str] = PRACTICE_MOD_KEYS
@@ -76,6 +83,10 @@ class Episode:
     """Per slot: the region to enlarge in that agent's next turn-start view."""
     notes: dict[int, str] = field(default_factory=dict)
     """Per slot: the agent's note, shown at the start of each of its turns."""
+    note_sections: dict[int, dict[str, str]] = field(default_factory=dict)
+    """Per slot: the sectioned note, used instead of `notes` when `note_every` is set."""
+    turns_since_note: dict[int, int] = field(default_factory=dict)
+    """Per slot: the agent's turns since it last wrote its note."""
     pending_panorama: dict[int, bytes] = field(default_factory=dict)
     """Per slot: a `look_around` picture to show at the start of that agent's next turn."""
     recorder: Recorder = field(default_factory=Recorder)
@@ -139,6 +150,8 @@ class EpisodeLog(StoreModel):
     capture: dict | None = None
     """A `CaptureInfo`: where the game wrote each body's video frames."""
     capture_error: str | None = None
+    summaries: list[dict] = Field(default_factory=list)
+    """Each memory summary: turn, slot, name, text."""
 
 
 def list_samples(log_path: str) -> list[tuple[str, int, str]]:

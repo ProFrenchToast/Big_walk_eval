@@ -11,6 +11,7 @@ a tool call, or when the turn's tool call or game time limit is used up.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Callable
 from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
@@ -19,10 +20,13 @@ import anyio
 from inspect_ai.log import transcript
 from inspect_ai.model import (
     ChatMessage,
+    ChatMessageAssistant,
     ChatMessageSystem,
+    ChatMessageTool,
     ChatMessageUser,
     Content,
     ContentImage,
+    ContentReasoning,
     ContentText,
     Model,
     ModelOutput,
@@ -35,13 +39,14 @@ from inspect_ai.util import span
 
 from big_walk_eval.episode import Episode, EpisodeConfig, EpisodeLog
 from big_walk_eval.game.client import GameClient
-from big_walk_eval.prompts import system_prompt, turn_header
+from big_walk_eval.prompts import render_note, summary_prompt, system_prompt, turn_header
 from big_walk_eval.protocol import CaptureRequest, PuzzleConfig
 from big_walk_eval.replay import Recorder, RecordingGame
 from big_walk_eval.tools import agent_tools, computer_tool_name
 from big_walk_eval.tools.computer import png_content, zoom_png
 
 OLD_SCREENSHOT = "[old screenshot removed]"
+MAX_SUMMARY_CHARS = 2500
 
 
 @dataclass
@@ -51,6 +56,9 @@ class Agent:
     messages: list[ChatMessage]
     tools: list[Tool]
     turn_starts: list[int] = field(default_factory=list)
+    summary: str = ""
+    summarized_turns: int = 0
+    """Turns covered by `summary`. The first is turn 0."""
 
 
 def trim_images(messages: list[ChatMessage], keep: int) -> list[ChatMessage]:
@@ -82,6 +90,30 @@ def recent(agent: Agent, turns: int) -> list[ChatMessage]:
         return agent.messages
     start = agent.turn_starts[-turns]
     return [agent.messages[0], *agent.messages[start:]]
+
+
+def turns_as_text(messages: list[ChatMessage]) -> str:
+    """Plain text of an agent's turns for its summary. Turn headers keep only their first line."""
+    lines = []
+    for m in messages:
+        parts = [ContentText(text=m.content)] if isinstance(m.content, str) else m.content
+        if isinstance(m, ChatMessageUser):
+            for i, c in enumerate(parts):
+                if isinstance(c, ContentImage):
+                    lines.append("[screenshot]")
+                elif isinstance(c, ContentText):
+                    lines.append(c.text.split("\n", 1)[0] if i == 0 else c.text)
+        elif isinstance(m, ChatMessageAssistant):
+            for c in parts:
+                if isinstance(c, ContentReasoning) and not c.redacted:
+                    lines.append(f"Your thinking: {c.summary or c.reasoning}")
+                elif isinstance(c, ContentText) and c.text:
+                    lines.append(f"You wrote: {c.text}")
+            for call in m.tool_calls or []:
+                lines.append(f"You called: {call.function}({json.dumps(call.arguments)})")
+        elif isinstance(m, ChatMessageTool):
+            lines.append(f"Result: {m.error.message if m.error else m.text}")
+    return "\n".join(lines)
 
 
 @solver
@@ -148,6 +180,8 @@ def round_robin(
                                 max_tool_calls=config.max_tool_calls_per_turn,
                                 one_response=config.one_response_per_turn,
                                 memory_turns=config.memory_turns,
+                                note_every=config.note_every,
+                                summary_every=config.summary_every,
                             )
                         )
                     ],
@@ -217,6 +251,12 @@ async def _run_turn(
     config: EpisodeConfig,
 ) -> dict:
     game = episode.game
+    if (
+        config.memory_turns
+        and config.summary_every
+        and len(agent.turn_starts) - agent.summarized_turns >= config.summary_every
+    ):
+        await _summarise(episode, agent, index, model, state)
     turn = episode.start_turn(index, agent.slot)
     await game.switch(agent.slot)
     png = await game.screenshot()
@@ -225,7 +265,10 @@ async def _run_turn(
             text=turn_header(
                 turn=index,
                 name=agent.name,
-                note=episode.notes.get(agent.slot, "") if config.memory_turns else None,
+                note=_note_text(episode, agent.slot),
+                summary=agent.summary if config.memory_turns and config.summary_every else None,
+                note_age=episode.turns_since_note.get(agent.slot, 0),
+                note_every=config.note_every if config.memory_turns else 0,
             )
         ),
         png_content(png),
@@ -265,6 +308,7 @@ async def _run_turn(
         if turn.done:
             break
 
+    episode.turns_since_note[agent.slot] = episode.turns_since_note.get(agent.slot, 0) + 1
     return {
         "turn": index,
         "slot": agent.slot,
@@ -274,6 +318,37 @@ async def _run_turn(
         "game_ms": turn.game_ms,
         "truncated": turn.truncated,
     }
+
+
+def _note_text(episode: Episode, slot: int) -> str | None:
+    if not episode.config.memory_turns:
+        return None
+    if episode.config.note_every:
+        return render_note(episode.note_sections.get(slot, {}))
+    return episode.notes.get(slot, "")
+
+
+async def _summarise(
+    episode: Episode, agent: Agent, index: int, model: Model, state: TaskState
+) -> None:
+    """Rewrite the agent's summary to cover its turns so far, with the model it plays with."""
+    start = agent.turn_starts[agent.summarized_turns]
+    prompt = summary_prompt(
+        summary=agent.summary,
+        note=_note_text(episode, agent.slot) or "",
+        turns=turns_as_text(agent.messages[start:]),
+        max_chars=MAX_SUMMARY_CHARS,
+    )
+    async with span(f"summary: {agent.name}", type="summary"):
+        output = await model.generate([agent.messages[0], ChatMessageUser(content=prompt)])
+    if output.completion.strip():
+        agent.summary = output.completion.strip()
+    agent.summarized_turns = len(agent.turn_starts)
+    log = state.store_as(EpisodeLog)
+    log.summaries = [
+        *log.summaries,
+        {"turn": index, "slot": agent.slot, "name": agent.name, "text": agent.summary},
+    ]
 
 
 def _mirror(state: TaskState, agent: Agent, messages: list[ChatMessage], turn: int) -> None:

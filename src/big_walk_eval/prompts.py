@@ -61,6 +61,22 @@ with your right hand. A held button stays held until you release it, also while 
 - The bottom-left corner of your view shows what your hands hold."""
 
 
+NOTE_SECTIONS = {
+    "facts": "Facts about the puzzle",
+    "players": "What the players said",
+    "places": "Where things and players are",
+    "tried": "What you tried",
+    "plan": "Plan",
+}
+
+
+def render_note(sections: dict[str, str]) -> str:
+    """A sectioned note as text, sections in a fixed order."""
+    return "\n".join(
+        f"{title}: {sections.get(key) or '(empty)'}" for key, title in NOTE_SECTIONS.items()
+    )
+
+
 def system_prompt(
     *,
     name: str,
@@ -72,6 +88,8 @@ def system_prompt(
     max_tool_calls: int,
     one_response: bool = True,
     memory_turns: int = 0,
+    note_every: int = 0,
+    summary_every: int = 0,
 ) -> str:
     n = len(others) + 1
     reward = f" {reward_description}" if reward_description else ""
@@ -91,12 +109,24 @@ The game pauses while you think. Time moves only while your actions run. \
 The players take turns. In your turn you can use up to {max_tool_calls} tool calls and \
 up to {max_game_ms / 1000:g} seconds of game time. Your turn ends when you reply without \
 a tool call, or when you reach a limit. Then the other players take their turns."""
-    if memory_turns:
+    if memory_turns and note_every:
+        turns += f"""
+
+You remember only your last {memory_turns} turns. Keep what you need later in your note, \
+with the `note` tool. Your note has five sections: "facts" (facts about the puzzle, copied \
+exactly: text, symbols, numbers, colours, counts), "players" (what the other players \
+said, and what you told them), "places" (where things and players are), "tried" (what you \
+tried and what happened), and "plan" (what you agreed, and your plan). Each call replaces \
+one section. Your note is shown at the start of every turn. Update it at least every \
+{note_every} turns, before you forget what happened."""
+    elif memory_turns:
         turns += f"""
 
 You remember only your last {memory_turns} turns. Keep what you need later (what you \
 have seen and where, what the other players said, and your plan) with the `note` tool. \
 Each call replaces your note, and your note is shown at the start of every turn."""
+    if memory_turns and summary_every:
+        turns += """ A summary of your earlier turns is also shown at the start of every turn."""
     return f"""\
 You are one of {n} players in the game {game_name}. Your name is {name}. \
 The other players are {", ".join(others)}.
@@ -133,8 +163,54 @@ The episode ends only when all players have called it. You can withdraw your vot
 `end_episode(withdraw=true)`."""
 
 
-def turn_header(*, turn: int, name: str, note: str | None = None) -> str:
+def turn_header(
+    *,
+    turn: int,
+    name: str,
+    note: str | None = None,
+    summary: str | None = None,
+    note_age: int | None = None,
+    note_every: int = 0,
+) -> str:
     head = f"Turn {turn + 1}. It is your turn, {name}.\n"
+    if summary is not None:
+        head += f"Summary of your earlier turns:\n{summary or '(none yet)'}\n"
     if note is not None:
         head += f"Your note:\n{note or '(empty)'}\n"
+    if note_age is not None and note_every:
+        head += f"You last updated your note {note_age} of your turns ago.\n"
+        if note_age >= note_every:
+            head += "Update your note this turn, before you forget what happened.\n"
     return head + "Your current view:"
+
+
+SUMMARY_PROMPT = """\
+You remember only your last few turns, so keep a summary of your earlier turns. \
+Below are your summary so far, your note, and your turns since that summary. \
+Write a new summary. It replaces the old one.
+
+- Keep everything from the old summary that is still true, and add what is new.
+- Copy text, symbols, numbers, and messages exactly.
+- Say what you saw yourself and what another player told you.
+- Remove what turned out to be wrong.
+- Use these headings: {headings}.
+- Use at most {max_chars} characters. Write only the summary.
+
+Your summary so far:
+{summary}
+
+Your note:
+{note}
+
+Your turns since that summary:
+{turns}"""
+
+
+def summary_prompt(*, summary: str, note: str, turns: str, max_chars: int) -> str:
+    return SUMMARY_PROMPT.format(
+        headings=", ".join(NOTE_SECTIONS.values()),
+        max_chars=max_chars,
+        summary=summary or "(none yet)",
+        note=note or "(empty)",
+        turns=turns,
+    )

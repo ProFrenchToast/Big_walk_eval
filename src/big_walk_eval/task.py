@@ -35,6 +35,8 @@ def big_walk_coop(
     keep_images: int = 3,
     turn_tool: bool = True,
     memory_turns: int = 6,
+    note_every: int = 0,
+    summary_every: int = 0,
     look_around: bool = True,
     capture: bool = False,
     capture_fps: int = 30,
@@ -64,6 +66,12 @@ def big_walk_coop(
       turn_tool: Give agents a `turn` tool that turns the head by degrees.
       memory_turns: Above 0, each agent sees only its last `memory_turns` turns and
         keeps a note with the `note` tool instead.
+      note_every: Above 0, the note has five fixed sections that the agent replaces one
+        at a time, and the turn header asks for an update after `note_every` turns
+        without one.
+      summary_every: Above 0, after every `summary_every` turns of an agent, the model
+        rewrites a summary of that agent's past turns, shown at the start of each turn.
+        Keep it below `memory_turns`.
       look_around: Allow the `look_around` action (four views in one picture).
       capture: Record video frames from every body's own view while game time runs.
         Make a video with `scripts/make_video.py`.
@@ -89,6 +97,8 @@ def big_walk_coop(
         keep_images=keep_images,
         turn_tool=turn_tool,
         memory_turns=memory_turns,
+        note_every=note_every,
+        summary_every=summary_every,
         look_around=look_around,
         capture_fps=capture_fps if capture else 0,
         capture_width=capture_width,
