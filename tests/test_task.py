@@ -126,5 +126,13 @@ def test_task_defaults_match_episode_defaults():
 
     params = pyinspect.signature(big_walk_coop).parameters
     config = EpisodeConfig()
-    for name in ("turn_tool", "memory_turns", "look_around", "keep_images", "hfov_deg"):
+    for name in (
+        "turn_tool",
+        "memory_turns",
+        "note_every",
+        "summary_every",
+        "look_around",
+        "keep_images",
+        "hfov_deg",
+    ):
         assert params[name].default == getattr(config, name), name

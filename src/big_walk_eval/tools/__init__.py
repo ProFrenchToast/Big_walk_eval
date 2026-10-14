@@ -8,7 +8,7 @@ from big_walk_eval.tools.computer import (
     computer_tool,
 )
 from big_walk_eval.tools.end_episode import end_episode
-from big_walk_eval.tools.note import note
+from big_walk_eval.tools.note import note, section_note
 from big_walk_eval.tools.turn import turn
 
 # Inspect's Google provider sends every past call of a tool named "computer" back to
@@ -42,7 +42,7 @@ def agent_tools(episode: Episode, slot: int, computer_name: str = "computer") ->
     if episode.config.turn_tool:
         tools.append(turn(episode, slot))
     if episode.config.memory_turns:
-        tools.append(note(episode, slot))
+        tools.append((section_note if episode.config.note_every else note)(episode, slot))
     return tools
 
 
