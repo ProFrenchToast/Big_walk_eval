@@ -311,3 +311,103 @@ async def test_note_tool_shows_in_header():
     ep.start_turn(0, 1)
     await note(ep, 1)(text="vice on the north wall")
     assert "vice on the north wall" in turn_header(turn=1, name="Ash", note=ep.notes[1])
+
+
+def test_turns_as_text_keeps_actions_and_drops_headers():
+    from inspect_ai.model import ContentReasoning
+    from inspect_ai.tool import ToolCall
+
+    from big_walk_eval.solver import turns_as_text
+
+    text = turns_as_text(
+        [
+            ChatMessageUser(
+                content=[
+                    ContentText(text="Turn 3. It is your turn, Ash.\nYour note:\nold"),
+                    ContentImage(image="data:image/png;base64,AAAA"),
+                ]
+            ),
+            ChatMessageAssistant(
+                content=[
+                    ContentReasoning(reasoning="", summary="a code on the wall: 7 3"),
+                    ContentText(text="Going in."),
+                ],
+                tool_calls=[ToolCall(id="1", function="turn", arguments={"right_deg": 90})],
+            ),
+            ChatMessageTool(content="Turned.", tool_call_id="1", function="turn"),
+        ]
+    )
+    assert text.splitlines() == [
+        "Turn 3. It is your turn, Ash.",
+        "[screenshot]",
+        "Your thinking: a code on the wall: 7 3",
+        "You wrote: Going in.",
+        'You called: turn({"right_deg": 90})',
+        "Result: Turned.",
+    ]
+
+
+def test_summary_and_note_reminder(tmp_path, fake_puzzle):
+    scripted = ScriptedPolicy(
+        {
+            "Ash": [
+                step(("note", {"section": "facts", "text": "code 7 3"})),
+                step(("end_episode", {})),
+            ]
+        }
+    )
+    summary_inputs = []
+    summary_counts = []
+
+    def policy(input, tools, tool_choice, config):
+        if "Write a new summary" in input[-1].text:
+            summary_inputs.append(input[-1].text)
+            return ModelOutput.from_content(
+                model="mockllm/model", content=f"S{len(summary_inputs)}"
+            )
+        summary_counts.append(sum(m.text.count("Summary of your earlier turns") for m in input))
+        return scripted(input, tools, tool_choice, config)
+
+    sample, log = run(
+        tmp_path,
+        fake_puzzle,
+        {},
+        config=EpisodeConfig(memory_turns=3, note_every=2, summary_every=2),
+        max_turns=6,
+        policy=policy,
+    )
+    headers = {
+        (m.metadata["agent"], m.metadata["turn"]): m.text
+        for m in sample.messages
+        if isinstance(m, ChatMessageUser)
+    }
+    # Each agent is summarised once, after its first 2 turns (Ash before turn 5, Birch before 6).
+    assert [(s["name"], s["turn"], s["text"]) for s in log.summaries] == [
+        ("Ash", 4, "S1"),
+        ("Birch", 5, "S2"),
+    ]
+    assert 'You called: note({"section": "facts", "text": "code 7 3"})' in summary_inputs[0]
+    assert "Summary of your earlier turns:\nS1" in headers[("Ash", 4)]
+    # Only the newest header in the memory window carries the summary.
+    assert summary_counts == [1] * 6
+    assert "Facts about the puzzle: code 7 3" in headers[("Ash", 2)]
+    assert "You last updated your note 1 of your turns ago." in headers[("Ash", 2)]
+    assert "Update your note this turn" not in headers[("Birch", 3)]
+    assert "Update your note this turn" in headers[("Birch", 5)]
+
+
+async def test_section_note_replaces_one_section():
+    from inspect_ai.tool import ToolError
+
+    from big_walk_eval.episode import Episode
+    from big_walk_eval.tools.note import section_note
+
+    ep = Episode(FakeGame(seed=0), EpisodeConfig(note_every=4), {1: "Ash", 2: "Birch"})
+    ep.start_turn(0, 1)
+    write = section_note(ep, 1)
+    await write(section="facts", text="a")
+    await write(section="plan", text="b")
+    await write(section="facts", text="c")
+    assert ep.note_sections[1] == {"facts": "c", "plan": "b"}
+    with pytest.raises(ToolError, match="section must be"):
+        await write(section="misc", text="d")
