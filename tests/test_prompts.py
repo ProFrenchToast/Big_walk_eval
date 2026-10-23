@@ -24,5 +24,5 @@ def test_prompt_asks_for_introductions_not_search():
     assert "find the other players" not in p
 
 
-def test_real_game_prompt_describes_interaction_circle():
-    assert "white circle" in _prompt()
+def test_real_game_prompt_describes_interaction_ring():
+    assert "white ring" in _prompt()
