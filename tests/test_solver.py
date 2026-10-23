@@ -357,6 +357,7 @@ def test_summary_and_note_reminder(tmp_path, fake_puzzle):
         }
     )
     summary_inputs = []
+    summary_counts = []
 
     def policy(input, tools, tool_choice, config):
         if "Write a new summary" in input[-1].text:
@@ -364,6 +365,7 @@ def test_summary_and_note_reminder(tmp_path, fake_puzzle):
             return ModelOutput.from_content(
                 model="mockllm/model", content=f"S{len(summary_inputs)}"
             )
+        summary_counts.append(sum(m.text.count("Summary of your earlier turns") for m in input))
         return scripted(input, tools, tool_choice, config)
 
     sample, log = run(
@@ -386,6 +388,8 @@ def test_summary_and_note_reminder(tmp_path, fake_puzzle):
     ]
     assert 'You called: note({"section": "facts", "text": "code 7 3"})' in summary_inputs[0]
     assert "Summary of your earlier turns:\nS1" in headers[("Ash", 4)]
+    # Only the newest header in the memory window carries the summary.
+    assert summary_counts == [1] * 6
     assert "Facts about the puzzle: code 7 3" in headers[("Ash", 2)]
     assert "You last updated your note 1 of your turns ago." in headers[("Ash", 2)]
     assert "Update your note this turn" not in headers[("Birch", 3)]

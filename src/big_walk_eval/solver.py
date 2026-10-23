@@ -260,19 +260,14 @@ async def _run_turn(
     turn = episode.start_turn(index, agent.slot)
     await game.switch(agent.slot)
     png = await game.screenshot()
-    content: list[Content] = [
-        ContentText(
-            text=turn_header(
-                turn=index,
-                name=agent.name,
-                note=_note_text(episode, agent.slot),
-                summary=agent.summary if config.memory_turns and config.summary_every else None,
-                note_age=episode.turns_since_note.get(agent.slot, 0),
-                note_every=config.note_every if config.memory_turns else 0,
-            )
-        ),
-        png_content(png),
-    ]
+    header_args = dict(
+        turn=index,
+        name=agent.name,
+        note=_note_text(episode, agent.slot),
+        note_age=episode.turns_since_note.get(agent.slot, 0),
+        note_every=config.note_every if config.memory_turns else 0,
+    )
+    content: list[Content] = [ContentText(text=turn_header(**header_args)), png_content(png)]
     zoom = episode.pending_zoom.pop(agent.slot, None)
     if zoom is not None:
         content += [
@@ -288,13 +283,20 @@ async def _run_turn(
     header = ChatMessageUser(content=content)
     agent.turn_starts.append(len(agent.messages))
     agent.messages.append(header)
-    _mirror(state, agent, [header], index)
+    # The summary goes only into this turn's header as the model sees it, not into the
+    # stored history, so older headers in the memory window do not repeat it.
+    shown = header
+    if config.memory_turns and config.summary_every:
+        text = turn_header(**header_args, summary=agent.summary)
+        shown = header.model_copy(update={"content": [ContentText(text=text), *content[1:]]})
+    _mirror(state, agent, [shown], index)
 
     generates = 0
     max_generates = 1 if config.one_response_per_turn else config.max_generates_per_turn
     for _ in range(max_generates):
+        context = [shown if m is header else m for m in recent(agent, config.memory_turns)]
         output = await model.generate(
-            trim_images(recent(agent, config.memory_turns), config.keep_images),
+            trim_images(context, config.keep_images),
             tools=agent.tools,
         )
         generates += 1
