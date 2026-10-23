@@ -11,9 +11,15 @@ BIG_WALK_CONTROLS = """\
 - Walk: hold W (forward), S (back), A (left), D (right). For example hold_key with text "w" and duration 1. \
 You walk about 1.5 meters per second. Hold shift as well to run ("shift+w").
 - Look around: mouse_move to the point you want to look at. That point moves to the center of your view.
-- Use: left_click. Point at something first (left_click with a coordinate turns you to it). \
-This picks up an object, or presses a switch or button. You carry what you pick up until you drop it, \
+- Use: left_click. This picks up an object, presses a switch or button, or puts what you carry \
+into a place where it fits. You carry what you pick up until you drop it, \
 also while other players act. You can carry one thing at a time.
+- Aim before you use: a small thin white ring shows on what a left_click would act on, near the \
+center of your view, when it is near enough: an object you can pick up, a button you can press, or \
+a place where the thing you carry fits (for example a hole for a peg). No ring means a left_click \
+does nothing. So point at the thing first (mouse_move) and end your turn there. If your next \
+screenshot shows the ring on it, left_click without a coordinate. If not, move closer or point \
+more exactly. left_click with a coordinate turns and clicks at once, so you cannot check the ring.
 - Drop: right_click drops what you carry.
 - Hold a button down: left_mouse_down keeps "use" pressed, also while other players act, until left_mouse_up.
 - Jump: key "space". Crouch: hold "ctrl". Sit down: key "z", and "z" again to stand up. \
