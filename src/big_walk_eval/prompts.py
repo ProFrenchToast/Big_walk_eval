@@ -14,6 +14,11 @@ You walk about 1.5 meters per second. Hold shift as well to run ("shift+w").
 - Use: left_click. Point at something first (left_click with a coordinate turns you to it). \
 This picks up an object, or presses a switch or button. You carry what you pick up until you drop it, \
 also while other players act. You can carry one thing at a time.
+- Before you click, check for the white circle. When you point at something that a left_click \
+acts on, and it is near enough, a small thin white ring shows on it, near the center of your view: \
+on an object you can pick up, a button you can press, or a place where the thing you carry fits \
+(for example a hole for a peg). No ring means a left_click does nothing: move closer or point \
+more exactly, then look again.
 - Drop: right_click drops what you carry.
 - Hold a button down: left_mouse_down keeps "use" pressed, also while other players act, until left_mouse_up.
 - Jump: key "space". Crouch: hold "ctrl". Sit down: key "z", and "z" again to stand up. \
