@@ -43,7 +43,7 @@ internal static class SpawnGuard
         }
     }
 
-    // NEEDS GAME: that the patch applies to the injected type and a typed "+" no longer spawns.
+    // NEEDS GAME: numpad + (tested 2026-11-17: a typed "+" in chat no longer spawns).
     private static bool IsSpawnPressedPrefix(ref bool __result)
     {
         __result = false;
