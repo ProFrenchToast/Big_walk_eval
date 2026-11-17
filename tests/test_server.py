@@ -44,7 +44,7 @@ from server.calibrate import calibrate
 from server.config import ServerConfig
 from server.input.backend import RecordingInputBackend
 from server.input.player import TimelinePlayer, mouse_look_steps
-from server.input.sendinput import SCAN_CODES, key_fields, unicode_units
+from server.input.sendinput import CHAT_SUBSTITUTES, SCAN_CODES, key_fields, unicode_units
 from server.record_spawns import spawns_yaml
 from tests.conftest import ASH, BIRCH, ROOT, reset_request
 from tests.fake_bridge import FakeBridge, FakeClock
@@ -531,6 +531,10 @@ async def test_bridge_game_types_text_as_characters(bridge_env):
     keys = [args[0] for _, name, args in backend.calls if name == "key_down"]
     assert keys == ["enter", "enter"]
     assert result.game_ms == 2 * (KEY_TAP_MS + KEY_GAP_MS) + 3 * TYPE_CHAR_MS
+
+
+def test_plus_is_never_typed():
+    assert CHAT_SUBSTITUTES["+"] == "&"
 
 
 def test_unicode_units():
