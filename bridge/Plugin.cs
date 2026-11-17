@@ -72,6 +72,7 @@ public class Plugin : BasePlugin
         _harmony = new Harmony(Guid);
         GameEvents.Install(_harmony);
         Hud.Install(_harmony);
+        SpawnGuard.Install(_harmony);
 
         EnsureServer();
 
