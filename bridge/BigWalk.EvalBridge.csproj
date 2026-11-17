@@ -44,6 +44,7 @@
     <Reference Include="UnityEngine.ImageConversionModule"><HintPath>$(Interop)\UnityEngine.ImageConversionModule.dll</HintPath></Reference>
     <Reference Include="UnityEngine.ScreenCaptureModule"><HintPath>$(Interop)\UnityEngine.ScreenCaptureModule.dll</HintPath></Reference>
     <Reference Include="UnityEngine.UI"><HintPath>$(Interop)\UnityEngine.UI.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.InputLegacyModule"><HintPath>$(Interop)\UnityEngine.InputLegacyModule.dll</HintPath></Reference>
     <Reference Include="Unity.TextMeshPro"><HintPath>$(Interop)\Unity.TextMeshPro.dll</HintPath></Reference>
   </ItemGroup>
 
