@@ -49,10 +49,11 @@ def test_computer_tool_gets_native_binding(episode: Episode):
     assert td.parallel is False
 
 
-def test_google_models_without_native_computer_use_get_a_renamed_tool(episode: Episode):
+def test_models_without_native_computer_use_get_a_renamed_tool(episode: Episode):
     assert computer_tool_name("google/gemini-3.7-flash") == "game"
     assert computer_tool_name("google/gemini-3-flash-preview") == "computer"
-    assert computer_tool_name("anthropic/claude-sonnet-5-5") == "computer"
+    assert computer_tool_name("anthropic/claude-opus-5-5") == "game"
+    assert computer_tool_name("openai/gpt-5") == "computer"
     names = [ToolDef(t).name for t in agent_tools(episode, 1, "game")]
     assert names == ["game", "end_episode"]
 

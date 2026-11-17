@@ -16,12 +16,17 @@ from big_walk_eval.tools.turn import turn
 # arguments), also for Gemini models without native computer use. Those models then
 # copy the broken calls (seen with gemini-3.1-flash-lite and gemini-3.7-flash). They
 # get the same tool under another name.
+# Inspect's Anthropic provider swaps a tool named "computer" for Anthropic's computer
+# toolset, which drops our action list and description. Claude models get the renamed
+# tool too, so they see the same tool as Gemini.
 GOOGLE_NATIVE_COMPUTER_USE = ("gemini-2.5-computer-use-preview", "gemini-3-flash-preview")
 RENAMED_COMPUTER_TOOL = "game"
 
 
 def computer_tool_name(model: Model | str | None) -> str:
     name = str(model or "")
+    if name.startswith("anthropic/"):
+        return RENAMED_COMPUTER_TOOL
     if name.startswith("google/") and not any(m in name for m in GOOGLE_NATIVE_COMPUTER_USE):
         return RENAMED_COMPUTER_TOOL
     return "computer"
