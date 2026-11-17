@@ -3,9 +3,7 @@
 Keys are sent as scan codes, because many games read scan codes and ignore
 virtual keys. Mouse look uses relative MOUSEEVENTF_MOVE counts. Typed text
 (`type_char`) is sent as Unicode characters with no scan code, so it reaches
-the text chat field but not the key bindings or most practice-mod hotkeys.
-A typed "+" does fire the practice mod's spawn key (also with SpawnKey moved to
-F24), which spawns a body and switches to it, so "+" is typed as "&".
+the text chat field but not the key bindings or the practice-mod hotkeys.
 """
 
 from __future__ import annotations
@@ -33,8 +31,6 @@ MOUSE_BUTTON_FLAGS = {
     "right": (0x0008, 0x0010),
     "middle": (0x0020, 0x0040),
 }
-
-CHAT_SUBSTITUTES = {"+": "&"}
 
 # Scan code set 1. Values above 0xFF are extended keys (E0 prefix).
 SCAN_CODES: dict[str, int] = {
@@ -196,7 +192,7 @@ class SendInputBackend:
         )
 
     async def type_char(self, char: str) -> None:
-        char = CHAT_SUBSTITUTES.get(char, char)
+        # NEEDS GAME: that the chat field takes these and the hotkeys ignore them.
         events = []
         for unit in unicode_units(char):
             for flags in (KEYEVENTF_UNICODE, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP):
